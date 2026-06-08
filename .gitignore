@@ -1,0 +1,5 @@
+# Release artifacts belong in GitHub Releases, not in git history.
+*.deb
+*.deb.asc
+SHA256SUMS
+SHA256SUMS.asc

@@ -1,0 +1,35 @@
+Osprey — End User License Agreement (Summary)
+
+Copyright © 2025–2026 Michel Wijnberg. All rights reserved.
+
+Osprey is proprietary, commercial software. This repository distributes compiled
+binaries for evaluation and for use under a valid license. No source code is
+granted, and no open-source license applies.
+
+1. Evaluation. You may install and use Osprey free of charge to monitor up to
+   32 devices, with no time limit and with all features enabled, for the purpose
+   of evaluating the software. Production use beyond 32 devices requires a paid
+   license.
+
+2. Licensed use. Professional and Enterprise licenses permit production use beyond
+   the evaluation tier. Contact sales@wijnberg.net for terms.
+
+3. Restrictions. You may not: (a) reverse-engineer, decompile, or disassemble the
+   software; (b) redistribute, sublicense, resell, or publish the binaries or any
+   part of them; (c) remove or alter any proprietary notices; or (d) use the
+   software to provide a hosted or managed service to third parties without an
+   Enterprise agreement.
+
+4. Third-party components. The binary includes third-party open-source software
+   under their own licenses; see THIRD-PARTY-LICENSES.txt.
+
+5. No warranty. The software is provided "AS IS", without warranty of any kind,
+   express or implied. In no event shall Michel Wijnberg be liable for any
+   indirect, incidental, special, or consequential damages arising from the use or
+   inability to use the software.
+
+This file is a summary provided for convenience. The complete and governing Terms
+of Service are published at https://www.wijnberg.net/osprey/terms and prevail in
+case of any conflict.
+
+Licensing & sales: sales@wijnberg.net
