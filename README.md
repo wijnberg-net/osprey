@@ -1,6 +1,6 @@
 # Osprey
 
-**Real-time network visibility & engineering for OSPF, IS-IS, and BGP**
+**Real-time network visibility & engineering for OSPF, IS-IS, BGP, and MPLS**
 
 Osprey passively discovers your routing infrastructure, builds a protocol-accurate
 model of every IGP area, and gives your engineering team one place to understand,
@@ -39,6 +39,12 @@ correlation built in.
   SR-MPLS), BGP via BMP, and L2 via LLDP/CDP, correlated on one canvas. IS-IS
   multi-AF gives independent SPF per address family. BGP RIB analysis shows every
   path per prefix across all BMP targets — like `show ip bgp`, network-wide.
+- **Watch BGP and MPLS change over time** — an animated AS-flow view morphs the
+  inter-AS graph as routing shifts, with per-AS drill-down, a T1↔T2 movers diff,
+  and prefix-level change replay; historical BGP shows the real as-of-time
+  best-paths in time travel. MPLS-TE tunnels and L3VPNs discovered from the
+  routers overlay directly on the topology, so a rerouted tunnel or a downed VRF
+  appears exactly where the failure is.
 - **Zero footprint** — GRE collectors form read-only IGP adjacencies (high cost,
   priority 0) and never influence SPF or forwarding. SNMP polls counters and L2
   neighbors. BMP targets push RIB updates. The network does not know Osprey is
@@ -85,8 +91,9 @@ licensing, contact **[sales@wijnberg.net](mailto:sales@wijnberg.net)**.
 |------------|--------------------|--------------|
 | **OSPFv2** | GRE adjacency, SNMP | Full LSDB, SPF, inter-area and external routes, traffic counters |
 | **OSPFv3** | GRE adjacency, SNMP | Full LSDB, dual-stack, RFC 5838 address families |
-| **IS-IS**  | GRE adjacency, SNMP | Full LSDB, CLNS/IPv4/IPv6 SPF, SR-MPLS label stacks |
-| **BGP**    | BMP (RFC 7854)      | Full RIB, all paths per prefix, ADD-PATH, peer state monitoring |
+| **IS-IS**  | GRE adjacency, SNMP | Full LSDB, CLNS/IPv4/IPv6 multi-AF SPF, SR-MPLS, dual-stack, single-seed multi-area discovery, Cisco IOS GRE interop |
+| **BGP**    | BMP (RFC 7854)      | Full RIB, all paths per prefix, ADD-PATH, peer state, historical as-of-T replay, AS-flow animation |
+| **MPLS**   | SNMP (MPLS-TE / MPLS-L3VPN MIBs) | TE tunnels (RFC 3812), L3VPNs (RFC 4364 / 4382) with VRF & route-target rollup |
 | **L2**     | SNMP (LLDP/CDP)     | Switch adjacencies, BFS crawling, overlay on IGP topology |
 
 ---
@@ -116,6 +123,19 @@ licensing, contact **[sales@wijnberg.net](mailto:sales@wijnberg.net)**.
 - Per-router routing table with step-by-step cost explanation
 - BGP prefix search (exact, longest-match, covered) with CSV export
 - SPF tree visualization from any device with cost annotations
+
+### BGP analysis
+- Full RIB per prefix across every BMP target — all paths, ADD-PATH, best-path selection — like `show ip bgp`, network-wide
+- AS-Flow view: an interactive inter-AS graph where autonomous systems are sized bubbles and AS-path adjacencies are animated flows; scrub a timeline, play the reflow, diff two instants with a movers breakdown, and drill into any AS for share, churn, sole-path vs backup dependency, exit routers, and session health — full-table (DFZ) safe
+- Change replay: step, animate, and diff a single prefix's best-path history on the timeline — watch exit points shift, sessions flap, and paths re-home
+- Historical BGP: time travel shows the real as-of-time best-paths and peer sessions, and evaluates hot-potato exit shifts and peer-failure impact as of the selected instant
+- Peer session monitoring via BMP with up/down history and per-target prefix counts
+
+### MPLS visibility
+- MPLS-TE tunnels (RFC 3812) discovered by SNMP: role (head / transit / tail), admin/oper state, and an abstract headend-to-tailend arc on the canvas (marching ants when up, broken red dash when down) — an overlay plane that makes no claim to trace the hop-by-hop path
+- MPLS L3VPNs (RFC 4364 / 4382): per-PE VRFs rolled up server-side into L3VPNs by route-target, with automatic full-mesh vs hub-and-spoke classification and per-site hub / spoke roles
+- L3VPN overlay: selecting an L3VPN highlights its PE sites and draws membership edges (a full interconnect for mesh, a star from the hub for hub-spoke), with an honesty ribbon — the arcs show control-plane VPN membership, not the data path
+- MPLS discovery rides a per-network **auto | on | off** toggle and a capability probe, so only routers that actually run MPLS are walked; tunnel reroutes and VRF-down events feed incident correlation as symptoms, never root causes
 
 ### Failure simulation
 - Simulate link failures, node removals, metric changes, hypothetical links/routers, SRLG failures
@@ -208,6 +228,7 @@ respective licenses; see [THIRD-PARTY-LICENSES.txt](THIRD-PARTY-LICENSES.txt).
 **OSPF**: RFC 2328 (v2), RFC 5340 (v3), RFC 5838 (AF extensions), RFC 7474 (SHA-HMAC).
 **IS-IS**: ISO 10589, RFC 1195, RFC 5301 (hostname), RFC 5303 (3-way), RFC 5305 (TE), RFC 8667 (SR-MPLS).
 **BGP/BMP**: RFC 4271 (BGP-4), RFC 4760 (MP-BGP), RFC 6793 (4-byte ASN), RFC 7854 (BMP), RFC 7911 (Add-Path), RFC 8654 (Extended Messages).
+**MPLS**: RFC 3812 (TE MIB), RFC 4364 (BGP/MPLS IP VPNs), RFC 4382 (L3VPN MIB).
 **L2**: IEEE 802.1AB (LLDP), Cisco CDP.
 
 </details>
