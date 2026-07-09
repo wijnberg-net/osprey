@@ -1,6 +1,6 @@
 # Osprey
 
-**Real-time network visibility & engineering for OSPF, IS-IS, BGP, and MPLS**
+**Real-time network visibility & engineering for OSPF, IS-IS, BGP, MPLS, and EVPN**
 
 Osprey passively discovers your routing infrastructure, builds a protocol-accurate
 model of every IGP area, and gives your engineering team one place to understand,
@@ -42,9 +42,10 @@ correlation built in.
 - **Watch BGP and MPLS change over time** — an animated AS-flow view morphs the
   inter-AS graph as routing shifts, with per-AS drill-down, a T1↔T2 movers diff,
   and prefix-level change replay; historical BGP shows the real as-of-time
-  best-paths in time travel. MPLS-TE tunnels and L3VPNs discovered from the
-  routers overlay directly on the topology, so a rerouted tunnel or a downed VRF
-  appears exactly where the failure is.
+  best-paths in time travel. MPLS-TE tunnels, L3VPNs, L2VPN pseudowires (VPWS
+  wires and VPLS meshes), and BGP-EVPN instances discovered from the routers
+  overlay directly on the topology, so a rerouted tunnel, a downed VRF, or a
+  torn pseudowire appears exactly where the failure is.
 - **Zero footprint** — GRE collectors form read-only IGP adjacencies (high cost,
   priority 0) and never influence SPF or forwarding. SNMP polls counters and L2
   neighbors. BMP targets push RIB updates. The network does not know Osprey is
@@ -93,7 +94,8 @@ licensing, contact **[sales@wijnberg.net](mailto:sales@wijnberg.net)**.
 | **OSPFv3** | GRE adjacency, SNMP | Full LSDB, dual-stack, RFC 5838 address families |
 | **IS-IS**  | GRE adjacency, SNMP | Full LSDB, CLNS/IPv4/IPv6 multi-AF SPF, SR-MPLS, dual-stack, single-seed multi-area discovery, Cisco IOS GRE interop |
 | **BGP**    | BMP (RFC 7854)      | Full RIB, all paths per prefix, ADD-PATH, peer state, historical as-of-T replay, AS-flow animation |
-| **MPLS**   | SNMP (MPLS-TE / MPLS-L3VPN MIBs) | TE tunnels (RFC 3812), L3VPNs (RFC 4364 / 4382) with VRF & route-target rollup |
+| **EVPN**   | BMP (RFC 7432)      | E-LAN & EVPN-VPWS instances (VXLAN or MPLS), member PEs with MAC/IP counts, Ethernet segments, MAC-mobility & PE-loss detection |
+| **MPLS**   | SNMP (MPLS-TE / L3VPN / PW MIBs) | TE tunnels (RFC 3812), L3VPNs (RFC 4364 / 4382) with VRF & route-target rollup, pseudowires (RFC 5601) rolled up into VPWS wires & VPLS instances |
 | **L2**     | SNMP (LLDP/CDP)     | Switch adjacencies, BFS crawling, overlay on IGP topology |
 
 ---
@@ -131,11 +133,14 @@ licensing, contact **[sales@wijnberg.net](mailto:sales@wijnberg.net)**.
 - Historical BGP: time travel shows the real as-of-time best-paths and peer sessions, and evaluates hot-potato exit shifts and peer-failure impact as of the selected instant
 - Peer session monitoring via BMP with up/down history and per-target prefix counts
 
-### MPLS visibility
+### MPLS & EVPN service visibility
 - MPLS-TE tunnels (RFC 3812) discovered by SNMP: role (head / transit / tail), admin/oper state, and an abstract headend-to-tailend arc on the canvas (marching ants when up, broken red dash when down) — an overlay plane that makes no claim to trace the hop-by-hop path
 - MPLS L3VPNs (RFC 4364 / 4382): per-PE VRFs rolled up server-side into L3VPNs by route-target, with automatic full-mesh vs hub-and-spoke classification and per-site hub / spoke roles
-- L3VPN overlay: selecting an L3VPN highlights its PE sites and draws membership edges (a full interconnect for mesh, a star from the hub for hub-spoke), with an honesty ribbon — the arcs show control-plane VPN membership, not the data path
-- MPLS discovery rides a per-network **auto | on | off** toggle and a capability probe, so only routers that actually run MPLS are walked; tunnel reroutes and VRF-down events feed incident correlation as symptoms, never root causes
+- MPLS L2VPN (VPWS & VPLS): pseudowires walked per PE via the PW MIBs (RFC 5601, with a per-device fallback driver) and rolled up into end-to-end VPWS wires — including honest half-wires when the far end is outside the monitored network — and VPLS instances with a mesh-completeness badge (full / partial / unknown), each with a live browser panel and canvas overlay
+- EVPN via BMP (RFC 7432): E-LAN and EVPN-VPWS instances discovered straight from the BGP feed (VXLAN or MPLS encapsulation), with observations from redundant route reflectors collapsed into one canonical instance; the EVI browser lists member PEs with per-PE MAC/IP counts, Ethernet Segments, and on-map / off-view placement, and draws membership edges on the canvas
+- EVPN MAC mobility and PE loss as correlated symptoms: host moves are detected via the MAC-Mobility sequence (with an all-active multihoming guard, so normal redundancy never fires false moves) and storm-guarded; both attach to the co-incident device or link failure, never opening incidents of their own
+- Selecting any service highlights its PEs and draws membership edges (a full interconnect for mesh, a star from the hub for hub-spoke) in the route path's visual language — same stroke, same marching-ants motion when up, clearly distinct broken dash when down or partial — with honesty ribbons: the arcs show control-plane membership, not the data path
+- MPLS discovery rides a per-network **auto | on | off** toggle and a capability probe, so only routers that actually run MPLS are walked; tunnel reroutes, VRF-down and pseudowire-down events feed incident correlation as symptoms, never root causes
 
 ### Failure simulation
 - Simulate link failures, node removals, metric changes, hypothetical links/routers, SRLG failures
@@ -171,7 +176,7 @@ graph TD
 
     CM["Collector Manager\nGRE · SNMP discovery"]
     SP["SNMP Poller\ntraffic counters"]
-    BS["BMP Server\nBGP RIB"]
+    BS["BMP Server\nBGP + EVPN RIB"]
     N["Event bus\nheartbeats · updates"]
     E["Engine\nSPF · diff · correlation"]
     PG[("PostgreSQL\ntopology · events")]
@@ -228,7 +233,8 @@ respective licenses; see [THIRD-PARTY-LICENSES.txt](THIRD-PARTY-LICENSES.txt).
 **OSPF**: RFC 2328 (v2), RFC 5340 (v3), RFC 5838 (AF extensions), RFC 7474 (SHA-HMAC).
 **IS-IS**: ISO 10589, RFC 1195, RFC 5301 (hostname), RFC 5303 (3-way), RFC 5305 (TE), RFC 8667 (SR-MPLS).
 **BGP/BMP**: RFC 4271 (BGP-4), RFC 4760 (MP-BGP), RFC 6793 (4-byte ASN), RFC 7854 (BMP), RFC 7911 (Add-Path), RFC 8654 (Extended Messages).
-**MPLS**: RFC 3812 (TE MIB), RFC 4364 (BGP/MPLS IP VPNs), RFC 4382 (L3VPN MIB).
+**EVPN**: RFC 7432 (BGP MPLS-Based Ethernet VPN), RFC 8214 (EVPN-VPWS), RFC 8365 (network virtualization overlays / VXLAN).
+**MPLS**: RFC 3812 (TE MIB), RFC 4364 (BGP/MPLS IP VPNs), RFC 4382 (L3VPN MIB), RFC 5601 (PW-STD-MIB).
 **L2**: IEEE 802.1AB (LLDP), Cisco CDP.
 
 </details>
