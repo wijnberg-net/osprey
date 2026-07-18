@@ -31,7 +31,7 @@ correlation built in.
 - **Simulate before you change** — fail links, remove devices, adjust metrics, and
   define SRLG groups against live topology. Server-side SPF computes the resulting
   traffic shifts, flags newly isolated devices, and surfaces congestion risk —
-  before you touch production.
+  before you touch the live network.
 - **Replay any moment** — Time Travel reconstructs topology at any point in history
   with transport-style playback. Combined with automatic incident correlation,
   trace exactly how an event unfolded and verify a change had the intended effect.
@@ -202,9 +202,9 @@ no Elasticsearch, no graph database.
 
 ## Scale
 
-Tested in production with 500+ devices across OSPF and IS-IS; designed for 5,000+
-with sub-10 ms search. SNMP counter polling defaults to 5-minute intervals with
-configurable per-target overrides and a 6-hour interface-discovery cycle.
+Designed to scale to 5,000+ devices across OSPF and IS-IS, with sub-10 ms
+search. SNMP counter polling defaults to 5-minute intervals with configurable
+per-target overrides and a 6-hour interface-discovery cycle.
 
 ---
 
@@ -220,7 +220,7 @@ troubleshooting — lives at **[www.wijnberg.net/osprey/docs](https://www.wijnbe
 Proprietary. Copyright © 2025–2026 Michel Wijnberg. All rights reserved. See
 [LICENSE](LICENSE).
 
-Free evaluation: all features, up to 32 devices, no time limit. Production
+Free evaluation: all features, up to 32 devices, no time limit. Commercial
 licensing: **[sales@wijnberg.net](mailto:sales@wijnberg.net)**. Full terms:
 [www.wijnberg.net/osprey/terms](https://www.wijnberg.net/osprey/terms).
 
