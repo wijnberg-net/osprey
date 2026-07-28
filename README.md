@@ -1,6 +1,6 @@
 # Osprey
 
-**Real-time network visibility & engineering for OSPF, IS-IS, BGP, MPLS, and EVPN**
+**Real-time network visibility & engineering for OSPF, IS-IS, EIGRP, BGP, MPLS, and EVPN**
 
 Osprey passively discovers your routing infrastructure, builds a protocol-accurate
 model of every IGP area, and gives your engineering team one place to understand,
@@ -36,7 +36,7 @@ correlation built in.
   with transport-style playback. Combined with automatic incident correlation,
   trace exactly how an event unfolded and verify a change had the intended effect.
 - **Multi-protocol, multi-AF paths** — OSPFv2, OSPFv3, IS-IS (CLNS addressing and
-  SR-MPLS), BGP via BMP, and L2 via LLDP/CDP, correlated on one canvas. IS-IS
+  SR-MPLS), EIGRP, BGP via BMP, and L2 via LLDP/CDP, correlated on one canvas. IS-IS
   multi-AF gives independent SPF per address family. BGP RIB analysis shows every
   path per prefix across all BMP targets — like `show ip bgp`, network-wide.
 - **Watch BGP and MPLS change over time** — an animated AS-flow view morphs the
@@ -107,7 +107,7 @@ licensing, contact **[sales@wijnberg.net](mailto:sales@wijnberg.net)**.
 - Interactive canvas with area coloring, vendor icons, and real-time updates
 - Area-cloud overview for large multi-area topologies, expandable in place to drill down
 - Desktop-style panel manager: compare devices and links side-by-side without losing context
-- Multi-protocol link merge: OSPFv2, OSPFv3, and IS-IS on the same wire shown as one edge with per-protocol detail
+- Multi-protocol link merge: OSPFv2, OSPFv3, IS-IS, and EIGRP on the same wire shown as one edge with per-protocol detail
 - L2 overlay: LLDP/CDP switch adjacencies rendered alongside IGP topology
 - Export to Visio (.vsdx) reproducing the canvas closely — curved links, edge-label chips, area hulls — plus PNG and SVG, with importable vendor stencil packs
 - Multiple visual themes, including dark, high contrast (WCAG AAA), and retro
