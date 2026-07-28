@@ -93,6 +93,7 @@ licensing, contact **[sales@wijnberg.net](mailto:sales@wijnberg.net)**.
 | **OSPFv2** | GRE adjacency, SNMP | Full LSDB, SPF, inter-area and external routes, traffic counters |
 | **OSPFv3** | GRE adjacency, SNMP | Full LSDB, dual-stack, RFC 5838 address families |
 | **IS-IS**  | GRE adjacency, SNMP | Full LSDB, CLNS/IPv4/IPv6 multi-AF SPF, SR-MPLS, dual-stack, single-seed multi-area discovery, Cisco IOS GRE interop |
+| **EIGRP**  | SNMP (CISCO-EIGRP-MIB) | Passive neighbor & interface discovery (IPv4 + IPv6, classic & named mode, per VRF/AS), topology stitched onto the L2 fabric, observed forwarding paths with real composite metrics (FD), administrative distance, and adjacency-loss alerting — Cisco only, read-only, no adjacency formed |
 | **BGP**    | BMP (RFC 7854)      | Full RIB, all paths per prefix, ADD-PATH, peer state, historical as-of-T replay, AS-flow animation |
 | **EVPN**   | BMP (RFC 7432)      | E-LAN & EVPN-VPWS instances (VXLAN or MPLS), member PEs with MAC/IP counts, Ethernet segments, MAC-mobility & PE-loss detection |
 | **MPLS**   | SNMP (MPLS-TE / L3VPN / PW MIBs) | TE tunnels (RFC 3812), L3VPNs (RFC 4364 / 4382) with VRF & route-target rollup, pseudowires (RFC 5601) rolled up into VPWS wires & VPLS instances |
@@ -119,7 +120,9 @@ licensing, contact **[sales@wijnberg.net](mailto:sales@wijnberg.net)**.
 - Congestion and error alerting with sustained-sample filtering
 
 ### Route analysis
-- Shortest-path computation with ECMP and asymmetric-routing detection
+- **Hop-by-hop forwarding paths** — every hop is that router's *own* routing-table decision, not the source's shortest-path view, so the drawn path is the one the packet takes; each hop shows its metric, route type and installed ECMP set
+- **Cross-domain paths** — a path that leaves one routing domain is stitched across ASes and tenants using BGP evidence, with per-segment costs and honest confidence (resolved / inferred / opaque) rather than a guess
+- Shortest-path computation with the full equal-cost path set and asymmetric-routing detection
 - IS-IS address-family selector with per-AF traceroute (CLNS shows System IDs and NETs)
 - SR-MPLS label-stack computation (RFC 8667)
 - Per-router routing table with step-by-step cost explanation
@@ -156,6 +159,7 @@ licensing, contact **[sales@wijnberg.net](mailto:sales@wijnberg.net)**.
 - Diagnostic reports: timer consistency, MTU mismatch, congestion trends, routing stability, single points of failure
 
 ### Administration
+- **Enterprise sign-on** — OpenID Connect SSO, LDAP / Active Directory, SAML 2.0, and SCIM 2.0 user provisioning; two-factor authentication (TOTP) for local accounts
 - Role-based access control (admin, engineer, operator)
 - Browser-based SSH/Telnet terminal with encrypted session recording and full audit trail
 - Alert rules with Slack, Teams, email, and webhook notifications
