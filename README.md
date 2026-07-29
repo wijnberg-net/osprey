@@ -14,6 +14,8 @@ No risk.
 
 ---
 
+![Cross-domain route path in Osprey: an OSPFv2 tenant reaching an IS-IS tenant across a BGP boundary, drawn hop by hop on the live topology with per-segment costs and per-hop confidence in both directions](assets/route-path.png)
+
 ## Why Osprey
 
 Network engineers run complex multi-protocol topologies with limited visibility.
