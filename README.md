@@ -7,8 +7,8 @@ model of every IGP area, and gives your engineering team one place to understand
 simulate, and troubleshoot the network. No agents on routers. No route injection.
 No risk.
 
-[Website](https://www.wijnberg.net/osprey) ·
-[Documentation](https://www.wijnberg.net/osprey/docs) ·
+[Website](https://www.wijnberg.net/) ·
+[Documentation](https://www.wijnberg.net/docs/) ·
 [Download](https://github.com/wijnberg-net/osprey/releases/latest) ·
 [Licensing](mailto:sales@wijnberg.net)
 
@@ -217,7 +217,7 @@ per-target overrides and a 6-hour interface-discovery cycle.
 ## Documentation
 
 Full documentation — installation, canvas, reports, simulation, administration, and
-troubleshooting — lives at **[www.wijnberg.net/osprey/docs](https://www.wijnberg.net/osprey/docs)**.
+troubleshooting — lives at **[www.wijnberg.net/docs](https://www.wijnberg.net/docs/)**.
 
 ---
 
@@ -228,7 +228,7 @@ Proprietary. Copyright © 2025–2026 Michel Wijnberg. All rights reserved. See
 
 Free evaluation: all features, up to 32 devices, no time limit. Commercial
 licensing: **[sales@wijnberg.net](mailto:sales@wijnberg.net)**. Full terms:
-[www.wijnberg.net/osprey/terms](https://www.wijnberg.net/osprey/terms).
+[www.wijnberg.net/terms](https://www.wijnberg.net/terms/).
 
 The distributed binary includes third-party open-source components under their
 respective licenses; see [THIRD-PARTY-LICENSES.txt](THIRD-PARTY-LICENSES.txt).
