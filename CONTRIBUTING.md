@@ -31,7 +31,8 @@ source code.
 Never in a public issue — see [SECURITY.md](SECURITY.md) for the private
 reporting channel and what to expect from us.
 
-## Conduct
+## House rules
 
-All interactions in this repository fall under the
-[Code of Conduct](CODE_OF_CONDUCT.md).
+Keep it professional: argue about the technology, not the person. If you get
+something wrong, say so and move on. Maintainers may edit or remove content
+that crosses that line.
