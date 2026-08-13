@@ -1,0 +1,67 @@
+name: Bug report
+description: Report a defect in Osprey
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug.
+
+        **Security vulnerabilities do not belong here.** Please use
+        [private vulnerability reporting](https://github.com/wijnberg-net/osprey/security/advisories/new)
+        instead — see [SECURITY.md](https://github.com/wijnberg-net/osprey/blob/main/SECURITY.md).
+  - type: input
+    id: version
+    attributes:
+      label: Osprey version
+      description: "`dpkg -s osprey | grep Version`, or Help → About in the web UI."
+      placeholder: "1.2.3"
+    validations:
+      required: true
+  - type: input
+    id: os
+    attributes:
+      label: Operating system
+      placeholder: "Debian 13 / Ubuntu 24.04"
+    validations:
+      required: true
+  - type: dropdown
+    id: component
+    attributes:
+      label: Affected component
+      options:
+        - Web UI / topology canvas
+        - API
+        - Engine
+        - Collector manager (GRE/OSPF/IS-IS collectors)
+        - SNMP poller / discovery
+        - BMP server / BGP
+        - Installation / packaging (.deb)
+        - Not sure
+    validations:
+      required: true
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened, and what did you expect?
+      description: Include the exact steps that led to the problem if you can.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant logs
+      description: >-
+        For service issues: `journalctl -u osprey-<service> --since "-1h"`.
+        **Redact SNMP communities, passwords, and any addressing you consider
+        sensitive before posting.**
+      render: text
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched existing issues for this problem.
+          required: true
+        - label: This is not a security vulnerability (those go through private reporting).
+          required: true

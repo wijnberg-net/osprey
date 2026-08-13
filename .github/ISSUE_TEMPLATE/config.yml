@@ -1,0 +1,11 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/wijnberg-net/osprey/security/advisories/new
+    about: Report privately — never in a public issue. See SECURITY.md for the process.
+  - name: Documentation & user guide
+    url: https://github.com/wijnberg-net/osprey/wiki
+    about: Installation, configuration, and usage documentation.
+  - name: Licensing & sales
+    url: https://www.wijnberg.net/
+    about: Professional/Enterprise licenses and evaluation questions — sales@wijnberg.net.
