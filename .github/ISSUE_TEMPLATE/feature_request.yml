@@ -1,0 +1,41 @@
+name: Feature request
+description: Suggest an improvement or new capability
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What operational problem are you trying to solve?
+      description: >-
+        The workflow or situation first, not the solution. "During maintenance
+        windows we need to know which prefixes lose their only path" tells us
+        far more than "add a report".
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution (optional)
+      description: How you imagine it working — UI, API, report, alert…
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Topology visualization / canvas
+        - OSPF / IS-IS / EIGRP (IGP)
+        - BGP / BMP
+        - MPLS / EVPN services
+        - Traffic & utilization
+        - Reports & diagnostics
+        - Alerting & notifications
+        - Simulation / what-if
+        - Authentication & administration
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Scale, platforms involved, links to standards/RFCs — anything that sharpens the picture.
