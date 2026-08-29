@@ -5,7 +5,7 @@
 Osprey passively discovers your routing infrastructure, builds a protocol-accurate
 model of every IGP area, and gives your engineering team one place to understand,
 simulate, and troubleshoot the network. No agents on routers. No route injection.
-No risk.
+Never a transit path.
 
 [Website](https://www.wijnberg.net/) ·
 [Documentation](https://www.wijnberg.net/docs/) ·
@@ -25,8 +25,9 @@ occur. Understanding "what happened at 3 AM" means hoping someone captured the
 right data.
 
 Osprey observes IGP topology in real time through passive GRE adjacencies, SNMP
-polling, BMP sessions, and BGP-LS. It reconstructs the full link-state database for
-every protocol instance, computes shortest paths exactly as your routers do, and
+polling, BMP sessions, and BGP-LS. It reconstructs the OSPF and IS-IS
+link-state databases in full, models EIGRP from the routers' own topology tables,
+computes shortest paths exactly as your routers do, and
 presents it through an interactive web interface with simulation, time travel, and
 incident correlation built in.
 
@@ -34,7 +35,8 @@ incident correlation built in.
   define SRLG groups against live topology. Server-side SPF computes the resulting
   traffic shifts, flags newly isolated devices, and surfaces congestion risk —
   before you touch the live network.
-- **Replay any moment** — Time Travel reconstructs topology at any point in history
+- **Replay any retained moment** — Time Travel reconstructs topology at any point
+  inside the snapshot retention window
   with transport-style playback. Combined with automatic incident correlation,
   trace exactly how an event unfolded and verify a change had the intended effect.
 - **Multi-protocol, multi-AF paths** — OSPFv2, OSPFv3, IS-IS (CLNS addressing and
@@ -54,12 +56,15 @@ incident correlation built in.
   wires and VPLS meshes), and BGP-EVPN instances discovered from the routers
   overlay directly on the topology, so a rerouted tunnel, a downed VRF, or a
   torn pseudowire appears exactly where the failure is.
-- **Zero footprint** — GRE collectors form read-only IGP adjacencies (high cost,
-  priority 0) and never influence SPF or forwarding. SNMP polls counters and L2
-  neighbors. BMP targets push RIB updates. BGP-LS peering is receive-only by
-  construction: Osprey never listens, always dials, and its wire layer can serialise
-  nothing but OPEN, KEEPALIVE, and NOTIFICATION — it cannot send an UPDATE even by
-  mistake. The network does not know Osprey is watching.
+- **Never in the forwarding path** — GRE collectors form read-only IGP adjacencies
+  and originate a single max-cost Router-LSA (IS-IS: the overload bit), which is
+  precisely what makes them unusable as transit. Like any adjacency they are visible
+  in the link-state database and are an input to SPF; what they can never be is a
+  path a packet takes. SNMP polls counters and L2 neighbors. BMP targets push RIB
+  updates. BGP-LS peering is receive-only by construction: Osprey never listens,
+  always dials, and its wire layer can serialise nothing but OPEN, KEEPALIVE, and
+  NOTIFICATION — it cannot send an UPDATE even by mistake. Nothing Osprey does can
+  move a packet.
 
 ---
 
@@ -120,10 +125,9 @@ licensing, contact **[sales@wijnberg.net](mailto:sales@wijnberg.net)**.
 - Desktop-style panel manager: compare devices and links side-by-side without losing context
 - Multi-protocol link merge: OSPFv2, OSPFv3, IS-IS, and EIGRP on the same wire shown as one edge with per-protocol detail
 - L2 overlay: LLDP/CDP switch adjacencies rendered alongside IGP topology
-- Evidence provenance on every link and device — read from a link-state database,
-  reported by a MIB, or exported by a router — shown in the detail drawers
+- Evidence provenance on every link and device — read from a link-state database, reported by a MIB, or exported by a router — shown in the detail drawers
 - Export to Visio (.vsdx) reproducing the canvas closely — curved links, edge-label chips, area hulls — plus PNG and SVG, with importable vendor stencil packs
-- Multiple visual themes, including dark, high contrast (WCAG AAA), and retro
+- Multiple visual themes, including dark, high contrast, and retro
 - Responsive layout for phones and tablets; the desktop layout is unchanged
 
 ### Traffic monitoring
@@ -133,7 +137,7 @@ licensing, contact **[sales@wijnberg.net](mailto:sales@wijnberg.net)**.
 - Congestion and error alerting with sustained-sample filtering
 
 ### Route analysis
-- **Hop-by-hop forwarding paths** — every hop is that router's *own* routing-table decision, not the source's shortest-path view, so the drawn path is the one the packet takes; each hop shows its metric, route type and installed ECMP set
+- **Hop-by-hop forwarding paths** — every hop is that router's *own* routing-table decision, not the source's shortest-path view, so the drawn path is the one the packet takes — where per-router evidence reaches that far. Where it does not (some OSPFv3 and IS-IS paths, or a selection holding only part of a protocol instance), Osprey falls back to the shortest-path view and labels the answer as exactly that. Each hop shows its metric, route type and installed ECMP set
 - **Cross-domain paths** — a path that leaves one routing domain is stitched across ASes and tenants using BGP evidence, with per-segment costs and honest confidence (resolved / inferred / opaque) rather than a guess
 - Shortest-path computation with the full equal-cost path set and asymmetric-routing detection
 - IS-IS address-family selector with per-AF traceroute (CLNS shows System IDs and NETs)
@@ -147,16 +151,8 @@ licensing, contact **[sales@wijnberg.net](mailto:sales@wijnberg.net)**.
 - AS-Flow view: an interactive inter-AS graph where autonomous systems are sized bubbles and AS-path adjacencies are animated flows; scrub a timeline, play the reflow, diff two instants with a movers breakdown, and drill into any AS for share, churn, sole-path vs backup dependency, exit routers, and session health — full-table (DFZ) safe
 - Change replay: step, animate, and diff a single prefix's best-path history on the timeline — watch exit points shift, sessions flap, and paths re-home
 - Historical BGP: time travel shows the real as-of-time best-paths and peer sessions, and evaluates hot-potato exit shifts and peer-failure impact as of the selected instant
-- **BGP security findings over what your sessions were offered** — three deterministic
-  checks, no baselining and no scores: a prefix left with multiple offered origins, a
-  more-specific under another origin's covering prefix, and a path already carrying your
-  own AS. Every finding names the vantage sessions it was seen on, and an empty report
-  under incomplete coverage reads as a coverage statement, not an all-clear
-- **RPKI/ROA validation against an authorization set you import** — RFC 6811 validation at
-  read time, badging each offered path valid / invalid / unknown, with historical
-  candidates validated against the authorizations as they stood at the time. With no ROAs
-  loaded there is no badge at all, because an "unknown" everywhere would imply validation
-  is running
+- **BGP security findings over what your sessions were offered** — three deterministic checks, no baselining and no scores: a prefix left with multiple offered origins, a more-specific under another origin's covering prefix, and a path already carrying your own AS. Every finding names the vantage sessions it was seen on, and an empty report under incomplete coverage reads as a coverage statement, not an all-clear
+- **RPKI/ROA validation against an authorization set you import** — RFC 6811 validation at read time, badging each offered path valid / invalid / unknown, with historical candidates validated against the authorizations as they stood at the time. With no ROAs loaded there is no badge at all, because an "unknown" everywhere would imply validation is running
 - Peer session monitoring via BMP with up/down history and per-target prefix counts
 
 ### MPLS & EVPN service visibility
@@ -166,7 +162,7 @@ licensing, contact **[sales@wijnberg.net](mailto:sales@wijnberg.net)**.
 - EVPN via BMP (RFC 7432): E-LAN and EVPN-VPWS instances discovered straight from the BGP feed (VXLAN or MPLS encapsulation), with observations from redundant route reflectors collapsed into one canonical instance; the EVI browser lists member PEs with per-PE MAC/IP counts, Ethernet Segments, and on-map / off-view placement, and draws membership edges on the canvas
 - EVPN MAC mobility and PE loss as correlated symptoms: host moves are detected via the MAC-Mobility sequence (with an all-active multihoming guard, so normal redundancy never fires false moves) and storm-guarded; both attach to the co-incident device or link failure, never opening incidents of their own
 - Selecting any service highlights its PEs and draws membership edges (a full interconnect for mesh, a star from the hub for hub-spoke) in the route path's visual language — same stroke, same marching-ants motion when up, clearly distinct broken dash when down or partial — with honesty ribbons: the arcs show control-plane membership, not the data path
-- MPLS discovery rides a per-network **auto | on | off** toggle and a capability probe, so only routers that actually run MPLS are walked; tunnel reroutes, VRF-down and pseudowire-down events feed incident correlation as symptoms, never root causes
+- MPLS discovery rides a per-network **on | off** toggle (off by default) and a capability probe, so only routers that actually run MPLS are walked; tunnel reroutes, VRF-down and pseudowire-down events feed incident correlation as symptoms, never root causes
 
 ### Failure simulation
 - Simulate link failures, node removals, metric changes, hypothetical links/routers, SRLG failures
@@ -175,7 +171,7 @@ licensing, contact **[sales@wijnberg.net](mailto:sales@wijnberg.net)**.
 - Shareable scenarios with undo/redo, applicable to historical snapshots via time travel
 
 ### History and diagnostics
-- Time Travel with playback controls and timeline scrubber
+- Time Travel with playback controls and timeline scrubber, bounded by the configured snapshot retention window
 - Topology Diff: compare two points in time with an added/removed/changed summary
 - Incident-correlation engine: related events grouped with inferred root causes
 - LSDB browser with LSA headers, age indicators, and Options-flag decoding
@@ -222,15 +218,19 @@ graph TD
     A -- HTTPS / WSS --> W
 ```
 
-Data flows one direction: collectors and BMP ingest protocol data and publish to an
-internal event bus, the engine persists to PostgreSQL, and the API serves the
-frontend. No service calls back upstream. PostgreSQL is the only datastore — no JVM,
+Topology flows one direction: collectors and BMP ingest protocol data and publish
+to an internal event bus, the engine persists to PostgreSQL, and the API serves the
+frontend — no collector writes topology, and no service calls back upstream. SNMP
+enrichment (interfaces, L2 neighbors, MPLS services) writes its own rows directly,
+alongside that path rather than through it. PostgreSQL is the only datastore — no JVM,
 no Elasticsearch, no graph database.
 
 ## Scale
 
-Designed to scale to 5,000+ devices across OSPF and IS-IS, with sub-10 ms
-search. SNMP counter polling defaults to 5-minute intervals with configurable
+PostgreSQL, the engine, and the event bus carry device counts well past what a
+single full-network canvas can usefully draw — the practical ceiling is rendering,
+which is why per-area views are the working surface on large topologies. SNMP
+counter polling defaults to 5-minute intervals with configurable
 per-target overrides and a 6-hour interface-discovery cycle.
 
 ---
