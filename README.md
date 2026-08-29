@@ -25,10 +25,10 @@ occur. Understanding "what happened at 3 AM" means hoping someone captured the
 right data.
 
 Osprey observes IGP topology in real time through passive GRE adjacencies, SNMP
-polling, and BMP sessions. It reconstructs the full link-state database for every
-protocol instance, computes shortest paths exactly as your routers do, and presents
-it through an interactive web interface with simulation, time travel, and incident
-correlation built in.
+polling, BMP sessions, and BGP-LS. It reconstructs the full link-state database for
+every protocol instance, computes shortest paths exactly as your routers do, and
+presents it through an interactive web interface with simulation, time travel, and
+incident correlation built in.
 
 - **Simulate before you change** — fail links, remove devices, adjust metrics, and
   define SRLG groups against live topology. Server-side SPF computes the resulting
@@ -41,6 +41,12 @@ correlation built in.
   SR-MPLS), EIGRP, BGP via BMP, and L2 via LLDP/CDP, correlated on one canvas. IS-IS
   multi-AF gives independent SPF per address family. BGP RIB analysis shows every
   path per prefix across all BMP targets — like `show ip bgp`, network-wide.
+- **See areas you cannot reach** — where a protocol adjacency is politically or
+  technically impossible, BGP-LS (RFC 9552) has the routers export their own link-state
+  database instead: mirrored over an existing BMP session, or over a receive-only peering
+  Osprey dials out. Every link and device records how it was learned — read from a
+  link-state database, reported by a MIB, or exported by a router — so the map never
+  hides which parts are first-hand.
 - **Watch BGP and MPLS change over time** — an animated AS-flow view morphs the
   inter-AS graph as routing shifts, with per-AS drill-down, a T1↔T2 movers diff,
   and prefix-level change replay; historical BGP shows the real as-of-time
@@ -50,8 +56,10 @@ correlation built in.
   torn pseudowire appears exactly where the failure is.
 - **Zero footprint** — GRE collectors form read-only IGP adjacencies (high cost,
   priority 0) and never influence SPF or forwarding. SNMP polls counters and L2
-  neighbors. BMP targets push RIB updates. The network does not know Osprey is
-  watching.
+  neighbors. BMP targets push RIB updates. BGP-LS peering is receive-only by
+  construction: Osprey never listens, always dials, and its wire layer can serialise
+  nothing but OPEN, KEEPALIVE, and NOTIFICATION — it cannot send an UPDATE even by
+  mistake. The network does not know Osprey is watching.
 
 ---
 
@@ -94,9 +102,10 @@ licensing, contact **[sales@wijnberg.net](mailto:sales@wijnberg.net)**.
 |------------|--------------------|--------------|
 | **OSPFv2** | GRE adjacency, SNMP | Full LSDB, SPF, inter-area and external routes, traffic counters |
 | **OSPFv3** | GRE adjacency, SNMP | Full LSDB, dual-stack, RFC 5838 address families |
-| **IS-IS**  | GRE adjacency, SNMP | Full LSDB, CLNS/IPv4/IPv6 multi-AF SPF, SR-MPLS, dual-stack, single-seed multi-area discovery, Cisco IOS GRE interop |
+| **IS-IS**  | GRE adjacency, SNMP | Full LSDB, CLNS/IPv4/IPv6 multi-AF SPF, SR-MPLS, dual-stack, single-seed multi-area discovery that provisions one strict recorder per area and hands them over, Cisco IOS GRE interop |
 | **EIGRP**  | SNMP (CISCO-EIGRP-MIB) | Passive neighbor & interface discovery (IPv4 + IPv6, classic & named mode, per VRF/AS), topology stitched onto the L2 fabric, observed forwarding paths with real composite metrics (FD), administrative distance, and adjacency-loss alerting — Cisco only, read-only, no adjacency formed |
 | **BGP**    | BMP (RFC 7854)      | Full RIB, all paths per prefix, ADD-PATH, peer state, historical as-of-T replay, AS-flow animation |
+| **BGP-LS** | BMP lane or receive-only peer (RFC 9552) | Link-state topology exported by the routers themselves, projected onto the canvas like a recorder-fed area; stands down automatically where a real recorder already feeds that area; refuses to draw a partial graph rather than a wrong one |
 | **EVPN**   | BMP (RFC 7432)      | E-LAN & EVPN-VPWS instances (VXLAN or MPLS), member PEs with MAC/IP counts, Ethernet segments, MAC-mobility & PE-loss detection |
 | **MPLS**   | SNMP (MPLS-TE / L3VPN / PW MIBs) | TE tunnels (RFC 3812), L3VPNs (RFC 4364 / 4382) with VRF & route-target rollup, pseudowires (RFC 5601) rolled up into VPWS wires & VPLS instances |
 | **L2**     | SNMP (LLDP/CDP)     | Switch adjacencies, BFS crawling, overlay on IGP topology |
@@ -111,6 +120,8 @@ licensing, contact **[sales@wijnberg.net](mailto:sales@wijnberg.net)**.
 - Desktop-style panel manager: compare devices and links side-by-side without losing context
 - Multi-protocol link merge: OSPFv2, OSPFv3, IS-IS, and EIGRP on the same wire shown as one edge with per-protocol detail
 - L2 overlay: LLDP/CDP switch adjacencies rendered alongside IGP topology
+- Evidence provenance on every link and device — read from a link-state database,
+  reported by a MIB, or exported by a router — shown in the detail drawers
 - Export to Visio (.vsdx) reproducing the canvas closely — curved links, edge-label chips, area hulls — plus PNG and SVG, with importable vendor stencil packs
 - Multiple visual themes, including dark, high contrast (WCAG AAA), and retro
 - Responsive layout for phones and tablets; the desktop layout is unchanged
@@ -136,6 +147,16 @@ licensing, contact **[sales@wijnberg.net](mailto:sales@wijnberg.net)**.
 - AS-Flow view: an interactive inter-AS graph where autonomous systems are sized bubbles and AS-path adjacencies are animated flows; scrub a timeline, play the reflow, diff two instants with a movers breakdown, and drill into any AS for share, churn, sole-path vs backup dependency, exit routers, and session health — full-table (DFZ) safe
 - Change replay: step, animate, and diff a single prefix's best-path history on the timeline — watch exit points shift, sessions flap, and paths re-home
 - Historical BGP: time travel shows the real as-of-time best-paths and peer sessions, and evaluates hot-potato exit shifts and peer-failure impact as of the selected instant
+- **BGP security findings over what your sessions were offered** — three deterministic
+  checks, no baselining and no scores: a prefix left with multiple offered origins, a
+  more-specific under another origin's covering prefix, and a path already carrying your
+  own AS. Every finding names the vantage sessions it was seen on, and an empty report
+  under incomplete coverage reads as a coverage statement, not an all-clear
+- **RPKI/ROA validation against an authorization set you import** — RFC 6811 validation at
+  read time, badging each offered path valid / invalid / unknown, with historical
+  candidates validated against the authorizations as they stood at the time. With no ROAs
+  loaded there is no badge at all, because an "unknown" everywhere would imply validation
+  is running
 - Peer session monitoring via BMP with up/down history and per-target prefix counts
 
 ### MPLS & EVPN service visibility
@@ -182,7 +203,7 @@ graph TD
 
     CM["Collector Manager\nGRE · SNMP discovery"]
     SP["SNMP Poller\ntraffic counters"]
-    BS["BMP Server\nBGP + EVPN RIB"]
+    BS["BMP Server\nBGP · EVPN · BGP-LS"]
     N["Event bus\nheartbeats · updates"]
     E["Engine\nSPF · diff · correlation"]
     PG[("PostgreSQL\ntopology · events")]
@@ -191,7 +212,7 @@ graph TD
 
     R -- GRE/SNMP --> CM
     R -- Enrichment --> SP
-    R -- BMP sessions --> BS
+    R -- BMP / BGP-LS --> BS
     CM --> N
     SP --> N
     BS --> N
@@ -238,9 +259,10 @@ respective licenses; see [THIRD-PARTY-LICENSES.txt](THIRD-PARTY-LICENSES.txt).
 
 **OSPF**: RFC 2328 (v2), RFC 5340 (v3), RFC 5838 (AF extensions), RFC 7474 (SHA-HMAC).
 **IS-IS**: ISO 10589, RFC 1195, RFC 5301 (hostname), RFC 5303 (3-way), RFC 5305 (TE), RFC 8667 (SR-MPLS).
-**BGP/BMP**: RFC 4271 (BGP-4), RFC 4760 (MP-BGP), RFC 6793 (4-byte ASN), RFC 7854 (BMP), RFC 7911 (Add-Path), RFC 8654 (Extended Messages).
+**BGP/BMP**: RFC 4271 (BGP-4), RFC 4760 (MP-BGP), RFC 6793 (4-byte ASN), RFC 7854 (BMP), RFC 7911 (Add-Path), RFC 8654 (Extended Messages), RFC 9552 (BGP-LS).
 **EVPN**: RFC 7432 (BGP MPLS-Based Ethernet VPN), RFC 8214 (EVPN-VPWS), RFC 8365 (network virtualization overlays / VXLAN).
 **MPLS**: RFC 3812 (TE MIB), RFC 4364 (BGP/MPLS IP VPNs), RFC 4382 (L3VPN MIB), RFC 5601 (PW-STD-MIB).
+**RPKI**: RFC 6482 (ROA), RFC 6811 (origin validation), RFC 6483 / RFC 7607 (AS0).
 **L2**: IEEE 802.1AB (LLDP), Cisco CDP.
 
 </details>
