@@ -99,16 +99,23 @@ All features, up to 32 devices, no time limit, no license key required. Upgrade 
 uploading a license key through the web UI. For Professional or Enterprise
 licensing, contact **[sales@wijnberg.net](mailto:sales@wijnberg.net)**.
 
+Licensing degrades, it does not switch the product off. Exceeding your node count
+or letting a license lapse gives you 30 days of completely normal operation; after
+that, everything already discovered keeps working — topology, paths, alerts, reports
+and the real-time feed all stay live — and the only thing refused is admitting a
+*new* device beyond the cap. Removing a device frees its slot immediately, and a
+router that changes its ID keeps the slot it already had.
+
 ---
 
 ## Protocol support
 
 | Protocol   | Discovery method   | Capabilities |
 |------------|--------------------|--------------|
-| **OSPFv2** | GRE adjacency, SNMP | Full LSDB, SPF, inter-area and external routes, traffic counters |
-| **OSPFv3** | GRE adjacency, SNMP | Full LSDB, dual-stack, RFC 5838 address families |
-| **IS-IS**  | GRE adjacency, SNMP | Full LSDB, CLNS/IPv4/IPv6 multi-AF SPF, SR-MPLS, dual-stack, single-seed multi-area discovery that provisions one strict recorder per area and hands them over, Cisco IOS GRE interop |
-| **EIGRP**  | SNMP (CISCO-EIGRP-MIB) | Passive neighbor & interface discovery (IPv4 + IPv6, classic & named mode, per VRF/AS), topology stitched onto the L2 fabric, observed forwarding paths with real composite metrics (FD), administrative distance, and adjacency-loss alerting — Cisco only, read-only, no adjacency formed |
+| **OSPFv2** | GRE adjacency, SNMP, BGP-LS | Full LSDB, SPF, inter-area and external routes, traffic counters |
+| **OSPFv3** | GRE adjacency, SNMP, BGP-LS | Full LSDB, dual-stack, RFC 5838 address families |
+| **IS-IS**  | GRE adjacency, SNMP, BGP-LS | Full LSDB, CLNS/IPv4/IPv6 multi-AF SPF, SR-MPLS, dual-stack, single-seed multi-area discovery that provisions one strict recorder per area and hands them over, Cisco IOS GRE interop |
+| **EIGRP**  | SNMP (CISCO-EIGRP-MIB) | Passive neighbor & interface discovery (IPv4 + IPv6, classic & named mode, per VRF/AS), topology stitched onto the L2 fabric, observed forwarding paths read from the routers' own DUAL topology tables — the installed next-hop set with its feasible and computed distances, not a modelled metric — plus administrative distance and adjacency-loss alerting. Cisco only, read-only, no adjacency formed |
 | **BGP**    | BMP (RFC 7854)      | Full RIB, all paths per prefix, ADD-PATH, peer state, historical as-of-T replay, AS-flow animation |
 | **BGP-LS** | BMP lane or receive-only peer (RFC 9552) | Link-state topology exported by the routers themselves, projected onto the canvas like a recorder-fed area; stands down automatically where a real recorder already feeds that area; refuses to draw a partial graph rather than a wrong one |
 | **EVPN**   | BMP (RFC 7432)      | E-LAN & EVPN-VPWS instances (VXLAN or MPLS), member PEs with MAC/IP counts, Ethernet segments, MAC-mobility & PE-loss detection |
@@ -121,6 +128,7 @@ licensing, contact **[sales@wijnberg.net](mailto:sales@wijnberg.net)**.
 
 ### Topology visualization
 - Interactive canvas with area coloring, vendor icons, and real-time updates
+- Three built-in icon packs, all area-tinted — including Osprey 3D, original artwork whose rendered pucks carry each device's role on the face
 - Area-cloud overview for large multi-area topologies, expandable in place to drill down
 - Desktop-style panel manager: compare devices and links side-by-side without losing context
 - Multi-protocol link merge: OSPFv2, OSPFv3, IS-IS, and EIGRP on the same wire shown as one edge with per-protocol detail
@@ -166,6 +174,7 @@ licensing, contact **[sales@wijnberg.net](mailto:sales@wijnberg.net)**.
 
 ### Failure simulation
 - Simulate link failures, node removals, metric changes, hypothetical links/routers, SRLG failures
+- Cross-domain what-if: a failure applied to a path that spans several ASes or tenants keeps its full BGP-stitched chain, with the mutation applied to each link-state segment. Where the failure hits an EIGRP chain, an already-installed surviving next-hop is promoted rather than the domain going blank — and where no installed path survives, the segment says so instead of guessing at a DUAL recomputation
 - Traffic-shift impact analysis with congestion-risk classification
 - Batch assessment: iterate all links or nodes, surface only failures that cause isolation
 - Shareable scenarios with undo/redo, applicable to historical snapshots via time travel
@@ -257,7 +266,7 @@ respective licenses; see [THIRD-PARTY-LICENSES.txt](THIRD-PARTY-LICENSES.txt).
 <details>
 <summary>Protocol references</summary>
 
-**OSPF**: RFC 2328 (v2), RFC 5340 (v3), RFC 5838 (AF extensions), RFC 7474 (SHA-HMAC).
+**OSPF**: RFC 2328 (v2), RFC 5340 (v3), RFC 5838 (AF extensions), RFC 5709 (HMAC-SHA authentication), RFC 7474 (manual-key security extension).
 **IS-IS**: ISO 10589, RFC 1195, RFC 5301 (hostname), RFC 5303 (3-way), RFC 5305 (TE), RFC 8667 (SR-MPLS).
 **BGP/BMP**: RFC 4271 (BGP-4), RFC 4760 (MP-BGP), RFC 6793 (4-byte ASN), RFC 7854 (BMP), RFC 7911 (Add-Path), RFC 8654 (Extended Messages), RFC 9552 (BGP-LS).
 **EVPN**: RFC 7432 (BGP MPLS-Based Ethernet VPN), RFC 8214 (EVPN-VPWS), RFC 8365 (network virtualization overlays / VXLAN).
