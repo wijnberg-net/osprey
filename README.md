@@ -15,7 +15,7 @@ through BGP or forward user traffic.
 
 ---
 
-![Osprey showing a path between OSPFv2 and IS-IS networks across a BGP boundary, with forward and reverse path details](assets/route-path.png)
+![Osprey topology workspace with device, multi-protocol link, traffic, and SSH panels open](assets/topology-workspace.png)
 
 ## Why Osprey
 
