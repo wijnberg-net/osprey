@@ -120,7 +120,7 @@ match it to the existing device.
 | **EIGRP**  | SNMP (CISCO-EIGRP-MIB) | IPv4/IPv6 neighbor, interface and topology-table discovery; classic and named mode, VRF/AS scoping, observed route metrics and next hops, L2 integration, administrative-distance selection and adjacency-loss alerts. Cisco only; no EIGRP adjacency required |
 | **BGP**    | BMP (RFC 7854)      | Received routing tables and candidate paths, ADD-PATH, peer state, historical replay and AS-flow animation |
 | **BGP-LS** | BMP or direct BGP session (RFC 9552) | Router-exported topology with source attribution; direct area collection takes precedence. Incomplete collection is reported, and topology is withheld when source-completeness checks fail |
-| **EVPN**   | BMP (RFC 7432)      | E-LAN & EVPN-VPWS instances (VXLAN or MPLS), member PEs with MAC/IP counts, Ethernet segments, MAC-mobility & PE-loss detection |
+| **EVPN**   | BMP (RFC 7854)      | EVPN routes (RFC 7432), E-LAN & EVPN-VPWS instances (VXLAN or MPLS), member PEs with MAC/IP counts, Ethernet segments, MAC-mobility & PE-loss detection |
 | **MPLS**   | SNMP (MPLS-TE / L3VPN / PW MIBs) | TE tunnels (RFC 3812), L3VPNs grouped by VRF and route-target data (RFC 4364 / 4382), VPWS connections and VPLS instances from pseudowire data (RFC 5601) |
 | **L2**     | SNMP (LLDP/CDP)     | Switch adjacencies, neighbor-based discovery, overlay on IGP topology |
 
@@ -128,6 +128,11 @@ Capabilities depend on the source, device software, and enabled router features.
 BGP-LS exports are not equivalent to a complete raw LSDB, and BMP exposes the
 routes its exporters provide. A supported protocol does not imply that every
 device exposes every table or address family.
+
+IS-IS multi-area discovery is enabled per recorder. Automatic handoff to
+per-area SNMP recorders is a separate, default-off option: it requires both
+the server's `snmp.isis_bootstrap_enabled` setting (with a collector-manager
+restart) and the parent recorder's **Bootstrap strict per-area recorders** option.
 
 ---
 
@@ -149,8 +154,8 @@ device exposes every table or address family.
 ### Traffic monitoring
 
 - SNMP v2c/v3 polling: per-interface utilization, errors, bandwidth, vendor detection
-- On-demand 5-second boost polling when inspecting a link
-- Traffic graphs with hourly history (24h, 7d, 30d, 1y)
+- On-demand 10-second boost polling when inspecting a link
+- Traffic graphs with hourly history and 24h, 7d and 30d viewing windows
 - Congestion and error alerting with sustained-sample filtering
 
 ### Route analysis
@@ -242,12 +247,16 @@ device exposes every table or address family.
 - Enterprise sign-on with OpenID Connect, LDAP / Active Directory and SAML 2.0;
   SCIM 2.0 user provisioning and TOTP two-factor authentication for local accounts
 - Role-based access control (admin, engineer, operator)
-- Browser-based SSH/Telnet terminal with encrypted session recording and full audit trail
+- Browser-based SSH/Telnet terminal with admin-enabled session recording,
+  encrypted at rest on standard package installations, and audit logging
 - Alert rules with Slack, Teams, email, and webhook notifications
 - Maintenance windows for scheduled alert suppression
 - SNMP credential profiles with per-network overrides and fallback credentials
 - Backup/restore, audit logging, encrypted credential storage, license management
 - Update notification: checks for a newer release on startup and prompts when one is available
+
+Identity-provider integration acceptance testing is still pending. Validate
+sign-in, group-to-role mapping and provisioning with your provider before rollout.
 
 ---
 
@@ -260,8 +269,8 @@ graph TD
     R[Routers & Switches]
 
     CM["Collector Manager\nGRE · SNMP discovery"]
-    SP["SNMP Poller\ninterfaces · counters · services"]
     BS["BMP Server\nBGP · EVPN · BGP-LS"]
+    SP["SNMP Poller\ninterfaces · counters · services"]
     N["Event bus\nheartbeats · updates"]
     E["Engine\nSPF · diff · correlation"]
     PG[("PostgreSQL\ntopology · events")]
@@ -269,11 +278,11 @@ graph TD
     W["Web UI"]
 
     R -- GRE/SNMP --> CM
-    R -- Enrichment --> SP
     R -- BMP / BGP-LS --> BS
+    R -- Enrichment --> SP
     CM --> N
-    SP --> N
     BS --> N
+    SP --> N
     N --> E
     E --> PG
     SP --> PG
@@ -338,7 +347,8 @@ respective licenses; see [THIRD-PARTY-LICENSES.txt](THIRD-PARTY-LICENSES.txt).
 **BGP/BMP**: RFC 4271 (BGP-4), RFC 4760 (MP-BGP), RFC 6793 (4-byte ASN), RFC 7854 (BMP), RFC 7911 (Add-Path), RFC 8654 (Extended Messages), RFC 9552 (BGP-LS).
 **EVPN**: RFC 7432 (BGP MPLS-Based Ethernet VPN), RFC 8214 (EVPN-VPWS), RFC 8365 (network virtualization overlays / VXLAN).
 **MPLS**: RFC 3812 (TE MIB), RFC 4364 (BGP/MPLS IP VPNs), RFC 4382 (L3VPN MIB), RFC 5601 (PW-STD-MIB).
-**RPKI**: RFC 6482 (ROA), RFC 6811 (origin validation), RFC 6483 / RFC 7607 (AS0).
+**RPKI**: RFC 6482 (ROA), RFC 6811 (origin validation), RFC 6483 (validation semantics, including AS0 ROAs).
+**AS0 in BGP**: RFC 7607 (handling AS number zero in BGP messages).
 **L2**: IEEE 802.1AB (LLDP), Cisco CDP.
 
 </details>
