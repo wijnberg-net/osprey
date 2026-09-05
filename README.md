@@ -50,6 +50,15 @@ shown alongside the result.
   on the topology. Service overlays show their recorded relationships and state;
   they do not by themselves prove where packets travel or what caused an outage.
 
+### Follow a path across routing domains
+
+The path panel presents forward and reverse paths as separate chains. Each
+segment identifies its routing domain, protocol instance, cost, and evidence
+status. The same hops are highlighted on the canvas, so the route explanation
+remains connected to the topology being investigated.
+
+![Osprey route analysis showing forward and reverse paths across OSPFv2, BGP, and IS-IS routing domains](assets/route-path.png)
+
 ### How Osprey connects to your network
 
 SNMP collectors read protocol tables, interface counters, and neighbor information.
