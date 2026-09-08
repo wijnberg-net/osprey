@@ -10,7 +10,7 @@ through BGP or forward user traffic.
 
 [Website](https://www.wijnberg.net/) ·
 [Documentation](https://www.wijnberg.net/docs/) ·
-[API documentation](https://wijnberg-net.github.io/osprey/) ·
+[API documentation](https://www.wijnberg.net/api/) ·
 [Download](https://github.com/wijnberg-net/osprey/releases/latest) ·
 [Licensing](mailto:sales@wijnberg.net)
 
@@ -83,7 +83,7 @@ or unresolved sections where the available observations do not support an answer
 ## Download & install
 
 Building an integration? Start with [API & Integrations](https://github.com/wijnberg-net/osprey/wiki/API-and-Integrations).
-The [API reference](https://wijnberg-net.github.io/osprey/) is versioned; releases
+The [API reference](https://www.wijnberg.net/api/) is versioned; releases
 from 1.4.3 also provide `openapi.json` as a download. The specification covers
 eight observation operations, not the complete API.
 
