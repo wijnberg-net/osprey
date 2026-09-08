@@ -1,0 +1,31 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>GET /api/v1/reports/bgp-security — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="get-apiv1reportsbgp-security">GET /api/v1/reports/bgp-security</h3><pre><code>GET /api/v1/reports/bgp-security?as_id=&lt;uuid&gt;
+GET /api/v1/reports/bgp-security?as_id=&lt;uuid&gt;&amp;at=&lt;RFC3339&gt;&amp;af=ipv4&amp;limit=200
+</code></pre>
+<p>The <strong>security detection report</strong>: three <strong>deterministic</strong> checks over the candidate lane — no baselining, no warm-up. Reads live <code>bgp_rib_entry</code> when <code>at</code> is absent or within ±60s of server time (refusing with <code>available:false</code> when no enabled BMP target feeds the scope), and <code>bgp_rib_entry_history</code> open at <code>at</code> behind the scoped full-RIB gate otherwise.</p>
+<p><strong>Auth:</strong> Any authenticated user.</p>
+<p><strong>Query parameters:</strong> <code>as_id</code> (required); optional <code>routing_domain_id</code>, <code>device_id</code>, <code>af</code> (<code>ipv4</code>|<code>ipv6</code>), <code>at</code> (RFC 3339, default now), <code>limit</code> (per-detector finding cap, default 100, max 500 — <code>truncated</code> reports a hit).</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;at&quot;: &quot;2026-08-18T00:00:00Z&quot;,
+  &quot;own_as&quot;: 65001,
+  &quot;scope&quot;: &quot;presence&quot;,
+  &quot;data_source&quot;: &quot;live&quot;,
+  &quot;available&quot;: true,
+  &quot;moas&quot;: [
+    { &quot;prefix&quot;: &quot;203.0.113.0/24&quot;, &quot;origins&quot;: [
+      { &quot;origin_as&quot;: 65100, &quot;session_count&quot;: 1, &quot;sessions&quot;: [ { &quot;device_id&quot;: &quot;uuid&quot;, &quot;peer_ip&quot;: &quot;198.51.100.31&quot;, &quot;address_family&quot;: &quot;ipv4&quot;, &quot;peer_as&quot;: 64801 } ] },
+      { &quot;origin_as&quot;: 65200, &quot;session_count&quot;: 2, &quot;sessions&quot;: [ { &quot;device_id&quot;: &quot;uuid&quot;, &quot;peer_ip&quot;: &quot;198.51.100.32&quot;, &quot;address_family&quot;: &quot;ipv4&quot;, &quot;peer_as&quot;: 64802 } ] } ] }
+  ],
+  &quot;more_specifics&quot;: [
+    { &quot;prefix&quot;: &quot;10.1.0.0/16&quot;, &quot;origin_as&quot;: 65300, &quot;covering_prefix&quot;: &quot;10.0.0.0/8&quot;, &quot;covering_origin&quot;: 65100,
+      &quot;session_count&quot;: 1, &quot;sessions&quot;: [ { &quot;device_id&quot;: &quot;uuid&quot;, &quot;peer_ip&quot;: &quot;198.51.100.32&quot;, &quot;address_family&quot;: &quot;ipv4&quot;, &quot;peer_as&quot;: 64802 } ] }
+  ],
+  &quot;own_as_offers&quot;: [
+    { &quot;prefix&quot;: &quot;203.0.113.0/24&quot;, &quot;as_path&quot;: &quot;64802 65001 65400&quot;,
+      &quot;session&quot;: { &quot;device_id&quot;: &quot;uuid&quot;, &quot;peer_ip&quot;: &quot;198.51.100.32&quot;, &quot;address_family&quot;: &quot;ipv4&quot;, &quot;peer_as&quot;: 64802 } }
+  ],
+  &quot;truncated&quot;: false
+}
+</code></pre>
+<p><strong>Claim discipline</strong> (enforced server-side): <code>scope</code> is always <code>presence</code> — every finding means &quot;this path was <strong>offered</strong> on this session at T&quot;, never acceptance and never &quot;hijack&quot;; every finding carries its vantage sessions (<code>sessions</code> is a capped sample of 3, <code>session_count</code> the true total). The three checks: <strong><code>moas</code></strong> = ≥2 distinct origins open for one prefix; <strong><code>more_specifics</code></strong> = a candidate open for P while a strictly covering P′ with a different origin is open; <strong><code>own_as_offers</code></strong> = a peer offered a path already containing the own AS — offered AND provably not selectable on this router (RFC 4271 §9.1.2), the strongest claim of the three. The own-AS token match cannot distinguish AS_SEQUENCE from AS_SET/confederation members — the raw <code>as_path</code> rides along so the reader can judge. <code>available:false</code> (uncovered history instant, or no enabled target on the live lane) makes emptiness a <strong>coverage statement, not an all-clear</strong>. <strong>Errors:</strong> <code>400</code> on a missing <code>as_id</code> or invalid <code>af</code>/<code>at</code>.</p>
+</main></html>

@@ -1,0 +1,74 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>`GET /bgp/history/scenario` — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="get-bgphistoryscenario"><code>GET /bgp/history/scenario</code></h3><p>Replay payload for a <strong>single prefix</strong> over a time window, reconstructed from the bitemporal best-path/peer history (<code>bgp_best_path_history</code>, <code>bgp_peer_history</code>). Backs the BGP change-animation replay panel. Shaped like the RIPEstat bgplay data call: the state open at <code>from</code>, plus the ordered transitions within the window.</p>
+<p><strong>Auth</strong>: all authenticated roles</p>
+<p><strong>Query params</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>as_id</code></td>
+<td>UUID</td>
+<td>Yes</td>
+<td>Autonomous-system scope</td>
+</tr>
+<tr>
+<td><code>prefix</code></td>
+<td>CIDR</td>
+<td>Yes</td>
+<td>The prefix to replay (guided-attention surface — a prefix is mandatory; use <code>/bgp/history/bins</code> for an AS-wide overview)</td>
+</tr>
+<tr>
+<td><code>from</code>, <code>to</code></td>
+<td>RFC 3339</td>
+<td>Yes</td>
+<td>Window bounds; <code>from</code> must be strictly before <code>to</code></td>
+</tr>
+<tr>
+<td><code>match</code></td>
+<td>string</td>
+<td>No</td>
+<td><code>exact</code> (default) or <code>covering</code> (<code>prefix &gt;&gt;= $</code>)</td>
+</tr>
+<tr>
+<td><code>routing_domain_id</code></td>
+<td>UUID</td>
+<td>No</td>
+<td>Restrict to one routing domain</td>
+</tr>
+<tr>
+<td><code>device_id</code></td>
+<td>UUID</td>
+<td>No</td>
+<td>Restrict to one selecting device&#39;s perspective</td>
+</tr>
+<tr>
+<td><code>cap</code></td>
+<td>int</td>
+<td>No</td>
+<td>Max events (default 5000, max 20000); when hit, <code>truncated=true</code></td>
+</tr>
+</tbody></table>
+<p><strong>Response</strong>: <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;initial_state&quot;: [ { &quot;prefix&quot;: &quot;10.0.0.0/24&quot;, &quot;device_id&quot;: &quot;…&quot;, &quot;next_hop&quot;: &quot;198.51.100.1&quot;, &quot;as_path&quot;: &quot;65001 65002&quot;, &quot;…&quot;: &quot;…&quot; } ],
+  &quot;events&quot;: [
+    { &quot;type&quot;: &quot;announce&quot;, &quot;event_time&quot;: &quot;2026-07-01T10:00:00Z&quot;, &quot;prefix&quot;: &quot;10.0.0.0/24&quot;, &quot;device_id&quot;: &quot;…&quot;, &quot;origin&quot;: &quot;change&quot;, &quot;new&quot;: { &quot;next_hop&quot;: &quot;198.51.100.1&quot;, &quot;…&quot;: &quot;…&quot; } },
+    { &quot;type&quot;: &quot;change&quot;,   &quot;event_time&quot;: &quot;2026-07-01T10:05:00Z&quot;, &quot;prefix&quot;: &quot;10.0.0.0/24&quot;, &quot;device_id&quot;: &quot;…&quot;, &quot;origin&quot;: &quot;change&quot;, &quot;new&quot;: { &quot;next_hop&quot;: &quot;198.51.100.2&quot; }, &quot;old&quot;: { &quot;next_hop&quot;: &quot;198.51.100.1&quot; } },
+    { &quot;type&quot;: &quot;withdraw&quot;, &quot;event_time&quot;: &quot;2026-07-01T10:10:00Z&quot;, &quot;prefix&quot;: &quot;10.0.0.0/24&quot;, &quot;device_id&quot;: &quot;…&quot;, &quot;origin&quot;: &quot;change&quot;, &quot;old&quot;: { &quot;next_hop&quot;: &quot;198.51.100.2&quot; } }
+  ],
+  &quot;peer_events&quot;: [ { &quot;event_time&quot;: &quot;…&quot;, &quot;device_id&quot;: &quot;…&quot;, &quot;peer_ip&quot;: &quot;198.51.100.1&quot;, &quot;address_family&quot;: &quot;ipv4&quot;, &quot;peer_as&quot;: 65002, &quot;peer_type&quot;: &quot;ebgp&quot;, &quot;state&quot;: &quot;down&quot;, &quot;origin&quot;: &quot;change&quot; } ],
+  &quot;truncated&quot;: false
+}
+</code></pre>
+<ul>
+<li><strong><code>type</code></strong> is derived from interval adjacency: <code>announce</code> (no interval ended exactly at this open), <code>change</code> (an interval ended here — <code>old</code> carries the prior next-hop / AS-path / local-pref / MED for the diff lane), <code>withdraw</code> (a terminal close — no interval begins at this instant).</li>
+<li><strong><code>origin</code></strong> is <code>change</code> or <code>seed</code>. Seed transitions (D-SEED reconciliation at engine start) are <strong>labeled, not dropped</strong> — the UI de-emphasizes them (&quot;changed during a monitoring gap&quot;). Bitemporal note: a route that <em>vanished</em> while the engine was down surfaces as a <code>withdraw</code> at reconciliation time (there is no close-side origin marker) — correlate with a <code>peer_events</code> session gap at the same instant.</li>
+<li>Replay temporal floor = the recorder&#39;s debounce (30 s default): sub-debounce flaps are coalesced and do not appear.</li>
+</ul>
+<p><strong>Errors</strong>: <code>400</code> if <code>as_id</code>, <code>prefix</code>, or the window is missing/invalid.</p>
+</main></html>

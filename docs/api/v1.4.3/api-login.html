@@ -1,0 +1,40 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Login — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="login">Login</h3><pre><code>POST /api/v1/auth/login
+</code></pre>
+<p><strong>Rate limit:</strong> 5 requests per minute per IP.</p>
+<p>Authenticates a user and sets <code>osprey_access</code> and <code>osprey_refresh</code> cookies.</p>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;username&quot;: &quot;admin&quot;,
+  &quot;password&quot;: &quot;admin&quot;
+}
+</code></pre>
+<p><strong>Response:</strong> <code>200 OK</code> (sets cookies)</p>
+<pre><code class="language-json">{
+  &quot;user&quot;: {
+    &quot;id&quot;: &quot;uuid&quot;,
+    &quot;username&quot;: &quot;admin&quot;,
+    &quot;display_name&quot;: &quot;&quot;,
+    &quot;role&quot;: &quot;admin&quot;,
+    &quot;is_active&quot;: true,
+    &quot;force_password_change&quot;: true,
+    &quot;created_at&quot;: &quot;2024-01-01T00:00:00Z&quot;,
+    &quot;updated_at&quot;: &quot;2024-01-01T00:00:00Z&quot;
+  },
+  &quot;default_password_warning&quot;: true,
+  &quot;force_password_change&quot;: true
+}
+</code></pre>
+<p><strong>Notes:</strong></p>
+<ul>
+<li><code>force_password_change</code> is <code>true</code> when the user must change their password before accessing other endpoints (e.g., default admin on first login, or after an admin password reset). All authenticated endpoints except auth management return <code>403</code> until the password is changed.</li>
+<li>Login lockout is persistent (DB-backed). After 5 consecutive failures (configurable via <code>security.max_login_attempts</code>), the account is locked for the configured <code>security.lockout_duration_minutes</code> (default 15 minutes). Lockout survives API restarts.</li>
+<li>Password change and admin password reset invalidate all existing refresh tokens and sessions for the user, forcing re-login on all devices.</li>
+<li>SSO-provisioned accounts (<code>auth_source</code> <code>oidc</code>/<code>saml</code>) cannot log in with a password: the attempt gets the same generic <code>401</code> as a wrong password (no oracle), counts toward lockout, and is audited. Only the <code>osprey auth reset-password</code> recovery CLI converts such an account back to local.</li>
+<li><strong>LDAP</strong>: when enabled LDAP providers exist, an <em>unknown</em> username and any <code>auth_source=ldap</code> account authenticate against the directory through this same endpoint (bind-auth; first login JIT-provisions the account). The F6 separation is strict: a <strong>local</strong> account is never tried against LDAP — a typo&#39;d local password cannot leak to AD and AD-lockout amplification is impossible. Wrong directory passwords count toward Osprey&#39;s lockout; directory outages do not (they audit as <code>ldap_error</code>). A directory login refused by role mapping returns <code>403</code>.</li>
+<li>The <code>auth.local_login</code> system setting gates password login: <code>enabled</code> (default) allows all roles; <code>admins_only</code> and <code>disabled</code> both return <code>403</code> for non-admin users <strong>after</strong> successful password verification (no credential oracle); <code>disabled</code> additionally hides the login form in the UI (break-glass via <code>/?local=1</code>). Admins can always password-log-in — a dead IdP must never lock everyone out.</li>
+<li>The cookie <code>Max-Age</code> values follow the configured <code>auth.access_token_ttl</code> and <code>refresh_token_ttl</code>.</li>
+<li>All login outcomes are audited (<code>login</code>, <code>login_failed</code> with a reason, entity type <code>auth</code>).</li>
+<li><strong>MFA step-up</strong>: when the account has confirmed TOTP (or its role is in <code>auth.mfa.required_roles</code>), a correct password does <strong>not</strong> issue a session. The response is <code>200 {&quot;mfa_required&quot;: true, &quot;mfa_token&quot;: &quot;…&quot;}</code> and the client must call <code>POST /auth/login/mfa</code>. The <code>mfa_token</code> is a short-lived (2 min), single-use, typ/aud-bound JWT that is <strong>never</strong> accepted as a session cookie; the login lockout counter is cleared only after the full flow completes (an attacker with the password but no code cannot reset it). LDAP-sourced accounts are step-up-enforced the same way (a simple bind has no IdP-side second factor); OIDC/SAML do MFA at their IdP.</li>
+<li><strong>MFA enroll-at-login</strong>: when <code>auth.mfa.required_roles</code> mandates MFA for the user&#39;s role but no authenticator is enrolled yet, the response is <code>200 {&quot;mfa_enroll_required&quot;: true, &quot;mfa_token&quot;: &quot;…&quot;}</code> instead — the role is <strong>not</strong> locked out. The client drives enroll-at-login with the <code>mfa_token</code>; a session is issued only after the first code is verified (see below).</li>
+</ul>
+</main></html>

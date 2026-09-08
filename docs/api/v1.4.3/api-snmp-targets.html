@@ -1,0 +1,221 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SNMP Targets — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="snmp-targets">SNMP Targets</h3><p>Engineer or admin CRUD for SNMP polling targets. Each target associates a device with SNMP credentials and polling configuration for traffic monitoring.</p>
+<h4 id="create-snmp-target">Create SNMP Target</h4><pre><code>POST /api/v1/snmp-targets
+</code></pre>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;device_id&quot;: &quot;uuid&quot;,
+  &quot;hostname&quot;: &quot;10.0.0.1&quot;,
+  &quot;port&quot;: 161,
+  &quot;version&quot;: &quot;2c&quot;,
+  &quot;community&quot;: &quot;public&quot;,
+  &quot;v3_config&quot;: null,
+  &quot;poll_interval_seconds&quot;: 30,
+  &quot;enabled&quot;: true
+}
+</code></pre>
+<p><strong>Validation:</strong></p>
+<ul>
+<li><code>device_id</code> and <code>hostname</code> are required</li>
+<li><code>port</code> defaults to <code>161</code> if omitted</li>
+<li><code>version</code> defaults to <code>&quot;v2c&quot;</code> if omitted. Canonical values: <code>&quot;v1&quot;</code>, <code>&quot;v2c&quot;</code>, <code>&quot;v3&quot;</code>; the bare spellings <code>&quot;1&quot;</code>/<code>&quot;2c&quot;</code>/<code>&quot;3&quot;</code> are accepted and normalized. Anything else is a <code>400</code>.</li>
+<li><code>community</code> is required for version <code>&quot;1&quot;</code> and <code>&quot;2c&quot;</code></li>
+<li><code>v3_config</code> is required for version <code>&quot;v3&quot;</code>, with a non-empty user — enforced with a <code>400</code>. Canonical keys: <code>user</code>, <code>auth_proto</code>, <code>auth_pass</code>, <code>priv_proto</code>, <code>priv_pass</code>, <code>context_name</code>; the alternative spellings (<code>username</code>, <code>auth_protocol</code>, <code>auth_password</code>, <code>priv_protocol</code>, <code>priv_password</code>) are accepted as aliases. <code>security_level</code> is accepted and ignored: the message flags are derived from which credentials are present (auth+priv → authPriv, auth only → authNoPriv, neither → noAuthNoPriv). <code>auth_proto</code> must be MD5 or SHA/SHA-224/SHA-256/SHA-384/SHA-512 and <code>priv_proto</code> DES or AES/AES-192/AES-256/AES-192C/AES-256C (the supported vocabulary); unknown values are a <code>400</code>.</li>
+<li><code>poll_interval_seconds</code> defaults to <code>30</code> if omitted</li>
+<li><code>enabled</code> defaults to <code>true</code> if omitted</li>
+</ul>
+<p><strong>Response:</strong> <code>201 Created</code></p>
+<pre><code class="language-json">{
+  &quot;id&quot;: &quot;uuid&quot;,
+  &quot;device_id&quot;: &quot;uuid&quot;,
+  &quot;router_id&quot;: &quot;10.0.0.1&quot;,
+  &quot;hostname&quot;: &quot;10.0.0.1&quot;,
+  &quot;port&quot;: 161,
+  &quot;version&quot;: &quot;2c&quot;,
+  &quot;community&quot;: &quot;public&quot;,
+  &quot;v3_config&quot;: null,
+  &quot;poll_interval_seconds&quot;: 30,
+  &quot;enabled&quot;: true,
+  &quot;created_at&quot;: &quot;2026-02-18T12:00:00Z&quot;,
+  &quot;updated_at&quot;: &quot;2026-02-18T12:00:00Z&quot;
+}
+</code></pre>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Missing required fields or invalid request body</li>
+<li><code>403 Forbidden</code> -- Non-admin user</li>
+</ul>
+<h4 id="list-snmp-targets">List SNMP Targets</h4><pre><code>GET /api/v1/snmp-targets?limit=100&amp;offset=0
+</code></pre>
+<p>List all SNMP targets. The <code>router_id</code> field is joined from the associated device. Supports <a href="api-pagination.html#pagination">pagination</a>.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li><code>limit</code> (optional) — Max items to return (default 100, max 1000)</li>
+<li><code>offset</code> (optional) — Items to skip (default 0)</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code> — Paginated envelope</p>
+<pre><code class="language-json">{
+  &quot;data&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;device_id&quot;: &quot;uuid&quot;,
+      &quot;router_id&quot;: &quot;10.0.0.1&quot;,
+      &quot;hostname&quot;: &quot;10.0.0.1&quot;,
+      &quot;port&quot;: 161,
+      &quot;version&quot;: &quot;2c&quot;,
+      &quot;community&quot;: &quot;***&quot;,
+      &quot;v3_config&quot;: null,
+      &quot;poll_interval_seconds&quot;: 30,
+      &quot;enabled&quot;: true,
+      &quot;created_at&quot;: &quot;2026-02-18T12:00:00Z&quot;,
+      &quot;updated_at&quot;: &quot;2026-02-18T12:00:00Z&quot;
+    }
+  ],
+  &quot;total&quot;: 1,
+  &quot;limit&quot;: 100,
+  &quot;offset&quot;: 0
+}
+</code></pre>
+<p><strong>Notes:</strong></p>
+<ul>
+<li><code>router_id</code> is the OSPF router ID from the associated device, joined at query time.</li>
+<li><strong>Credential masking:</strong> <code>community</code>, <code>v3_config.auth_pass</code>, and <code>v3_config.priv_pass</code> are always returned as <code>&quot;***&quot;</code> in API responses. On update, sending <code>&quot;***&quot;</code> preserves the existing value; send a new string to change it. Backup exports also redact credentials.</li>
+<li>These endpoints require the <strong>engineer or admin</strong> role; the <code>operator</code> role receives <code>403</code>. Credential masking applies to <strong>every</strong> role, including admins.</li>
+<li><code>v3_config</code> is <code>null</code> for non-v3 targets.</li>
+</ul>
+<h4 id="list-devices-without-snmp-coverage">List Devices Without SNMP Coverage</h4><pre><code>GET /api/v1/snmp-targets/uncovered
+</code></pre>
+<p>Return the set of discovered devices that do not yet have an SNMP target configured. Used by the SNMP settings UI to surface candidates for bulk enrollment. Engineer or admin role required.</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;devices&quot;: [
+    {
+      &quot;device_id&quot;: &quot;uuid&quot;,
+      &quot;router_id&quot;: &quot;10.0.0.5&quot;,
+      &quot;hostname&quot;: &quot;&quot;,
+      &quot;management_ip&quot;: &quot;10.0.0.5&quot;,
+      &quot;area_id&quot;: &quot;uuid&quot;
+    }
+  ],
+  &quot;total&quot;: 1
+}
+</code></pre>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>Uncovered = device row exists in topology (<code>device</code> table) but no row in <code>snmp_target</code> references it.</li>
+<li>Companion endpoint to <code>POST /api/v1/snmp-targets/auto-discover</code>, which enrolls candidates in bulk.</li>
+</ul>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>401 Unauthorized</code> — Missing or invalid access token</li>
+<li><code>403 Forbidden</code> — Role below engineer</li>
+<li><code>500 Internal Server Error</code> — Database error</li>
+</ul>
+<h4 id="get-snmp-target">Get SNMP Target</h4><pre><code>GET /api/v1/snmp-targets/{targetID}
+</code></pre>
+<p>Get a single SNMP target by ID.</p>
+<p><strong>Path parameters:</strong></p>
+<ul>
+<li><code>targetID</code> (required) -- UUID of the SNMP target</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code> (single SNMP target object)</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>403 Forbidden</code> -- Non-admin user</li>
+<li><code>404 Not Found</code> -- SNMP target does not exist</li>
+</ul>
+<h4 id="update-snmp-target">Update SNMP Target</h4><pre><code>PUT /api/v1/snmp-targets/{targetID}
+</code></pre>
+<p>Partial update of an SNMP target. Uses read-merge-write -- only fields present in the request body are updated; other fields are preserved. The <code>device_id</code> cannot be changed after creation.</p>
+<p><strong>Path parameters:</strong></p>
+<ul>
+<li><code>targetID</code> (required) -- UUID of the SNMP target</li>
+</ul>
+<p><strong>Request body (all fields optional):</strong></p>
+<pre><code class="language-json">{
+  &quot;hostname&quot;: &quot;10.0.0.2&quot;,
+  &quot;port&quot;: 1161,
+  &quot;version&quot;: &quot;3&quot;,
+  &quot;community&quot;: null,
+  &quot;v3_config&quot;: {
+    &quot;username&quot;: &quot;snmpuser&quot;,
+    &quot;auth_protocol&quot;: &quot;SHA&quot;,
+    &quot;auth_password&quot;: &quot;authpass123&quot;,
+    &quot;priv_protocol&quot;: &quot;AES&quot;,
+    &quot;priv_password&quot;: &quot;privpass123&quot;,
+    &quot;security_level&quot;: &quot;authPriv&quot;
+  },
+  &quot;poll_interval_seconds&quot;: 60,
+  &quot;enabled&quot;: false
+}
+</code></pre>
+<p><strong>Response:</strong> <code>200 OK</code> (updated SNMP target object)</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Invalid request body</li>
+<li><code>403 Forbidden</code> -- Non-admin user</li>
+<li><code>404 Not Found</code> -- SNMP target does not exist</li>
+</ul>
+<h4 id="toggle-snmp-target">Toggle SNMP Target</h4><pre><code>PUT /api/v1/snmp-targets/{targetID}/toggle
+</code></pre>
+<p>Flips the <code>enabled</code> flag on an SNMP target without modifying any other fields. This is the preferred method for enabling/disabling targets, as it preserves credential profiles and inline credentials (unlike a partial update which may overwrite fields with zero values).</p>
+<p><strong>Path parameters:</strong></p>
+<ul>
+<li><code>targetID</code> (required) -- UUID of the SNMP target</li>
+</ul>
+<p><strong>Request body:</strong> Empty JSON object <code>{}</code></p>
+<p><strong>Response:</strong> <code>200 OK</code> (updated SNMP target object with toggled <code>enabled</code> field)</p>
+<p><strong>Audit:</strong> Logs <code>toggle</code> action on <code>snmp_target</code> entity with <code>{&quot;enabled&quot;: &lt;new_value&gt;}</code>.</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>403 Forbidden</code> -- Non-admin user</li>
+<li><code>404 Not Found</code> -- SNMP target does not exist</li>
+</ul>
+<h4 id="delete-snmp-target">Delete SNMP Target</h4><pre><code>DELETE /api/v1/snmp-targets/{targetID}
+</code></pre>
+<p>Delete an SNMP target. The SNMP poller stops polling the target immediately.</p>
+<p><strong>Path parameters:</strong></p>
+<ul>
+<li><code>targetID</code> (required) -- UUID of the SNMP target</li>
+</ul>
+<p><strong>Response:</strong> <code>204 No Content</code></p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>403 Forbidden</code> -- Non-admin user</li>
+<li><code>404 Not Found</code> -- SNMP target does not exist</li>
+</ul>
+<h4 id="auto-discover-snmp-targets">Auto-Discover SNMP Targets</h4><pre><code>POST /api/v1/snmp-targets/auto-discover
+</code></pre>
+<p>Automatically create SNMP targets for all devices that do not already have one. Devices with the <code>is_collector</code> flag set are skipped.</p>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;credential_profile_id&quot;: &quot;uuid-of-profile&quot;,
+  &quot;community&quot;: &quot;public&quot;
+}
+</code></pre>
+<p>All fields are optional. Resolution order:</p>
+<ol>
+<li><code>credential_profile_id</code> from request body</li>
+<li><code>snmp.default_credential_profile_id</code> system setting</li>
+<li><code>community</code> from request body</li>
+<li><code>snmp.default_community</code> system setting</li>
+<li>Fallback: <code>&quot;public&quot;</code></li>
+</ol>
+<p>When a credential profile is used, targets are created with the profile&#39;s version (v2c or v3) and linked via <code>credential_profile_id</code>. When using inline community, targets are created as v2c with the community string.</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;created&quot;: 12
+}
+</code></pre>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>The <code>created</code> field indicates the number of new SNMP targets created.</li>
+<li>Each auto-created target uses the device&#39;s <code>router_id</code> as the hostname, port <code>161</code>, the resolved credentials, a default poll interval from <code>snmp.default_poll_interval_seconds</code> (default: 300s), and <code>enabled: true</code>.</li>
+<li>Devices that already have an SNMP target are silently skipped.</li>
+</ul>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Invalid credential profile ID</li>
+<li><code>403 Forbidden</code> -- Non-admin user</li>
+</ul>
+<hr>
+</main></html>

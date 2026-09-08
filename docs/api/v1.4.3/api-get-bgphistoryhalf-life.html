@@ -1,0 +1,16 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>`GET /bgp/history/half-life` — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="get-bgphistoryhalf-life"><code>GET /bgp/history/half-life</code></h3><p><strong>Path-interval lifetime percentiles</strong> over <code>(from, to]</code>, grouped per peer or per origin AS. Cohort: candidate intervals from <code>bgp_rib_entry_history</code> <strong>born in the window</strong> (<code>record_origin=&#39;change&#39;</code> — seed rows are re-baselines, not births). Closed rows carry the percentiles; <code>open_count</code> counts the cohort&#39;s still-open rest. The reader drives from the enumerated <code>bgp_peer</code> list through peer-scoped history queries — never an AS-wide table sweep.</p>
+<p><strong>Auth</strong>: all authenticated roles</p>
+<p><strong>Query params</strong>: <code>as_id</code> (required); <code>from</code>/<code>to</code> (required, RFC 3339); optional <code>routing_domain_id</code>, <code>device_id</code>, <code>af</code>, <code>group</code> (<code>peer</code> default | <code>origin</code>), <code>asn</code> (restricts <code>group=origin</code> to one origin).</p>
+<p><strong>Response</strong>: <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;group&quot;: &quot;peer&quot;,
+  &quot;from&quot;: &quot;2026-08-15T00:00:00Z&quot;, &quot;to&quot;: &quot;2026-08-15T12:00:00Z&quot;,
+  &quot;rows&quot;: [
+    { &quot;peer_id&quot;: &quot;uuid&quot;, &quot;device_id&quot;: &quot;uuid&quot;, &quot;peer_ip&quot;: &quot;172.20.0.1&quot;, &quot;address_family&quot;: &quot;ipv4&quot;,
+      &quot;closed_count&quot;: 310, &quot;open_count&quot;: 42, &quot;median_seconds&quot;: 244.5, &quot;p90_seconds&quot;: 5710.0 }
+  ],
+  &quot;full_available&quot;: true
+}
+</code></pre>
+<p><code>group=origin</code> rows carry <code>origin_as</code> instead of the peer identity (origin 0 = unknown/AS_SET-led). <code>full_available=false</code> marks empty rows as a <strong>coverage refusal</strong> (no <code>history_mode=&#39;full&#39;</code> target in scope), never stability evidence. <strong>Errors</strong>: <code>400</code> on a missing <code>as_id</code>, invalid window, or unknown <code>group</code>.</p>
+</main></html>

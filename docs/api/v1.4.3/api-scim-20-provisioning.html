@@ -1,0 +1,29 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SCIM 2.0 Provisioning — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="scim-20-provisioning">SCIM 2.0 Provisioning</h3><pre><code>GET    /api/v1/scim/v2/Users            — list (filter=userName|externalId eq &quot;…&quot;)
+POST   /api/v1/scim/v2/Users            — create (idempotent on externalId/userName)
+GET    /api/v1/scim/v2/Users/{id}
+PUT    /api/v1/scim/v2/Users/{id}       — replace displayName/active
+PATCH  /api/v1/scim/v2/Users/{id}       — RFC 7644 ops (active, displayName)
+DELETE /api/v1/scim/v2/Users/{id}       — soft-deactivate + revoke sessions
+</code></pre>
+<p><strong>Rate limit:</strong> 60 requests per minute per IP (burst 30). <strong>Auth:</strong> <code>Authorization: Bearer scim_…</code> — a SCIM provisioning token, not a cookie or API key.</p>
+<p><strong>Token scope.</strong> A SCIM token may only act on accounts SCIM itself created, and only within its own provider:</p>
+<ul>
+<li>Every account provisioned over SCIM is marked SCIM-managed (<code>app_user.scim_managed</code>) and records its owning provider (<code>app_user.scim_provider_id</code>, NULL when the creating token is deliberately unbound). An account that is <strong>not</strong> SCIM-managed is invisible to every SCIM token — this is what makes interactively created <strong>local admins unclaimable</strong>.</li>
+<li>A token bound to a provider sees only that provider&#39;s accounts — an unowned account included, or the binding would not be a boundary. A token deliberately created <strong>without</strong> a provider keeps the single-IdP convenience and may act on any SCIM-created account, including the ones it creates itself (origin and ownership are separate facts precisely so an unbound token can still deprovision its own accounts).</li>
+<li>Out-of-scope accounts answer <code>404</code>, never <code>403</code>, so a provisioning client cannot probe which usernames exist outside its scope. A create whose <code>userName</code> collides with an out-of-scope account gets <code>409</code>.</li>
+<li>Re-binding an account that already carries a <strong>different</strong> <code>externalId</code> is refused with <code>409</code>: that is an identity change, not idempotency.</li>
+<li>Reactivation of a disabled account is audited as <code>scim_reactivate</code> (it restores privileges). Errors use the SCIM error schema (<code>application/scim+json</code>). SCIM-created users get <code>auth_source: oidc</code> (SSO, no local password) and role <code>operator</code>; the IdP group mapping elevates them at first SSO login. Deactivation (PATCH <code>active:false</code>, PUT <code>active:false</code>, or DELETE) revokes the user&#39;s sessions so deprovisioning bites within the access-TTL, and audits <code>scim_deprovision</code>. A PUT that <strong>omits</strong> <code>active</code> (or <code>displayName</code>) leaves that attribute unchanged — a routine partial replace never silently deactivates the account or blanks its name. Deactivating the <strong>last active admin</strong> via any SCIM path is refused with <code>409</code> (mirrors the interactive user API), so an IdP lifecycle rule cannot lock everyone out.</li>
+</ul>
+<p>Admin management of provisioning tokens (raw token shown once, revoke ≠ delete):</p>
+<pre><code>GET    /api/v1/admin/scim-tokens
+POST   /api/v1/admin/scim-tokens        — {description?, expires_at?} → {token, …}
+DELETE /api/v1/admin/scim-tokens/{id}   — revoke
+</code></pre>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> — Missing username or password</li>
+<li><code>401 Unauthorized</code> — Invalid credentials, inactive user, or SSO-provisioned account</li>
+<li><code>403 Forbidden</code> — Local login restricted to administrators (<code>auth.local_login</code> policy)</li>
+<li><code>429 Too Many Requests</code> — Rate limit exceeded or account locked</li>
+</ul>
+</main></html>

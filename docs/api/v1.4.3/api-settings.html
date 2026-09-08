@@ -1,0 +1,31 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Settings — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="settings">Settings</h3><p>Per-user settings stored as JSONB. New keys are merged; existing keys not in the update request are preserved.</p>
+<h4 id="get-settings">Get Settings</h4><pre><code>GET /api/v1/settings
+</code></pre>
+<p>Get the authenticated user&#39;s settings.</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;user_id&quot;: &quot;uuid&quot;,
+  &quot;settings&quot;: {
+    &quot;icon_pack&quot;: &quot;default&quot;,
+    &quot;label_mode&quot;: &quot;hostname&quot;,
+    &quot;theme&quot;: &quot;dark&quot;
+  },
+  &quot;updated_at&quot;: &quot;2024-01-01T00:00:00Z&quot;
+}
+</code></pre>
+<p>If no settings row exists, an empty <code>settings</code> object is returned.</p>
+<h4 id="update-settings">Update Settings</h4><pre><code>PUT /api/v1/settings
+</code></pre>
+<p>Merge-update the authenticated user&#39;s settings. Only keys present in the request are updated; other keys are preserved.</p>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;settings&quot;: {
+    &quot;icon_pack&quot;: &quot;industrial&quot;,
+    &quot;theme&quot;: &quot;light&quot;
+  }
+}
+</code></pre>
+<p><strong>Response:</strong> <code>200 OK</code> (updated settings object)</p>
+<p><strong>Error:</strong> <code>400 Bad Request</code> — Missing <code>settings</code> field</p>
+<hr>
+</main></html>

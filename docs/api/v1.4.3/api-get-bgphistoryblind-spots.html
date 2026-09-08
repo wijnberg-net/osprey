@@ -1,0 +1,21 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>`GET /bgp/history/blind-spots` — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="get-bgphistoryblind-spots"><code>GET /bgp/history/blind-spots</code></h3><p>The <strong>observability ledger</strong> for a window: when was each peer <em>not</em> observable. Three first-class sources: recorded session-down stretches from <code>bgp_peer_history</code> (D-GAP — a BMP outage is a gap, not a mass withdrawal), RIB re-seed markers (<code>record_origin=&#39;seed&#39;</code> — recording restarted here; what preceded is unobserved), and history storm-suppression episodes (<code>bgp_history_suppression</code>). Without this annotation every BMP outage reads as an exceptionally stable peer.</p>
+<p><strong>Auth</strong>: all authenticated roles</p>
+<p><strong>Query params</strong>: <code>as_id</code> (required); <code>from</code>/<code>to</code> (required, RFC 3339); optional <code>device_id</code>, <code>af</code> (<code>routing_domain_id</code> is accepted but does not apply — <code>bgp_peer_history</code> carries no routing domain).</p>
+<p><strong>Response</strong>: <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;from&quot;: &quot;2026-08-15T00:00:00Z&quot;, &quot;to&quot;: &quot;2026-08-15T12:00:00Z&quot;,
+  &quot;ledger&quot;: {
+    &quot;peer_count&quot;: 16,
+    &quot;peers&quot;: [
+      { &quot;device_id&quot;: &quot;uuid&quot;, &quot;peer_ip&quot;: &quot;172.20.0.1&quot;, &quot;address_family&quot;: &quot;ipv4&quot;, &quot;peer_as&quot;: 4242420000,
+        &quot;down_seconds&quot;: 600, &quot;down_intervals&quot;: [ { &quot;from&quot;: &quot;…&quot;, &quot;to&quot;: &quot;…&quot; } ],
+        &quot;seed_count&quot;: 1, &quot;last_seed&quot;: &quot;2026-08-15T06:12:00Z&quot; }
+    ],
+    &quot;suppressions&quot;: [
+      { &quot;bmp_target_id&quot;: &quot;uuid&quot;, &quot;kind&quot;: &quot;rib&quot;, &quot;started_at&quot;: &quot;…&quot;, &quot;ended_at&quot;: &quot;…&quot;, &quot;suppressed_rows&quot;: 812345 }
+    ]
+  }
+}
+</code></pre>
+<p><code>peer_count</code> is the coverage denominator (every identity with any recorded session interval overlapping the window); <code>peers</code> lists only those with gaps or seeds. Down intervals are clamped to the window. A suppression without <code>ended_at</code> is <strong>still active</strong>; its <code>suppressed_rows</code> reads 0 until close. <strong>Errors</strong>: <code>400</code> on a missing <code>as_id</code> or invalid window.</p>
+</main></html>

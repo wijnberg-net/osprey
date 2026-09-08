@@ -1,0 +1,19 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>`GET /bgp/history/candidates` — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="get-bgphistorycandidates"><code>GET /bgp/history/candidates</code></h3><p>Per-peer <strong>candidate RIB intervals</strong> for one <code>(prefix, device)</code> over a window — the &quot;why did the best path change&quot; lanes, served from the <code>full</code>-mode per-peer RIB changelog (<code>bgp_rib_entry_history</code>). Each interval carries the candidate&#39;s attributes and the recorded <code>is_best</code>, so a client reconstructs the live candidate set (and which one is best) at any instant by interval overlap.</p>
+<p><strong>Auth</strong>: all authenticated roles</p>
+<p><strong>Query params</strong>: <code>as_id</code>, <code>prefix</code>, and <code>device_id</code> (all required); <code>from</code>/<code>to</code> (required, RFC 3339); optional <code>routing_domain_id</code>. <code>match</code> is always <code>exact</code> (lanes never follow a covering aggregate).</p>
+<p><strong>Response</strong>: <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;full_available&quot;: true,
+  &quot;candidates&quot;: [
+    {
+      &quot;peer_ip&quot;: &quot;198.51.100.1&quot;, &quot;peer_as&quot;: 65001, &quot;peer_type&quot;: &quot;ebgp&quot;, &quot;path_id&quot;: 0,
+      &quot;next_hop&quot;: &quot;198.51.100.1&quot;, &quot;as_path&quot;: &quot;65001 65100&quot;, &quot;local_pref&quot;: 200, &quot;med&quot;: 0,
+      &quot;origin&quot;: &quot;igp&quot;, &quot;is_best&quot;: true,
+      &quot;valid_from&quot;: &quot;2026-07-01T10:00:00Z&quot;, &quot;valid_to&quot;: &quot;2026-07-01T10:30:00Z&quot;
+    }
+  ]
+}
+</code></pre>
+<p><code>valid_to</code> is omitted for an open (still-live) interval; <code>local_pref</code> (peer sent none) and <code>communities</code> (empty) are likewise omitted. <code>full_available</code> is <strong>false</strong> when no <code>full</code> RIB history exists for the window — <code>candidates</code> is then empty (guaranteed: if any candidate exists in the window, <code>full_available</code> reports true even when recording stopped mid-window) and the UI shows a &quot;requires full mode&quot; hint rather than a misleading &quot;no changes&quot; state. Bounded by design: one prefix on one device → at most the peer count × churn.</p>
+<p><strong>Errors</strong>: <code>400</code> if <code>as_id</code>, <code>prefix</code>, <code>device_id</code>, or the window is missing/invalid.</p>
+</main></html>

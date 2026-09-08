@@ -1,0 +1,14 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>`GET /bgp/peers/stat-history` — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="get-bgppeersstat-history"><code>GET /bgp/peers/stat-history</code></h3><p><strong>Per-peer BMP Statistics Report samples</strong> over a trailing window: the router&#39;s own <code>prefixes_rejected</code> (RFC 7854 §4.8 stat 0 — &quot;my inbound policy refused N of your paths&quot;, router-authoritative, no inference) and <code>as_path_loops</code> (stat 4), plus the Adj-RIB-In/Loc-RIB gauges. Values are raw cumulative counters that reset with the underlying BGP session — derive deltas client-side and treat a decrease as a reset.</p>
+<p><strong>Auth</strong>: all authenticated roles</p>
+<p><strong>Query params</strong>: <code>as_id</code> and/or <code>target_id</code> (at least one required); <code>hours</code> (trailing window, default 24, max 720).</p>
+<p><strong>Response</strong>: <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;from&quot;: &quot;2026-08-14T12:00:00Z&quot;,
+  &quot;peers&quot;: [
+    { &quot;peer_id&quot;: &quot;uuid&quot;,
+      &quot;samples&quot;: [ { &quot;t&quot;: &quot;2026-08-15T11:58:03Z&quot;, &quot;prefixes_rejected&quot;: 42, &quot;as_path_loops&quot;: 7, &quot;adj_rib_in&quot;: 1223, &quot;loc_rib&quot;: 1201 } ] }
+  ]
+}
+</code></pre>
+<p>Peers absent from <code>peers</code> sent no Statistics Reports: most routers only send them with a reporting period configured (IOS: <code>stats-reporting-period</code> under <code>bmp server</code>). An empty answer means &quot;the router reports nothing&quot;, never &quot;nothing rejected&quot;. On a dual-AF MP-BGP session the samples attach to the peer row matching the <strong>transport</strong> address family. Samples are floored at one per peer per 30s and pruned after <code>retention.bgp_peer_stats_days</code> (default 30). <strong>Errors</strong>: <code>400</code> when both <code>as_id</code> and <code>target_id</code> are missing.</p>
+</main></html>

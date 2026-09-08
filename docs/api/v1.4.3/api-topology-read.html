@@ -1,0 +1,1363 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Topology (Read) — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="topology-read">Topology (Read)</h3><h4 id="list-devices">List Devices</h4><pre><code>GET /api/v1/devices?area_id={areaID}&amp;limit=100&amp;offset=0
+</code></pre>
+<p>List all devices in a specific area. Supports <a href="api-pagination.html#pagination">pagination</a>.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li><code>area_id</code> (required) — UUID of the area</li>
+<li><code>limit</code> (optional) — Max items to return (default 100, max 1000)</li>
+<li><code>offset</code> (optional) — Items to skip (default 0)</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code> — Paginated envelope</p>
+<pre><code class="language-json">{
+  &quot;data&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;router_id&quot;: &quot;10.0.0.1&quot;,
+      &quot;hostname&quot;: &quot;router1&quot;,
+      &quot;dns_name&quot;: &quot;router1.example.com&quot;,
+      &quot;vendor&quot;: &quot;industrial&quot;,
+      &quot;device_type&quot;: &quot;router&quot;,
+      &quot;is_abr&quot;: false,
+      &quot;is_ospf_abr&quot;: false,
+      &quot;is_isis_l1l2&quot;: false,
+      &quot;is_asbr&quot;: false,
+      &quot;is_collector&quot;: false,
+      &quot;created_at&quot;: &quot;2024-01-01T00:00:00Z&quot;,
+      &quot;updated_at&quot;: &quot;2024-01-01T00:00:00Z&quot;
+    }
+  ],
+  &quot;total&quot;: 1,
+  &quot;limit&quot;: 100,
+  &quot;offset&quot;: 0
+}
+</code></pre>
+<p><strong>Error:</strong> <code>400 Bad Request</code> — Missing area_id</p>
+<h4 id="export-devices">Export Devices</h4><pre><code>GET /api/v1/devices/export?format=csv|json&amp;area_id={areaID}
+GET /api/v1/devices/export?format=csv|json&amp;pi_id={piID}
+GET /api/v1/devices/export?format=csv|json&amp;rd_id={rdID}
+GET /api/v1/devices/export?format=csv|json&amp;network_id={networkID}
+</code></pre>
+<p>Export all devices in the given scope as CSV or JSON. Devices are deduplicated across areas. Each row includes area names (comma-separated) and interface count.</p>
+<p><strong>Query parameters:</strong> Standard scope parameters (<code>area_id</code>, <code>pi_id</code>, <code>rd_id</code>, <code>network_id</code>) plus <code>format</code> (<code>csv</code> or <code>json</code>, default <code>json</code>).</p>
+<p><strong>CSV columns:</strong> ID, Router ID, Hostname, DNS Name, Vendor, Device Type, Model, Platform, Software Version, SysObject ID, ABR, ASBR, Collector, First Seen, Last Seen, Areas, Interfaces.</p>
+<p><strong>JSON response:</strong> Array of <code>DeviceExportRow</code> objects:</p>
+<pre><code class="language-json">[{
+  &quot;id&quot;: &quot;uuid&quot;,
+  &quot;router_id&quot;: &quot;10.0.0.1&quot;,
+  &quot;hostname&quot;: &quot;router-1&quot;,
+  &quot;dns_name&quot;: &quot;router-1.example.com&quot;,
+  &quot;vendor&quot;: &quot;industrial&quot;,
+  &quot;device_type&quot;: &quot;router&quot;,
+  &quot;model&quot;: &quot;ISR4431&quot;,
+  &quot;platform&quot;: &quot;IOS-XE&quot;,
+  &quot;software_version&quot;: &quot;17.06.03a&quot;,
+  &quot;sys_object_id&quot;: &quot;1.3.6.1.4.1.9.1.2658&quot;,
+  &quot;is_abr&quot;: true,
+  &quot;is_ospf_abr&quot;: true,
+  &quot;is_isis_l1l2&quot;: false,
+  &quot;is_asbr&quot;: false,
+  &quot;is_collector&quot;: false,
+  &quot;first_seen&quot;: &quot;2026-01-15T10:30:00Z&quot;,
+  &quot;last_seen&quot;: &quot;2026-02-24T12:00:00Z&quot;,
+  &quot;areas&quot;: &quot;0.0.0.0, 0.0.0.1&quot;,
+  &quot;interface_count&quot;: 12
+}]
+</code></pre>
+<h4 id="export-visio">Export Visio</h4><pre><code>POST /api/v1/export/visio?area_id={areaID}
+POST /api/v1/export/visio?pi_id={piID}
+POST /api/v1/export/visio?rd_id={rdID}
+POST /api/v1/export/visio?network_id={networkID}
+</code></pre>
+<p>Generate a Microsoft Visio (.vsdx) topology diagram for the given scope.</p>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;positions&quot;: { &quot;device-uuid&quot;: { &quot;x&quot;: 100, &quot;y&quot;: 200 } },
+  &quot;exclude_device_ids&quot;: [&quot;device-uuid-1&quot;],
+  &quot;icon_pack&quot;: &quot;default&quot;,
+  &quot;label_mode&quot;: &quot;hostname&quot;,
+  &quot;icon_defaults&quot;: { &quot;router&quot;: { &quot;packId&quot;: &quot;default&quot;, &quot;iconId&quot;: &quot;router&quot; } },
+  &quot;device_icon_overrides&quot;: { &quot;device-uuid&quot;: { &quot;packId&quot;: &quot;uuid-pack-id&quot;, &quot;iconId&quot;: &quot;uuid-icon-id&quot; } },
+  &quot;render_model&quot;: {
+    &quot;nodes&quot;: [ { &quot;id&quot;: &quot;device-uuid&quot;, &quot;x&quot;: 100, &quot;y&quot;: 200, &quot;w&quot;: 60, &quot;h&quot;: 60, &quot;label&quot;: &quot;R1&quot;, &quot;classes&quot;: &quot;&quot; } ],
+    &quot;edges&quot;: [ { &quot;id&quot;: &quot;e1&quot;, &quot;source&quot;: &quot;uuidA&quot;, &quot;target&quot;: &quot;uuidB&quot;, &quot;sx&quot;: 1, &quot;sy&quot;: 2, &quot;tx&quot;: 3, &quot;ty&quot;: 4,
+                 &quot;control_points&quot;: [ { &quot;x&quot;: 2, &quot;y&quot;: 3 } ], &quot;color&quot;: &quot;#4A90D9&quot;, &quot;width&quot;: 2, &quot;line_style&quot;: &quot;solid&quot;,
+                 &quot;label_color&quot;: &quot;#DCE0E6&quot;, &quot;label_bg&quot;: &quot;#1E293B&quot;, &quot;label_size&quot;: 6,
+                 &quot;labels&quot;: [ { &quot;text&quot;: &quot;10&quot;, &quot;slot&quot;: &quot;center&quot; } ] } ],
+    &quot;hulls&quot;: [ { &quot;area_label&quot;: &quot;0.0.0.0&quot;, &quot;color&quot;: &quot;#3B82F6&quot;, &quot;polygon&quot;: [ { &quot;x&quot;: 0, &quot;y&quot;: 0 } ] } ]
+  }
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>positions</code></td>
+<td>map[string]{x,y}</td>
+<td>No</td>
+<td>Cytoscape canvas coordinates; overrides saved layout</td>
+</tr>
+<tr>
+<td><code>exclude_device_ids</code></td>
+<td>string[]</td>
+<td>No</td>
+<td>Device IDs to omit (hidden nodes)</td>
+</tr>
+<tr>
+<td><code>icon_pack</code></td>
+<td>string</td>
+<td>No</td>
+<td><code>&quot;default&quot;</code> or <code>&quot;industrial&quot;</code></td>
+</tr>
+<tr>
+<td><code>label_mode</code></td>
+<td>string</td>
+<td>No</td>
+<td><code>&quot;hostname&quot;</code>, <code>&quot;dns&quot;</code>, <code>&quot;router_id&quot;</code>, or <code>&quot;hostname_ip&quot;</code></td>
+</tr>
+<tr>
+<td><code>icon_defaults</code></td>
+<td>map[string]IconRef</td>
+<td>No</td>
+<td>Per-device-type icon defaults (e.g. <code>{&quot;router&quot;: {&quot;packId&quot;:&quot;industrial&quot;,&quot;iconId&quot;:&quot;router&quot;}}</code>). For custom packs, <code>packId</code> is the pack UUID and <code>iconId</code> is the icon UUID.</td>
+</tr>
+<tr>
+<td><code>device_icon_overrides</code></td>
+<td>map[string]IconRef</td>
+<td>No</td>
+<td>Per-device icon overrides keyed by device UUID. Same IconRef format as <code>icon_defaults</code>.</td>
+</tr>
+<tr>
+<td><code>render_model</code></td>
+<td>object</td>
+<td>No</td>
+<td>High-fidelity capture of the live canvas in Cytoscape model coordinates: per-edge endpoints + bezier <code>control_points</code>, resolved line/label styles and label slots; per-node placement + classes; and area-boundary <code>polygon</code>s. When present, the exporter reproduces the on-screen curves, label chips and area hulls <strong>1:1</strong> instead of re-deriving geometry. Absent → legacy re-derivation from <code>positions</code>. Captured by the frontend (<code>web/src/components/topology/captureModel.ts</code>).</td>
+</tr>
+</tbody></table>
+<p><strong>Response:</strong> <code>200 OK</code> with <code>Content-Type: application/vnd.ms-visio.drawing</code> and <code>Content-Disposition: attachment</code>.</p>
+<p><strong>Error:</strong> <code>400 Bad Request</code> (no areas in scope), <code>500 Internal Server Error</code></p>
+<blockquote>
+<p><strong>Note:</strong> PNG and SVG exports are client-side only (Cytoscape canvas rendering in the browser). There are no REST endpoints for PNG/SVG export.</p>
+</blockquote>
+<h4 id="get-device">Get Device</h4><pre><code>GET /api/v1/devices/{deviceID}
+</code></pre>
+<p>Get a single device by ID.</p>
+<p><strong>Response:</strong> <code>200 OK</code> (single device object)</p>
+<p><strong>Error:</strong> <code>404 Not Found</code></p>
+<h4 id="get-device-rib">Get Device RIB</h4><pre><code>GET /api/v1/devices/{deviceID}/rib
+GET /api/v1/devices/{deviceID}/rib?area_id={areaID}
+GET /api/v1/devices/{deviceID}/rib?explain=true
+GET /api/v1/devices/{deviceID}/rib?at={RFC3339}
+</code></pre>
+<p>Convenience wrapper around <code>GET /topology/rib</code> that auto-resolves area scope from the device&#39;s area memberships. For multi-area devices (ABRs), all areas are merged to give the complete routing table perspective. An optional <code>area_id</code> parameter restricts to a single area.</p>
+<p>When an EIGRP area is in scope, the device&#39;s <em>observed</em> EIGRP topology-table routes are merged in as type <code>D</code> (internal) / <code>D EX</code> (redistributed) — connected-origin entries as <code>C</code> — joining the same AD-based best-route selection as the SPF-computed candidates (EIGRP itself is never fed to SPF). Their <code>metric</code> is the feasible distance the router reported and <code>via_area</code> shows the EIGRP AS (<code>&quot;AS 100&quot;</code>).</p>
+<p>Supports the same <code>explain</code> and <code>at</code> parameters as <code>GET /topology/rib</code>.
+At a historical time, EIGRP rows come only from the per-device snapshot covering
+<code>T</code>. Coverage metadata distinguishes a proven empty table from missing evidence;
+the handler never borrows live <code>eigrp_route</code> rows.</p>
+<p><code>next_hops</code> are expressed in the address family of each route&#39;s destination: an IPv4 route lists the next-hop router&#39;s IPv4 router-id, while an IPv6 route lists the next-hop router&#39;s IPv6 loopback (its lowest-cost /128 stub), falling back to the IPv4 router-id when the next hop advertises no IPv6 loopback.</p>
+<p><strong>Response:</strong> Same as <code>GET /topology/rib</code> — <code>200 OK</code> with <code>RIBResponse</code>.</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>404 Not Found</code> — Device not found in topology</li>
+<li><code>500 Internal Server Error</code> — Database error</li>
+</ul>
+<h4 id="list-links">List Links</h4><pre><code>GET /api/v1/links?area_id={areaID}&amp;limit=100&amp;offset=0
+</code></pre>
+<p>List all links in a specific area. Supports <a href="api-pagination.html#pagination">pagination</a>.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li><code>area_id</code> (required) — UUID of the area</li>
+<li><code>limit</code> (optional) — Max items to return (default 100, max 1000)</li>
+<li><code>offset</code> (optional) — Items to skip (default 0)</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code> — Paginated envelope</p>
+<pre><code class="language-json">{
+  &quot;data&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;source_device_id&quot;: &quot;uuid&quot;,
+      &quot;destination_device_id&quot;: &quot;uuid&quot;,
+      &quot;source_interface_id&quot;: &quot;uuid&quot;,
+      &quot;destination_interface_id&quot;: &quot;uuid&quot;,
+      &quot;link_type&quot;: &quot;point-to-point&quot;,
+      &quot;state&quot;: &quot;up&quot;,
+      &quot;cost_forward&quot;: 10,
+      &quot;cost_reverse&quot;: 10,
+      &quot;created_at&quot;: &quot;2024-01-01T00:00:00Z&quot;,
+      &quot;updated_at&quot;: &quot;2024-01-01T00:00:00Z&quot;
+    }
+  ],
+  &quot;total&quot;: 1,
+  &quot;limit&quot;: 100,
+  &quot;offset&quot;: 0
+}
+</code></pre>
+<p><strong>Error:</strong> <code>400 Bad Request</code> — Missing area_id</p>
+<h4 id="get-link-detail">Get Link Detail</h4><pre><code>GET /api/v1/links/{linkID}
+</code></pre>
+<p>Return the full detail record for a single link, including source/target device info and bound interface details. Used by the topology canvas link detail panel. Requires any authenticated role.</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;link&quot;: {
+    &quot;id&quot;: &quot;uuid&quot;,
+    &quot;source_device_id&quot;: &quot;uuid&quot;,
+    &quot;destination_device_id&quot;: &quot;uuid&quot;,
+    &quot;cost_forward&quot;: 10,
+    &quot;cost_reverse&quot;: 10,
+    &quot;link_type&quot;: &quot;p2p&quot;,
+    &quot;state&quot;: &quot;up&quot;,
+    &quot;area_id&quot;: &quot;uuid&quot;,
+    &quot;reported_by_collector_id&quot;: &quot;collector-config-uuid&quot;,
+    &quot;first_seen&quot;: &quot;2026-06-01T10:00:00Z&quot;,
+    &quot;last_seen&quot;: &quot;2026-06-11T10:00:00Z&quot;
+  },
+  &quot;source&quot;: { &quot;id&quot;: &quot;uuid&quot;, &quot;router_id&quot;: &quot;10.0.0.1&quot;, &quot;hostname&quot;: &quot;router1&quot;, &quot;dns_name&quot;: &quot;router1.example.com&quot; },
+  &quot;target&quot;: { &quot;id&quot;: &quot;uuid&quot;, &quot;router_id&quot;: &quot;10.0.0.2&quot;, &quot;hostname&quot;: &quot;router2&quot; },
+  &quot;source_interface&quot;: { &quot;id&quot;: &quot;uuid&quot;, &quot;if_name&quot;: &quot;GigabitEthernet0/0&quot;, &quot;ip_address&quot;: &quot;10.0.12.1&quot;, &quot;mask&quot;: &quot;255.255.255.252&quot; },
+  &quot;target_interface&quot;: null
+}
+</code></pre>
+<p><code>reported_by_collector_id</code> is the collector (config UUID) that last reported the link — per-collector attribution; omitted for unattributed rows. <code>target</code>/<code>source_interface</code>/<code>target_interface</code> are <code>null</code> when unknown.</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>401 Unauthorized</code> — Missing or invalid access token</li>
+<li><code>404 Not Found</code> — Link not found</li>
+<li><code>500 Internal Server Error</code> — Database error</li>
+</ul>
+<h4 id="get-topology-graph">Get Topology Graph</h4><pre><code>GET /api/v1/topology/graph?area_id={areaID}
+GET /api/v1/topology/graph?pi_id={piID}
+GET /api/v1/topology/graph?rd_id={rdID}
+</code></pre>
+<p>Returns topology graph in Cytoscape.js elements format (nodes and edges).</p>
+<p><strong>Query parameters (scope — mutually exclusive, one required):</strong></p>
+<ul>
+<li><code>area_id</code> — Graph for a single area</li>
+<li><code>pi_id</code> — Aggregated graph for all areas in a protocol instance</li>
+<li><code>rd_id</code> — Aggregated graph for all areas in a routing domain</li>
+<li><code>network_id</code> — Aggregated graph for all areas in a network</li>
+</ul>
+<p><strong>Optional:</strong></p>
+<ul>
+<li><code>at</code> — RFC 3339 timestamp (e.g. <code>2026-02-22T10:00:00Z</code>). When present, returns the historical topology from the nearest snapshot at or before the given time instead of live data. Multi-area scopes merge one snapshot per area with devices <strong>deduplicated by ID</strong> (each area snapshot embeds its full member list, so an ABR or dual-stack device would otherwise appear once per protocol instance × area) — the response carries exactly one node element per device, same contract as live. Snapshot interfaces missing <code>if_index</code>/<code>if_name</code> (captured before SNMP enrichment) are backfilled from the current interface row by its stable id, so dual-stack links still merge into one edge in time-travel. The response ETag folds in a render-version AND the areas&#39; newest interface <code>updated_at</code>, so both graph-logic changes and SNMP enrichment (interface rows / link binding — the dual-stack merge inputs, which never touch snapshots) invalidate cached client responses (no manual refresh needed). Applies to live and historical responses alike.</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">[
+  {
+    &quot;group&quot;: &quot;nodes&quot;,
+    &quot;data&quot;: {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;router_id&quot;: &quot;10.0.0.1&quot;,
+      &quot;label&quot;: &quot;router1&quot;,
+      &quot;hostname&quot;: &quot;router1&quot;,
+      &quot;dns_name&quot;: &quot;router1.example.com&quot;,
+      &quot;management_ip&quot;: &quot;10.0.0.1&quot;,
+      &quot;management_ip_source&quot;: &quot;loopback&quot;,
+      &quot;vendor&quot;: &quot;industrial&quot;,
+      &quot;device_type&quot;: &quot;router&quot;,
+      &quot;role&quot;: &quot;internal&quot;,
+      &quot;is_abr&quot;: false,
+      &quot;is_ospf_abr&quot;: false,
+      &quot;is_isis_l1l2&quot;: false,
+      &quot;is_asbr&quot;: false,
+      &quot;is_collector&quot;: false,
+      &quot;isolated&quot;: false,
+      &quot;areas&quot;: [&quot;0.0.0.0&quot;],
+      &quot;area_info&quot;: [
+        { &quot;id&quot;: &quot;area-uuid&quot;, &quot;label&quot;: &quot;0.0.0.0&quot;, &quot;protocol&quot;: &quot;ospfv2&quot;, &quot;area_type&quot;: &quot;normal&quot;, &quot;role&quot;: &quot;internal&quot;, &quot;pid&quot;: &quot;1&quot;, &quot;protocol_instance_id&quot;: &quot;pi-uuid&quot;, &quot;address_family&quot;: &quot;ipv4&quot; }
+      ]
+    },
+    &quot;classes&quot;: &quot;internal&quot;
+  },
+  {
+    &quot;group&quot;: &quot;edges&quot;,
+    &quot;data&quot;: {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;source&quot;: &quot;device-uuid-1&quot;,
+      &quot;target&quot;: &quot;device-uuid-2&quot;,
+      &quot;cost_forward&quot;: 10,
+      &quot;cost_reverse&quot;: 10,
+      &quot;cost&quot;: 10,
+      &quot;link_type&quot;: &quot;point-to-point&quot;,
+      &quot;state&quot;: &quot;up&quot;,
+      &quot;source_ip&quot;: &quot;10.0.12.1&quot;,
+      &quot;target_ip&quot;: &quot;10.0.12.2&quot;,
+      &quot;source_mask&quot;: &quot;255.255.255.252&quot;,
+      &quot;target_mask&quot;: &quot;255.255.255.252&quot;,
+      &quot;source_ip_v6&quot;: &quot;2001:db8::1&quot;,
+      &quot;target_ip_v6&quot;: &quot;2001:db8::2&quot;,
+      &quot;source_mask_v6&quot;: &quot;ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffc&quot;,
+      &quot;target_mask_v6&quot;: &quot;ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffc&quot;,
+      &quot;reported_by_collector_id&quot;: &quot;collector-config-uuid&quot;,
+      &quot;merged_link_ids&quot;: [&quot;link-uuid-v2&quot;, &quot;link-uuid-v3&quot;]
+    },
+    &quot;classes&quot;: &quot;up&quot;
+  }
+]
+</code></pre>
+<p><strong>Edge attribution:</strong></p>
+<ul>
+<li><code>reported_by_collector_id</code> — Collector (config UUID) that last reported the primary link of this edge (per-collector attribution). Omitted for unattributed links. When an area is partitioned and two recorders report disjoint islands, each island&#39;s edges carry their own recorder&#39;s ID — the field the per-island tint keys on.</li>
+</ul>
+<p><strong>Edge dual-stack merging:</strong></p>
+<ul>
+<li>When OSPFv2 and OSPFv3 links connect the same device pair in the same area, they are merged into a single Cytoscape edge. The edge carries both IPv4 (<code>source_ip</code>/<code>target_ip</code>) and IPv6 (<code>source_ip_v6</code>/<code>target_ip_v6</code>) addresses. The <code>merged_link_ids</code> array lists the individual link UUIDs. Single-protocol edges omit <code>*_v6</code> fields and <code>merged_link_ids</code>.</li>
+</ul>
+<p><strong>Per-protocol metadata (multi-protocol merged edges):</strong></p>
+<ul>
+<li><code>merged_protocols[]</code> — one entry per member link: <code>protocol</code>, <code>area_label</code>, <code>area_id</code>, <code>pid</code>, <code>address_family</code>, <code>cost_forward</code>, <code>cost_reverse</code>, <code>state</code>, <code>link_id</code>. <code>pid</code> is the protocol-instance PID — for EIGRP the AS number, which together with <code>address_family</code> is what the UI renders instead of the synthetic <code>0.0.0.0</code> area label (<code>AS 100 (v4)</code>), keeping multiple EIGRP rows on one link distinguishable.</li>
+<li>Single-protocol <strong>EIGRP</strong> edges carry <code>pid</code> + <code>address_family</code> at the edge level for the same reason.</li>
+</ul>
+<p><strong>Edge state aggregation (merged edges):</strong></p>
+<ul>
+<li>A merged edge&#39;s <code>state</code> is <code>&quot;up&quot;</code> while <strong>any</strong> member link is up (the edge still forwards), and <code>&quot;down&quot;</code> only when every member is down.</li>
+<li>When some-but-not-all members are down, the class <code>degraded</code> is added alongside <code>up</code> (per-member states are in <code>merged_protocols[].state</code>). The frontend renders degraded edges dashed in their area color — versus dashed red for fully down.</li>
+<li>Aggregated <code>cost_forward</code>/<code>cost_reverse</code> take the minimum over <strong>up</strong> members only while any member is up; a downed member&#39;s last-known cost never wins the display. When all members are down, all members contribute (display is <code>&quot;∞&quot;</code> anyway).</li>
+</ul>
+<p><strong>Edge cost display logic:</strong></p>
+<ul>
+<li>If link state is <code>down</code>: cost displays as <code>&quot;∞&quot;</code> (infinity symbol)</li>
+<li>If forward and reverse costs differ: <code>&quot;→10 / ←20&quot;</code> and class <code>asymmetric</code> is added</li>
+<li>Otherwise: single numeric cost</li>
+</ul>
+<p><strong>Node data fields:</strong></p>
+<ul>
+<li><code>management_ip</code> — Selected reachable SNMP poll address (host form), decoupled from <code>router_id</code> (which per RFC is identity-only and need not be reachable). Empty for pure-protocol devices with no SNMP target. Mirrors <code>device.management_ip</code>. Also present on the <code>GET /devices/{deviceID}</code> response.</li>
+<li><code>management_ip_source</code> — Ladder rung that produced <code>management_ip</code> (<code>loopback</code>/<code>stub</code>/<code>interface</code>/<code>router_id</code>/<code>snmp_ipv6</code>/<code>probe</code>/<code>manual</code>). <code>router_id</code> indicates an unverified fallback (no address has answered SNMP yet). Empty when <code>management_ip</code> is empty.</li>
+<li><code>areas</code> — Array of area labels (dotted-quad strings), deduplicated by label. Used for ABR detection (length &gt; 1).</li>
+<li><code>area_info</code> — Array of <code>{id, label, protocol, area_type, role, pid, protocol_instance_id, address_family}</code> objects, deduplicated by area UUID. Each entry carries the area UUID, dotted-quad label, parent protocol (<code>&quot;ospfv2&quot;</code>/<code>&quot;ospfv3&quot;</code>/<code>&quot;isis&quot;</code>), OSPF area type (<code>&quot;normal&quot;</code>/<code>&quot;stub&quot;</code>/<code>&quot;nssa&quot;</code>/…), the device&#39;s role in that area (<code>&quot;internal&quot;</code>/<code>&quot;abr&quot;</code>/<code>&quot;asbr&quot;</code>), and the owning protocol instance&#39;s process ID, UUID, and address family (<code>&quot;ipv4&quot;</code>/<code>&quot;ipv6&quot;</code>). Lets the UI group a node&#39;s areas by OSPF process / protocol instance (the same router can sit in different areas per process) and disambiguate mixed v2/v3 areas on ABR devices. <code>area_type</code>/<code>role</code>/<code>pid</code>/<code>protocol_instance_id</code>/<code>address_family</code> are omitted on entries sourced from snapshots saved before this enrichment.</li>
+<li><code>is_overloaded</code> — (IS-IS nodes only) <code>true</code> when the device&#39;s own LSP sets the overload bit. Omitted for OSPF nodes.</li>
+<li><code>area_addresses</code> — (IS-IS nodes only) Array of NET/area addresses (e.g. <code>[&quot;49.0001&quot;]</code>) advertised by the device. Omitted for OSPF nodes and when none are known.</li>
+<li><code>protocols_supported</code> — (IS-IS nodes only) IS-IS TLV 129 NLPIDs (<code>204</code>=IPv4, <code>142</code>=IPv6, <code>129</code>=OSI/CLNP); the UI decodes these into address-family labels. Omitted for OSPF nodes and when none advertised.</li>
+</ul>
+<p><strong>Node classes:</strong></p>
+<ul>
+<li><code>&quot;internal&quot;</code>, <code>&quot;abr&quot;</code>, <code>&quot;asbr&quot;</code> — based on OSPF role</li>
+<li><code>&quot;collector&quot;</code> — if device is the collector</li>
+<li><code>&quot;isolated&quot;</code> — if all links are down</li>
+</ul>
+<p><strong>Edge classes:</strong></p>
+<ul>
+<li><code>&quot;up&quot;</code> / <code>&quot;down&quot;</code> — aggregated link state (see Edge state aggregation)</li>
+<li><code>&quot;degraded&quot;</code> — merged edge with some-but-not-all member links down (always alongside <code>up</code>)</li>
+<li><code>&quot;asymmetric&quot;</code> — forward and reverse costs differ</li>
+</ul>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> — Missing or invalid query parameter</li>
+<li><code>500 Internal Server Error</code> — Database error</li>
+</ul>
+<h4 id="get-topology-graph-summary">Get Topology Graph Summary</h4><pre><code>GET /api/v1/topology/graph/summary?area_id={areaID}
+GET /api/v1/topology/graph/summary?pi_id={piID}
+GET /api/v1/topology/graph/summary?rd_id={rdID}
+GET /api/v1/topology/graph/summary?network_id={networkID}
+</code></pre>
+<p>Returns aggregate counts without the full Cytoscape elements payload. Useful for dashboards, health checks, and lightweight polling. Counts exclude GRE recorder devices (<code>is_collector</code>) and their adjacency links, matching the rendered topology (recorders are hidden on the canvas).</p>
+<p><strong>Query parameters:</strong> Same scope resolution as <code>GET /topology/graph</code>.</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;devices&quot;: 42,
+  &quot;links&quot;: 87,
+  &quot;areas&quot;: 2,
+  &quot;protocol_instances&quot;: 1,
+  &quot;per_area&quot;: [
+    { &quot;area_id&quot;: &quot;uuid&quot;, &quot;area_label&quot;: &quot;0.0.0.0&quot;, &quot;devices&quot;: 30, &quot;links&quot;: 55 },
+    { &quot;area_id&quot;: &quot;uuid&quot;, &quot;area_label&quot;: &quot;0.0.0.1&quot;, &quot;devices&quot;: 18, &quot;links&quot;: 32 }
+  ]
+}
+</code></pre>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> — Missing or invalid query parameter</li>
+<li><code>500 Internal Server Error</code> — Database error</li>
+</ul>
+<h4 id="get-area-clouds">Get Area Clouds</h4><pre><code>GET /api/v1/topology/area-clouds?pi_id={piID}
+GET /api/v1/topology/area-clouds?rd_id={rdID}
+GET /api/v1/topology/area-clouds?network_id={networkID}
+</code></pre>
+<p>Returns aggregated area cloud data for the large-scale topology view. Each area is represented as a &quot;cloud&quot; with device/link counts, health status, and alert counts. ABRs connecting areas are listed separately, and inter-area edges show which areas share ABRs.</p>
+<p><strong>Query parameters (scope — mutually exclusive, one required):</strong></p>
+<ul>
+<li><code>pi_id</code> — Protocol instance UUID (most specific)</li>
+<li><code>rd_id</code> — Routing domain UUID (expands to all PIs in domain)</li>
+<li><code>network_id</code> — Network UUID (expands to all PIs in network)</li>
+</ul>
+<p><strong>Optional:</strong></p>
+<ul>
+<li><code>include_empty</code> — &quot;1&quot; to include areas with zero devices/links (default &quot;0&quot;)</li>
+<li><code>at</code> — RFC 3339 timestamp for historical data (time travel). Device/link counts, ABRs, and inter-area edges are reconstructed from each area&#39;s nearest topology snapshot at or before the timestamp; alert/incident counts use their fired/first-event → resolved windows. An area without a snapshot at that time counts as empty. Rejected with <code>400</code> when it predates the snapshot retention window. (Until 2026-07-29 this parameter silently returned live data.)</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;areas&quot;: [
+    {
+      &quot;area_id&quot;: &quot;uuid&quot;,
+      &quot;area_label&quot;: &quot;0.0.0.0&quot;,
+      &quot;area_type&quot;: &quot;normal&quot;,
+      &quot;protocol&quot;: &quot;ospfv2&quot;,
+      &quot;address_family&quot;: &quot;ipv4&quot;,
+      &quot;protocol_instance_id&quot;: &quot;uuid&quot;,
+      &quot;pid&quot;: 1,
+      &quot;device_count&quot;: 42,
+      &quot;link_count_total&quot;: 87,
+      &quot;link_count_down&quot;: 2,
+      &quot;abr_count&quot;: 3,
+      &quot;active_alerts&quot;: { &quot;info&quot;: 0, &quot;warning&quot;: 2, &quot;critical&quot;: 0 },
+      &quot;active_incidents&quot;: 0,
+      &quot;health&quot;: &quot;warning&quot;,
+      &quot;flags&quot;: { &quot;lsdb_stale&quot;: false }
+    }
+  ],
+  &quot;abrs&quot;: [
+    {
+      &quot;device_id&quot;: &quot;uuid&quot;,
+      &quot;router_id&quot;: &quot;10.0.0.1&quot;,
+      &quot;hostname&quot;: &quot;abr1&quot;,
+      &quot;dns_name&quot;: &quot;abr1.example.com&quot;,
+      &quot;system_id&quot;: null,
+      &quot;protocol_instance_ids&quot;: [&quot;uuid1&quot;, &quot;uuid2&quot;],
+      &quot;area_ids&quot;: [&quot;uuid1&quot;, &quot;uuid2&quot;],
+      &quot;is_ospf_abr&quot;: true,
+      &quot;is_isis_l1l2&quot;: false,
+      &quot;is_asbr&quot;: false,
+      &quot;flags&quot;: { &quot;non_standard&quot;: false }
+    }
+  ],
+  &quot;edges&quot;: [
+    {
+      &quot;from_area_id&quot;: &quot;uuid1&quot;,
+      &quot;to_area_id&quot;: &quot;uuid2&quot;,
+      &quot;abr_device_ids&quot;: [&quot;uuid1&quot;, &quot;uuid2&quot;, &quot;uuid3&quot;],
+      &quot;abr_count&quot;: 3,
+      &quot;kind&quot;: &quot;physical&quot;
+    }
+  ]
+}
+</code></pre>
+<p><strong>Field details:</strong></p>
+<ul>
+<li><code>area_type</code>: &quot;normal&quot;, &quot;stub&quot;, &quot;nssa&quot;, &quot;totally_stubby&quot;</li>
+<li><code>health</code>: &quot;healthy&quot;, &quot;warning&quot;, &quot;critical&quot; (based on alert severity and link state)</li>
+<li><code>kind</code>: &quot;physical&quot; (ABR-connected) or &quot;virtual&quot; (virtual link)</li>
+<li><code>flags.non_standard</code>: True if ABR uses RFC 3509 non-backbone-connected ABR behavior</li>
+</ul>
+<p><strong>ETag caching:</strong> Live responses include an ETag header computed from snapshot hashes and alert counts. Clients can use <code>If-None-Match</code> to receive <code>304 Not Modified</code> when data hasn&#39;t changed.</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> — Missing scope parameter, unsupported protocol (only ospfv2, ospfv3, isis), or invalid <code>at</code> timestamp</li>
+<li><code>404 Not Found</code> — Routing domain or network not found</li>
+<li><code>500 Internal Server Error</code> — Database error</li>
+</ul>
+<h4 id="get-snapshot-timeline">Get Snapshot Timeline</h4><pre><code>GET /api/v1/topology/snapshots/timeline?area_id={areaID}
+GET /api/v1/topology/snapshots/timeline?pi_id={piID}
+GET /api/v1/topology/snapshots/timeline?rd_id={rdID}
+GET /api/v1/topology/snapshots/timeline?network_id={networkID}
+</code></pre>
+<p>Returns distinct snapshot timestamps for the selected scope, ordered descending (newest first). Used by the time-travel scrubber to show available historical points.</p>
+<p><strong>Query parameters (scope — mutually exclusive, one required):</strong></p>
+<ul>
+<li><code>area_id</code>, <code>pi_id</code>, <code>rd_id</code>, or <code>network_id</code> — same scope params as topology graph</li>
+</ul>
+<p><strong>Optional:</strong></p>
+<ul>
+<li><code>from</code> — RFC 3339 timestamp, default 7 days ago</li>
+<li><code>to</code> — RFC 3339 timestamp, default now</li>
+<li><code>limit</code> — Maximum timestamps to return, default 500 (max 5000)</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;timestamps&quot;: [
+    &quot;2026-02-22T10:15:00Z&quot;,
+    &quot;2026-02-22T10:10:00Z&quot;,
+    &quot;2026-02-22T10:05:00Z&quot;
+  ]
+}
+</code></pre>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> — Missing scope parameter</li>
+<li><code>500 Internal Server Error</code> — Database error</li>
+</ul>
+<h4 id="get-historical-stale-areas">Get Historical Stale Areas</h4><pre><code>GET /api/v1/topology/snapshots/stale-areas?at={RFC3339}&amp;area_id={areaID}
+GET /api/v1/topology/snapshots/stale-areas?at={RFC3339}&amp;pi_id={piID}
+GET /api/v1/topology/snapshots/stale-areas?at={RFC3339}&amp;rd_id={rdID}
+GET /api/v1/topology/snapshots/stale-areas?at={RFC3339}&amp;network_id={networkID}
+</code></pre>
+<p>Returns area <strong>UUIDs</strong> (per protocol instance) that were stale at a given historical time. Used by the time-travel frontend to dim areas that had no active data collection at the selected point in time. UUIDs (not dotted-quad labels) so the frontend distinguishes the OSPFv2 and OSPFv3 instances of the same area label — a shared label would dash healthy v2 links when only the v3 instance is stale.</p>
+<p><strong>Detection method:</strong> Event-sourced, with snapshot history as the recovery signal. The API takes each area&#39;s most recent <code>area_stale</code>/<code>area_recovered</code> event at or before the requested time. An area is reported stale only if that event is <code>area_stale</code> <strong>and</strong> no <code>topology_snapshot</code> row exists after it (up to the requested time) — a later snapshot proves the collector resumed reporting, even when the matching <code>area_recovered</code> event was never persisted (recovery events are debounced and under-recorded). Because <code>topology_snapshot</code> rows are hash-deduplicated (written only on a topology change), a healthy but stable area can go hours without a new row; this rule handles that correctly without any proximity/grace window, and is derived entirely from immutable event/snapshot history so live retention never alters it.</p>
+<p><strong>Query parameters (scope -- mutually exclusive, one required):</strong></p>
+<ul>
+<li><code>area_id</code>, <code>area_ids</code>, <code>pi_id</code>, <code>rd_id</code>, or <code>network_id</code> -- same scope params as topology graph</li>
+</ul>
+<p><strong>Required:</strong></p>
+<ul>
+<li><code>at</code> -- RFC 3339 timestamp (e.g. <code>2026-02-22T10:00:00Z</code>)</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;stale_areas&quot;: [&quot;2f61f510-7cb8-4f43-9772-89616078ab9e&quot;]
+}
+</code></pre>
+<p>An empty array means all areas were healthy at the requested time. Values are area UUIDs (per protocol instance), matching the <code>area_id</code> field in WebSocket <code>area_stale</code> / <code>area_recovered</code> diff events and the <code>area_id</code> / <code>merged_protocols[].area_id</code> data attributes on Cytoscape elements.</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Missing or invalid <code>at</code> parameter, or missing scope parameter</li>
+<li><code>500 Internal Server Error</code> -- Database error</li>
+</ul>
+<h4 id="compute-shortest-path">Compute Shortest Path</h4><pre><code>GET /api/v1/topology/path?pi_id={piID}&amp;source={sourceDeviceID}&amp;destination={destDeviceID}
+GET /api/v1/topology/path?pi_id={piID}&amp;source={sourceDeviceID}&amp;prefix=0.0.0.0/0
+</code></pre>
+<p>Computes the shortest path using area-aware SPF per RFC 2328 §16.1-16.4 (OSPF) or ISO 10589 (IS-IS). Supports two modes:</p>
+<ul>
+<li><strong>Device-to-device</strong>: Returns forward and reverse paths, detecting asymmetric routing.</li>
+<li><strong>Path-to-prefix</strong>: Prices every candidate the way the source router itself would: intra-area stub AND transit-link prefixes per RFC 2328 §16.1 (transit subnets are derived from the interface rows — dist to the attached router + its interface cost), Type-3 summaries strictly per §16.2 (only in areas the source is attached to, ABR distance within the carrying area, unreachable ⇒ skip), externals per §16.4, and BGP with the AD weighed at the <em>installing</em> router (a best path exported by another device reaches the source over the iBGP mesh — AD 200, not the exporter&#39;s eBGP 20). A summary the source defers per §16 step (3) can still answer a prefix nothing else covers, but then always carries a <code>caveat</code> + <code>path_model</code> marking it approximate.</li>
+</ul>
+<p>The algorithm respects routing rules:</p>
+<ul>
+<li>Intra-area routes (O) are always preferred over inter-area (O IA), regardless of metric.</li>
+<li>Inter-area traffic transits the backbone (area 0.0.0.0 / level-2) through ABRs via a 3-segment path.</li>
+<li>E1 routes are preferred over E2 per RFC 2328 Section 16.4.</li>
+<li>ECMP: equal-cost multi-paths are enumerated (up to 8).</li>
+<li><strong>BGP fallback (Step 4)</strong>: When no IGP route matches (Steps 1-3), queries <code>bgp_best_path</code> using longest-prefix match (<code>prefix &gt;&gt;= $1::inet</code>). Returns path to next-hop device, or a partial result with warning if next-hop is unresolved. <strong>When <code>at</code> is set (time-travel mode) this step evaluates against BGP history</strong>: candidates come from <code>bgp_best_path_history</code> as of <code>at</code>, with honest annotations when the record is imperfect — a warning when no route was recorded at <code>at</code> (history may not cover the period) and a warning when the exit device&#39;s BGP session was in a monitoring gap at <code>at</code>.</li>
+<li><strong>AD-based selection</strong>: All four steps (intra-area, inter-area, external, BGP) collect candidates. The winner is selected by lowest administrative distance (configurable via <code>routing.ad.*</code> system settings). Default: eBGP=20, OSPF=110, IS-IS=115, iBGP=200. Connected routes (AD 0) always win.</li>
+<li>Response includes <code>source</code> (&quot;ospf&quot;, &quot;ospfv3&quot;, &quot;isis&quot;, &quot;bgp&quot;), <code>ad_value</code> (winning AD), and <code>bgp_info</code> (AS_PATH, communities, LP, MED, ECMP) when source is BGP.</li>
+<li><strong>AD is per-candidate and protocol-correct</strong>: every IGP candidate derives its AD from its source area&#39;s protocol (<code>routing.ad.ospfv2</code>/<code>ospfv3</code>/<code>isis</code>/<code>eigrp</code> — consistent with the RIB view by pinned test; EIGRP additionally splits internal 90 vs redistributed 170 via <code>routing.ad.eigrp_external</code>, driven per-route by <code>cEigrpRouteOriginType</code>), the intra-over-inter preference only suppresses an inter-area candidate whose AD is not strictly lower (so an OSPF inter-area route at 110 beats an IS-IS intra route at 115), externals are selected per AD group (cross-protocol external races are decided by AD, not by comparing E2 metrics across protocols), and BGP candidates carry the source session&#39;s REAL peer type joined from <code>bgp_peer</code> (live) or <code>bgp_peer_history</code> (as-of-T) — the AS_PATH heuristic (single-element path ⇒ iBGP) is only the fallback when no source peer resolves.</li>
+<li><strong>Dual-IGP device pairs</strong> (endpoints sharing both an OSPF area and an IS-IS level): the lower-AD protocol&#39;s path wins regardless of metric; when the losing protocol had a cheaper path the result carries a <code>caveat</code> naming it. Equal-AD areas (OSPFv2+v3 dual-stack) keep pure metric selection.</li>
+</ul>
+<p><strong>Query parameters (scope — mutually exclusive, one required):</strong></p>
+<ul>
+<li><code>area_id</code> — UUID of the area (intra-area only)</li>
+<li><code>pi_id</code> — UUID of the protocol instance (multi-area path)</li>
+<li><code>rd_id</code> — UUID of the routing domain (multi-area path)</li>
+<li><code>network_id</code> — UUID of the network (multi-area path)</li>
+</ul>
+<p><strong>Required:</strong></p>
+<ul>
+<li><code>source</code> — UUID of the source device</li>
+</ul>
+<p><strong>Destination (one required, mutually exclusive):</strong></p>
+<ul>
+<li><code>destination</code> — UUID of the destination device</li>
+<li><code>prefix</code> — CIDR prefix (e.g. <code>0.0.0.0/0</code>, <code>192.0.2.0/24</code>) for path-to-prefix mode</li>
+</ul>
+<p><strong>Optional:</strong></p>
+<ul>
+<li><code>at</code> — RFC 3339 timestamp (e.g. <code>2026-02-22T10:00:00Z</code>). When present, topology, BGP and EIGRP forwarding evidence are all selected at the same T. EIGRP uses complete per-device route snapshots through one memoized request resolver; gaps make the affected segment opaque with <code>eigrp_history</code>, never a live fallback or silent alternative-border win. Live-only L2/port annotations remain explicitly labelled. Future timestamps are rejected.</li>
+<li><code>explain</code> — Boolean query parameter. When <code>true</code>, each PathInfo object includes a <code>explanation: RouteStep[]</code> array detailing the route computation reasoning (e.g., intra-area preference, inter-area backbone transit, external route selection).</li>
+<li><code>protocol</code> — Filter areas to a single protocol in multi-protocol environments (<code>ospfv2</code>, <code>ospfv3</code>, or <code>isis</code>). When set, only areas belonging to the specified protocol are used for path computation. The response includes <code>protocol</code> in the PathResult.</li>
+<li><code>af</code> — Address family selector: <code>clns</code>, <code>ipv4</code>, or <code>ipv6</code>. Default, in order of authority: (1) an explicitly supplied <code>source_addr</code>/<code>dest_addr</code> names the family outright — it already steers area selection, and an IP address rules out CLNS; (2) <code>clns</code> for IS-IS protocol instances; (3) otherwise derived from the scoped areas&#39; address family — <code>ipv6</code> when the scope holds at least one IPv6 area and no IPv4 one, <code>ipv4</code> otherwise (including RFC 5838 OSPFv3 IPv4-AF instances, genuinely mixed scopes, and a failed lookup). An IS-IS level&#39;s <code>multi</code> address family (one LSDB serves both) is compatible with either and casts no vote, so a carrier level in scope no longer mislabels an otherwise pure-IPv6 selection as <code>ipv4</code>. For <code>af=ipv6</code>: hop <code>in_interface</code>/<code>out_interface</code> addresses show the port&#39;s IPv6 (dual-stack IS-IS/EIGRP rows carry it in <code>ipv6_address</code>; a port without IPv6 shows no address), and the <strong>cross-domain stitch matches BGP evidence in-family</strong> — border selection runs against an IPv6 target address and only IPv6 eBGP sessions count as edges; with no IPv6 evidence between the ASes the domain verdict stands without stitched hops and the explanation names the reason. When <code>af=clns</code>: hops use <code>system_id</code> instead of <code>router_id</code>, include <code>nets</code> (full NET addresses), and interface IPs are omitted. <code>af=clns</code> is incompatible with <code>prefix</code> (returns <code>400</code>). The response includes <code>address_family</code> in the PathResult.</li>
+</ul>
+<p><strong>Hop-by-hop forwarding chain (device mode):</strong> <code>forward_path</code> and <code>reverse_path</code> carry the path the packet actually takes — every router&#39;s OWN routing-table decision toward the resolved destination address — rather than the source&#39;s least-cost corridor. Real IP forwarding is hop-by-hop, and the two answers diverge whenever an intermediate router&#39;s decision RULE or INPUT SET differs from the source&#39;s: an ABR that examines only backbone summary-LSAs (RFC 2328 §16 step (3), RFC 3509 §2.2), an intra-area path that outranks a cheaper summary (§16.2 (6)), a longest-prefix difference, or a differing AD mix. The chain is a reconstruction from recorded routing evidence, not a packet trace or confirmation of forwarding-plane state.</p>
+<p>Consequences for consumers, all additive:</p>
+<ul>
+<li><code>path_model</code> says which engine answered; <code>terminated</code> says how the walk ended; <code>traversed_cost</code> reports the links actually crossed next to <code>total_cost</code>, which is now <strong>the source&#39;s own installed metric</strong> — literally what <code>show ip route</code> prints there, including the destination loopback&#39;s stub cost. The destination loopback&#39;s stub cost can make this differ from the SPF cost to the destination device.</li>
+<li>Per hop, <code>route_metric</code> / <code>route_type</code> / <code>ecmp_branches</code> / <code>proven</code> explain the step.</li>
+<li>The source-rooted corridor moves to <code>source_view</code> / <code>source_view_reverse</code>, unchanged.</li>
+<li>Where the chain is <strong>not</strong> computable the response is byte-for-byte today&#39;s corridor with <code>path_model: &quot;spf&quot;</code> and a <strong>non-empty <code>model_note</code></strong> naming the reason; the notice (projection warning + reason) renders as its own explanation step, and the <code>caveat</code> banner carries nothing for it — never a blank panel and never a silent reinstatement of the old picture. That applies to: OSPFv3 (loopbacks are /128s Osprey records as management addresses, not stub networks, so nothing anchors the destination&#39;s host route), IS-IS (zero Type-3 summary rows, so L1↔L2 leaking cannot be reproduced), EIGRP (no link-state database — it keeps its own observed chain), a scope holding only part of a protocol instance&#39;s areas, an area carrying a virtual link (RFC 2328 §16.3 transit paths unmodelled), and a router in two protocol instances that can both carry the address family.</li>
+<li>Stitched multi-domain paths get the same treatment per IGP segment; the stitched <code>caveat</code> names the AS of every segment that fell back, and <code>path_model</code> stays empty when segments used different engines.</li>
+<li>Simulation is deliberately NOT migrated: a post-mutation chain is not computable (the Type-3 summaries surviving ABRs would re-originate cannot be synthesised), so both simulation sides stay on the SPF projection and say so in <code>warning</code> / <code>notices</code>.</li>
+</ul>
+<p><strong>Failed path diagnostics:</strong> When no path is found (<code>total_cost: -1</code>), the response automatically includes an <code>explanation: RouteStep[]</code> array with a step-by-step diagnosis of why the path failed. This covers: shared area analysis, backbone reachability, entry/exit ABR analysis for inter-area paths, and area membership mismatches. No <code>?explain=true</code> parameter is needed — failed path diagnostics are always included. In multi-instance scopes, backbones are counted per protocol instance (<code>backbone 0.0.0.0 (AS 65100 &#39;DC&#39;, ospfv2/1): 4 devices, 3 links; …</code>) and ABR lists carry an instance suffix (<code>abr-x [ospfv2/1 @ AS 65100]</code>) — one summed count would misread as a single broken backbone.</p>
+<p><strong>Cross-domain verdict (device mode):</strong> When source and destination share no protocol instance <strong>and</strong> no routing domain (different AS, tenant network, or VRF), the handler skips SPF entirely and returns a verdict: both directions carry <code>total_cost: -1</code> with an explanation stating the endpoints&#39; domains, and the top-level <code>domain_info</code> object identifies both endpoints (<code>asn</code>, <code>as_name</code>, <code>network_name</code>, <code>instances</code>) plus an optional <code>bgp_chain_hint</code> (e.g. <code>&quot;65100 → 65000 → 65200&quot;</code>) when a BMP exporter in either AS has an AS_PATH linking them. Endpoints that share a routing domain but no protocol instance (e.g. RFC 5838 OSPFv2+OSPFv3 side by side) are NOT a verdict: computation proceeds, and the only permitted join is a device present in both instances — such a path carries a <code>caveat</code> (<code>&quot;…possible redistribution, not verified in the LSDBs.&quot;</code>). ABRs are never paired across protocol instances. Prefix mode never returns the verdict — it resolves cross-domain destinations through the BGP longest-prefix race.</p>
+<p><strong>BGP-stitched multi-domain path (device mode):</strong> On a cross-domain verdict, the handler additionally tries to stitch the dataplane path from BMP evidence: RIB longest-match for the destination router-id selects the border in the source domain (IGP-cost race between candidate exporters), the RIB row&#39;s resolved next-hop is the next domain&#39;s entry, and each subsequent domain exits via the evidence ladder — (a) a RIB row at a border in that domain (<code>resolved</code>), (a2) a route server in an intermediate AS that peers with both domains and whose own BMP RIB covers the destination via the chain&#39;s next AS (<code>inferred</code>, evidence <code>bmp-rib-rs</code> — a transparent RS never appears in the AS_PATH, so this rung is the only way to see an IX detour), (b) an established eBGP session toward the next AS on the chain (<code>inferred</code>; from BMP Peer Up/Down or an SNMP BGP4-MIB walk — see <code>bgp_peer.source</code>), (c) nothing → the rest of the chain renders as <code>opaque</code> segments with a note, never guessed hops. When an AS on the chain has no areas in the selected scope at all, the note says exactly that (&quot;AS 65000 has no areas in the selected scope — include its areas to trace through this domain&quot;) — the actionable cause, not a generic &quot;entry unknown&quot;. A stitched result sets top-level <code>path_kind: &quot;multi-domain&quot;</code> (regular device-mode results carry <code>path_kind: &quot;igp&quot;</code> — <strong>consumers must test <code>path_kind</code>, not <code>total_cost</code></strong>, because a stitched path deliberately keeps <code>total_cost: -1</code>: costs from different domains never sum). The stitched <code>PathInfo</code> carries <code>domain_segments[]</code> (<code>asn</code>, <code>as_name</code>, <code>network_name</code>, <code>instance</code>, <code>start_hop</code>/<code>end_hop</code> — <code>-1</code> for hopless opaque segments — <code>segment_cost</code>, <code>confidence</code>, <code>note</code>) and each domain-entry hop carries <code>ebgp_hop</code> (<code>local_as</code>, <code>peer_as</code>, <code>evidence: &quot;bmp-rib&quot;|&quot;bmp-peer&quot;|&quot;snmp-peer&quot;</code> — with an <code>+l2</code> suffix when the far side was resolved through the borders&#39; LLDP/CDP adjacency instead of an address match). Segments whose hops include an operationally-up TE tunnel head-end are capped at <code>inferred</code> with a &quot;TE steering may differ&quot; note. Time-travel (<code>at=</code>) requests <strong>are</strong> stitched — historical answers read the BGP history tables, so evidence classes that are not historized are disclosed as explanation steps. The <code>domain_info</code> verdict object stays on stitched results. <strong>L2 detail on transitions:</strong> each eBGP transition step and the entry hop&#39;s <code>ebgp_hop</code> are enriched with physical L2 detail from the borders&#39; LLDP/CDP adjacency — but only what is provable: exactly one link pair and no fabric alternative → ports as fact (&quot;pe1 Et1/0 → pe2 Et1/0&quot;); parallel links → an aggregate (&quot;3 parallel L2 links: Gi2↔Et1/0, … (session link undetermined)&quot;); both borders on a shared bridge-capable device and no direct link → fabric presence with attachment ports (&quot;shared L2 fabric: ix-switch (… ↔ …)&quot;); direct link AND shared fabric → explicit ambiguity naming both, choosing neither. Fabric statements are presence, never a session-path claim. A shared bridge matched only on sysname (or seen only in stale rows) still vetoes port claims but is never displayed as fact. Supporting rows must be fresher than 13h (age disclosed above 6h), endpoints concrete, rows matched undirected; one L2 query per unique border device per stitching pass. <strong>Session-IP binding:</strong> when both session addresses resolve through the devices&#39; IP-MIB bindings (<code>device_ip</code>, walked on the discovery pass), the ports become proven facts that override the ambiguity gates — &quot;edge1 Gi3 → edge2 Et1/1 (bmp-rib; ip-bound)&quot; — and a bound port matching a fabric attachment upgrades fabric presence to a per-session claim (&quot;ip-bound, transits ix-switch&quot;). <strong>Canvas:</strong> eBGP transitions draw as path-styled overlay edges between the borders; a proven fabric transit routes the line over the bridge node, and merely-possible fabric devices get a dashed &#39;possible&#39; marker, never path styling.</p>
+<p><strong>SR-MPLS label stack enrichment:</strong> In path-to-prefix mode with <code>af=ipv4</code> or <code>af=ipv6</code>, the response is enriched with SR-MPLS labels when SR data is available. Each hop in the path gets a <code>label</code> field with the computed MPLS label (per RFC 8660: SRGB base + Prefix SID index for intermediate hops, Implicit NULL label 3 for PHP at the penultimate hop). The top-level <code>sr_enabled</code> flag indicates whether SR data was found. Label enrichment is additive — if no SR data exists, the path response is unchanged. CLNS address family (<code>af=clns</code>) does not support SR label enrichment. ECMP alternate paths are also enriched when present.</p>
+<p><strong>Response (device-to-device):</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;forward_path&quot;: {
+    &quot;hops&quot;: [
+      {
+        &quot;device_id&quot;: &quot;uuid-source&quot;,
+        &quot;router_id&quot;: &quot;10.0.0.1&quot;,
+        &quot;hostname&quot;: &quot;core-01&quot;,
+        &quot;link_id&quot;: &quot;&quot;,
+        &quot;cost&quot;: 0,
+        &quot;area_id&quot;: &quot;uuid-area0&quot;,
+        &quot;area_label&quot;: &quot;0.0.0.0&quot;,
+        &quot;in_interface&quot;: null,
+        &quot;out_interface&quot;: { &quot;name&quot;: &quot;Gi0/0&quot;, &quot;ip&quot;: &quot;10.0.0.1&quot;, &quot;speed&quot;: 1000, &quot;if_index&quot;: 1 }
+      },
+      {
+        &quot;device_id&quot;: &quot;uuid-abr&quot;,
+        &quot;router_id&quot;: &quot;10.0.0.2&quot;,
+        &quot;hostname&quot;: &quot;abr-01&quot;,
+        &quot;link_id&quot;: &quot;uuid-link-1&quot;,
+        &quot;cost&quot;: 10,
+        &quot;area_id&quot;: &quot;uuid-area0&quot;,
+        &quot;area_label&quot;: &quot;0.0.0.0&quot;,
+        &quot;is_abr&quot;: true,
+        &quot;in_interface&quot;: { &quot;name&quot;: &quot;Gi0/1&quot;, &quot;ip&quot;: &quot;10.0.0.2&quot;, &quot;speed&quot;: 1000, &quot;if_index&quot;: 2 },
+        &quot;out_interface&quot;: { &quot;name&quot;: &quot;Gi0/2&quot;, &quot;ip&quot;: &quot;10.1.0.1&quot;, &quot;speed&quot;: 10000, &quot;if_index&quot;: 3 }
+      },
+      {
+        &quot;device_id&quot;: &quot;uuid-dest&quot;,
+        &quot;router_id&quot;: &quot;10.0.0.3&quot;,
+        &quot;hostname&quot;: &quot;edge-05&quot;,
+        &quot;link_id&quot;: &quot;uuid-link-2&quot;,
+        &quot;cost&quot;: 10,
+        &quot;area_id&quot;: &quot;uuid-area1&quot;,
+        &quot;area_label&quot;: &quot;0.0.0.1&quot;,
+        &quot;in_interface&quot;: { &quot;name&quot;: &quot;Gi0/0&quot;, &quot;ip&quot;: &quot;10.1.0.2&quot;, &quot;speed&quot;: 10000, &quot;if_index&quot;: 1 },
+        &quot;out_interface&quot;: null
+      }
+    ],
+    &quot;total_cost&quot;: 20,
+    &quot;route_type&quot;: &quot;O IA&quot;,
+    &quot;area_segments&quot;: [
+      { &quot;area_id&quot;: &quot;uuid-area0&quot;, &quot;area_label&quot;: &quot;0.0.0.0&quot;, &quot;start_hop&quot;: 0, &quot;end_hop&quot;: 1, &quot;cost&quot;: 10 },
+      { &quot;area_id&quot;: &quot;uuid-area1&quot;, &quot;area_label&quot;: &quot;0.0.0.1&quot;, &quot;start_hop&quot;: 2, &quot;end_hop&quot;: 2, &quot;cost&quot;: 10 }
+    ],
+    &quot;ecmp_paths&quot;: [
+      [
+        { &quot;device_id&quot;: &quot;uuid-source&quot;, &quot;router_id&quot;: &quot;10.0.0.1&quot;, &quot;hostname&quot;: &quot;core-01&quot;, &quot;cost&quot;: 0, &quot;area_id&quot;: &quot;uuid-area0&quot;, &quot;area_label&quot;: &quot;0.0.0.0&quot; },
+        { &quot;device_id&quot;: &quot;uuid-alt-hop&quot;, &quot;router_id&quot;: &quot;10.0.0.4&quot;, &quot;hostname&quot;: &quot;core-02&quot;, &quot;link_id&quot;: &quot;uuid-link-3&quot;, &quot;cost&quot;: 10, &quot;area_id&quot;: &quot;uuid-area0&quot;, &quot;area_label&quot;: &quot;0.0.0.0&quot; },
+        { &quot;device_id&quot;: &quot;uuid-dest&quot;, &quot;router_id&quot;: &quot;10.0.0.3&quot;, &quot;hostname&quot;: &quot;edge-05&quot;, &quot;link_id&quot;: &quot;uuid-link-4&quot;, &quot;cost&quot;: 10, &quot;area_id&quot;: &quot;uuid-area1&quot;, &quot;area_label&quot;: &quot;0.0.0.1&quot; }
+      ]
+    ],
+    &quot;ecmp_count&quot;: 2
+  },
+  &quot;reverse_path&quot;: {
+    &quot;hops&quot;: [ &quot;...&quot; ],
+    &quot;total_cost&quot;: 30,
+    &quot;route_type&quot;: &quot;O IA&quot;,
+    &quot;area_segments&quot;: [ &quot;...&quot; ]
+  }
+}
+</code></pre>
+<p><strong>Response (path-to-prefix):</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;forward_path&quot;: {
+    &quot;hops&quot;: [ &quot;...&quot; ],
+    &quot;total_cost&quot;: 1,
+    &quot;route_type&quot;: &quot;E2&quot;,
+    &quot;area_segments&quot;: [ &quot;...&quot; ],
+    &quot;external_route&quot;: {
+      &quot;prefix&quot;: &quot;0.0.0.0/0&quot;,
+      &quot;metric_type&quot;: 2,
+      &quot;metric&quot;: 1,
+      &quot;adv_router&quot;: &quot;10.0.0.5&quot;,
+      &quot;fwd_addr&quot;: &quot;10.0.0.6&quot;,
+      &quot;tag&quot;: 0,
+      &quot;is_nssa&quot;: false
+    }
+  },
+  &quot;reverse_path&quot;: null
+}
+</code></pre>
+<p><strong>PathResult fields:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>forward_path</code></td>
+<td>PathInfo</td>
+<td>Forward path from source to destination</td>
+</tr>
+<tr>
+<td><code>reverse_path</code></td>
+<td>PathInfo</td>
+<td>Reverse path from destination to source (device-to-device mode only, null in path-to-prefix)</td>
+</tr>
+<tr>
+<td><code>source_addr</code></td>
+<td>string</td>
+<td>Source address (omitempty, echo of query parameter)</td>
+</tr>
+<tr>
+<td><code>dest_addr</code></td>
+<td>string</td>
+<td>Destination address (omitempty, echo of query parameter)</td>
+</tr>
+<tr>
+<td><code>protocol</code></td>
+<td>string</td>
+<td>Detected protocol: <code>ospfv2</code>, <code>ospfv3</code>, or <code>isis</code> (omitempty)</td>
+</tr>
+<tr>
+<td><code>address_family</code></td>
+<td>string</td>
+<td>Address family used: <code>ipv4</code>, <code>ipv6</code>, or <code>clns</code> (omitempty)</td>
+</tr>
+<tr>
+<td><code>sr_enabled</code></td>
+<td>bool</td>
+<td>True if SR-MPLS data was available and labels were attached to path hops. Only set in path-to-prefix mode with <code>af=ipv4</code> or <code>af=ipv6</code>.</td>
+</tr>
+<tr>
+<td><code>domain_info</code></td>
+<td>PathDomainInfo</td>
+<td>Cross-domain verdict (device mode only): endpoints live in different routing domains, no IGP path can exist. Contains <code>source</code>/<code>destination</code> endpoints (<code>device_id</code>, <code>label</code>, <code>asn</code>, <code>as_name</code>, <code>network_id</code>, <code>network_name</code>, <code>instances[]</code>) and optional <code>bgp_chain_hint</code> (omitempty)</td>
+</tr>
+<tr>
+<td><code>path_kind</code></td>
+<td>string</td>
+<td>Device-mode discriminator: <code>igp</code> (single-domain SPF) or <code>multi-domain</code> (BGP-stitched segments, <code>total_cost</code> stays -1). Consumers must test this, not cost (omitempty; absent in prefix mode)</td>
+</tr>
+<tr>
+<td><code>source_view</code> / <code>source_view_reverse</code></td>
+<td>PathInfo</td>
+<td>The SOURCE-ROOTED least-cost corridor for each direction, present only when <code>forward_path</code>/<code>reverse_path</code> carry a hop-by-hop forwarding chain instead (<code>path_model: &quot;chain&quot;</code>) <strong>and <code>explain=true</code></strong> (audit A10: the corridor is always computed internally, but this second answer is serialized only for diagnosing callers). Two fields because the corridor is computed independently per direction and real forwarding is asymmetric (omitempty)</td>
+</tr>
+<tr>
+<td><code>resolved_dest_addr</code> / <code>resolved_dest_kind</code></td>
+<td>string</td>
+<td>The address the path was actually computed toward, and what it is (<code>router_id_loopback</code> — the chain runs in device mode only; prefix mode keeps the source-rooted model and reports no chain fields). Device mode is genuinely ambiguous between a router&#39;s loopback and any of its interfaces — the choice can change both the metric and the hops — so the answer declares which question it answered. Distinct from <code>dest_addr</code>, which stays the echoed request parameter (omitempty)</td>
+</tr>
+</tbody></table>
+<p><strong>PathInfo fields:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>hops</code></td>
+<td>PathHop[]</td>
+<td>Ordered list of hops from source to destination</td>
+</tr>
+<tr>
+<td><code>total_cost</code></td>
+<td>int</td>
+<td>Total path cost (-1 if unreachable)</td>
+</tr>
+<tr>
+<td><code>route_type</code></td>
+<td>string</td>
+<td>Route type in the protocol&#39;s own vocabulary — OSPF <code>O</code>/<code>O IA</code>/<code>E1</code>/<code>E2</code>/<code>N1</code>/<code>N2</code>, IS-IS <code>I L1</code>/<code>I L2</code>/<code>I IA</code>, EIGRP <code>D</code>/<code>D EX</code>, BGP <code>B</code>/<code>Bi</code>, plus <code>C</code> (see table below)</td>
+</tr>
+<tr>
+<td><code>area_segments</code></td>
+<td>AreaSegment[]</td>
+<td>Consecutive hops grouped by area</td>
+</tr>
+<tr>
+<td><code>ecmp_paths</code></td>
+<td>PathHop[][]</td>
+<td>Alternative equal-cost paths (omitted when no ECMP). Each entry is a full hop sequence with the same schema as <code>hops</code></td>
+</tr>
+<tr>
+<td><code>ecmp_count</code></td>
+<td>int</td>
+<td>Total number of equal-cost paths including the primary (omitted when no ECMP)</td>
+</tr>
+<tr>
+<td><code>explanation</code></td>
+<td>RouteStep[]</td>
+<td>(When <code>?explain=true</code>) Ordered steps describing route computation reasoning (omitted by default)</td>
+</tr>
+<tr>
+<td><code>external_route</code></td>
+<td>ExternalRouteInfo</td>
+<td>External route metadata (present only in path-to-prefix mode)</td>
+</tr>
+<tr>
+<td><code>caveat</code></td>
+<td>string</td>
+<td>Advisory on an unverified assumption, e.g. a path crossing protocol instances via a shared device — possible redistribution. Prefix mode also sets it when the only candidate left in scope is a prefix the source advertises itself but is not attached to (an IS-IS L1L2 router re-advertises its level-1 area in its level-2 LSP): the answer is the advertisement, and the real next hop lives in an area outside the requested scope (omitempty)</td>
+</tr>
+<tr>
+<td><code>domain_segments</code></td>
+<td>DomainSegment[]</td>
+<td>Per-domain segments of a stitched multi-domain path: <code>asn</code>, <code>as_name</code>, <code>network_name</code>, <code>instance</code>, <code>start_hop</code>/<code>end_hop</code> (-1 = hopless opaque), <code>segment_cost</code> (-1 = unknown), <code>segment_fd</code>/<code>segment_cd</code> (observed-EIGRP segments only: the entry device&#39;s DUAL feasibility threshold resp. CURRENT computed distance toward the destination — prefer <code>segment_cd</code>, §62), <code>confidence</code> (<code>resolved</code>/<code>inferred</code>/<code>opaque</code>), <code>note</code> (omitempty)</td>
+</tr>
+<tr>
+<td><code>path_model</code></td>
+<td>string</td>
+<td>Which engine produced the hops: <code>chain</code> (hop-by-hop — every router&#39;s own routing table) or <code>spf</code> (the source-rooted least-cost corridor, which intermediate routers may legitimately disagree with). Empty on prefix mode, on the RIB/simulation consumers, and on a stitched path whose segments used different engines — the per-AS <code>caveat</code> then says what happened where (omitempty)</td>
+</tr>
+<tr>
+<td><code>model_note</code></td>
+<td>string</td>
+<td>Why the hop-by-hop chain could not be produced, when <code>path_model</code> fell back to <code>spf</code> — the machine-readable fallback signal (with <code>path_model</code>). The explanation renders one &quot;Hop-by-hop forwarding chain unavailable&quot; step carrying the projection warning plus this rationale; the <code>caveat</code> banner carries nothing for it. On stitched multi-domain paths the notes are AS-prefixed and joined with <code>; </code>, one explanation step per fallback segment (omitempty)</td>
+</tr>
+<tr>
+<td><code>terminated</code></td>
+<td>string</td>
+<td>End state of a forwarding chain: <code>delivered</code>, <code>delivered_elsewhere</code>, <code>no_route</code>, <code>next_hop_unknown</code>, <code>loop</code>, <code>max_hops</code>, <code>area_out_of_scope</code>, <code>unmodelled</code>. Anything but <code>delivered</code> also carries a non-empty <code>caveat</code> (omitempty)</td>
+</tr>
+<tr>
+<td><code>traversed_cost</code></td>
+<td>int</td>
+<td>Sum of the link costs the packet actually crosses plus the destination&#39;s own stub cost. A <strong>different true statement</strong> from <code>total_cost</code>, which is the SOURCE&#39;s routing-table metric: the two diverge whenever an inter-area route was priced against an ABR the packet never reaches (RFC 2328 §16.2), and the <code>caveat</code> then names both numbers. -1 when a hop cost is unknown or the chain never delivered; absent on SPF paths (omitempty)</td>
+</tr>
+</tbody></table>
+<p><strong>PathHop fields:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>device_id</code></td>
+<td>string</td>
+<td>UUID of the device at this hop</td>
+</tr>
+<tr>
+<td><code>router_id</code></td>
+<td>string</td>
+<td>OSPF router ID</td>
+</tr>
+<tr>
+<td><code>hostname</code></td>
+<td>string</td>
+<td>Device hostname (omitempty)</td>
+</tr>
+<tr>
+<td><code>system_id</code></td>
+<td>string</td>
+<td>IS-IS system ID, e.g. <code>0100.0000.0001</code> (omitempty, populated when <code>af=clns</code>)</td>
+</tr>
+<tr>
+<td><code>nets</code></td>
+<td>string[]</td>
+<td>Full NET addresses, e.g. <code>[&quot;49.0001.0100.0000.0001.00&quot;]</code> (omitempty, populated when <code>af=clns</code>)</td>
+</tr>
+<tr>
+<td><code>link_id</code></td>
+<td>string</td>
+<td>UUID of the link traversed to reach this hop (empty for source)</td>
+</tr>
+<tr>
+<td><code>cost</code></td>
+<td>int</td>
+<td>Incremental cost of this hop (0 for source)</td>
+</tr>
+<tr>
+<td><code>area_id</code></td>
+<td>string</td>
+<td>UUID of the area at this hop</td>
+</tr>
+<tr>
+<td><code>area_label</code></td>
+<td>string</td>
+<td>Dotted-quad area label (e.g. &quot;0.0.0.0&quot;) or IS-IS level label</td>
+</tr>
+<tr>
+<td><code>is_abr</code></td>
+<td>bool</td>
+<td>True if this device is an ABR (omitempty)</td>
+</tr>
+<tr>
+<td><code>in_interface</code></td>
+<td>HopInterface</td>
+<td>Ingress interface at this hop (omitempty). When <code>af=clns</code>, <code>ip</code> is omitted.</td>
+</tr>
+<tr>
+<td><code>out_interface</code></td>
+<td>HopInterface</td>
+<td>Egress interface at this hop (omitempty). When <code>af=clns</code>, <code>ip</code> is omitted.</td>
+</tr>
+<tr>
+<td><code>label</code></td>
+<td>int</td>
+<td>SR-MPLS label for this hop (omitempty). Present only in path-to-prefix mode when SR data is available. Value 3 = Implicit NULL (PHP). Value -1 = SRGB data unavailable for this hop.</td>
+</tr>
+<tr>
+<td><code>route_metric</code></td>
+<td>int</td>
+<td>THIS router&#39;s own installed metric toward the path&#39;s destination address — the number <code>show ip route</code> prints here. Forwarding chains only. <strong>Not monotonically decreasing</strong>: a step UP is the signature of an inter-area inconsistency (the previous router priced its route against a cheap summary from an ABR the packet never reaches). Distinct from <code>fd</code> (DUAL&#39;s feasibility threshold — a historical minimum, RFC 7868 §3.4), <code>cd</code> (the router&#39;s CURRENT computed distance — prefer this as the hop metric) and <code>rd</code> (successor-reported distance), all omitempty (§62)</td>
+</tr>
+<tr>
+<td><code>route_type</code></td>
+<td>string</td>
+<td>This router&#39;s own path type for that route (<code>C</code>, <code>O</code>, <code>O IA</code>, <code>E1</code>, <code>I L1</code>, <code>I L2</code>, …) — the per-hop counterpart of <code>PathInfo.route_type</code> (omitempty)</td>
+</tr>
+<tr>
+<td><code>ecmp_branches</code></td>
+<td>int</td>
+<td>Size of this router&#39;s installed next-hop set (1 = no branch). Without it a single drawn chain would hide a real load-sharing split (omitempty)</td>
+</tr>
+<tr>
+<td><code>proven</code></td>
+<td>bool</td>
+<td>This hop cannot be refused by any router: the destination is anchored in exactly one area, both ends of the hop are members of it, and the winning route is that area&#39;s intra-area route — which RFC 2328 §16.2 (6) makes unbeatable by any summary regardless of metric. Everything else (an ABR crossing the §16 step (3) gate, an external, a differing AD mix, a longest-prefix difference) is modelled, not proven. The guarantee is set MEMBERSHIP, not uniqueness (omitempty)</td>
+</tr>
+<tr>
+<td><code>ebgp_hop</code></td>
+<td>EBGPHopInfo</td>
+<td>Set when this hop was reached over an eBGP session (stitched multi-domain path): <code>local_as</code>, <code>peer_as</code>, <code>evidence</code> (<code>bmp-rib</code>, <code>bmp-peer</code>, or <code>snmp-peer</code>; <code>+l2</code> suffix = far side resolved via the borders&#39; LLDP/CDP adjacency). When the borders&#39; LLDP/CDP adjacency identifies exactly one link pair, also <code>local_port</code>, <code>peer_port</code> and <code>l2_age_secs</code> (age of the freshest supporting row, seconds); parallel links render as an aggregate in the explanation step instead of naming one arbitrary pair. <code>l2_fabric[]</code> lists bridge-capable devices adjacent to both borders (<code>device_id</code>, <code>name</code>, <code>from_local_port</code>/<code>from_fabric_port</code>, <code>to_local_port</code>/<code>to_fabric_port</code>, <code>age_secs</code>) — fabric PRESENCE, never a session-path claim. <code>l2_bound: true</code> marks ports proven by the devices&#39; own IP-MIB bindings (<code>device_ip</code>) for the session addresses — facts even with parallel links or a shared fabric; <code>transit_fabric</code> names the bridge the bound session provably transits. <code>rs_name</code>/<code>rs_device_id</code> name the route server whose BMP RIB selected the transition (evidence <code>bmp-rib-rs</code>; forwarding role hedged — a transparent RS may or may not be a dataplane hop) (omitempty)</td>
+</tr>
+</tbody></table>
+<p><strong>HopInterface fields:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>name</code></td>
+<td>string</td>
+<td>Interface name (e.g. &quot;Gi0/0&quot;, &quot;eth0&quot;)</td>
+</tr>
+<tr>
+<td><code>ip</code></td>
+<td>string</td>
+<td>IP address on the interface (omitempty)</td>
+</tr>
+<tr>
+<td><code>speed</code></td>
+<td>int</td>
+<td>Interface speed in Mbps (omitempty)</td>
+</tr>
+<tr>
+<td><code>if_index</code></td>
+<td>int</td>
+<td>SNMP ifIndex (omitempty, null when not discovered)</td>
+</tr>
+</tbody></table>
+<p><strong>AreaSegment fields:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>area_id</code></td>
+<td>string</td>
+<td>UUID of the OSPF area</td>
+</tr>
+<tr>
+<td><code>area_label</code></td>
+<td>string</td>
+<td>Dotted-quad area label</td>
+</tr>
+<tr>
+<td><code>start_hop</code></td>
+<td>int</td>
+<td>Index of the first hop in this segment (0-based)</td>
+</tr>
+<tr>
+<td><code>end_hop</code></td>
+<td>int</td>
+<td>Index of the last hop in this segment (0-based, inclusive)</td>
+</tr>
+<tr>
+<td><code>cost</code></td>
+<td>int</td>
+<td>Sum of incremental costs across the segment</td>
+</tr>
+</tbody></table>
+<p><strong>RouteStep fields (explanation array):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>step</code></td>
+<td>int</td>
+<td>Step number (1-indexed for readability in logs/UI)</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>string</td>
+<td>Human-readable explanation of this step (e.g., &quot;Selected intra-area route over inter-area&quot;, &quot;Found ASBR via Type 4 LSA&quot;, &quot;E1 metric (10 + 5) = 15 preferred over E2&quot;)</td>
+</tr>
+<tr>
+<td><code>detail</code></td>
+<td>string</td>
+<td>(Optional) Additional technical context (e.g., route cost, competing alternative metrics, metric type comparison)</td>
+</tr>
+</tbody></table>
+<p><strong>ExternalRouteInfo fields:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>prefix</code></td>
+<td>string</td>
+<td>CIDR prefix (e.g. &quot;0.0.0.0/0&quot;)</td>
+</tr>
+<tr>
+<td><code>metric_type</code></td>
+<td>int</td>
+<td>1 (E1/N1) or 2 (E2/N2)</td>
+</tr>
+<tr>
+<td><code>metric</code></td>
+<td>int</td>
+<td>External metric value</td>
+</tr>
+<tr>
+<td><code>adv_router</code></td>
+<td>string</td>
+<td>Router ID of the advertising ASBR</td>
+</tr>
+<tr>
+<td><code>fwd_addr</code></td>
+<td>string</td>
+<td>Forwarding address (omitempty, null when 0.0.0.0)</td>
+</tr>
+<tr>
+<td><code>tag</code></td>
+<td>int</td>
+<td>External route tag (omitempty)</td>
+</tr>
+<tr>
+<td><code>is_nssa</code></td>
+<td>bool</td>
+<td>True if this is an NSSA Type-7 route (omitempty)</td>
+</tr>
+</tbody></table>
+<p><strong>Route types:</strong> <code>C</code> (connected), <code>O</code> (intra-area), <code>O IA</code> (inter-area), <code>E1</code> (external type 1), <code>E2</code> (external type 2), <code>N1</code> (NSSA type 1), <code>N2</code> (NSSA type 2), <code>B</code>/<code>Bi</code> (eBGP/iBGP), <code>D</code>/<code>D EX</code> (EIGRP internal/external).</p>
+<p><strong>IS-IS route types:</strong> <code>I L1</code> (a route learned in the router&#39;s own level-1 area) and <code>I L2</code> (a route computed by SPF inside the level-2 backbone). The level comes from the area&#39;s <code>area_type</code>, <strong>not</strong> from OSPF&#39;s intra/inter axis: a path that never leaves the level-2 backbone is <code>I L2</code>, and one that crosses from a level-1 area into the backbone is <code>I L2</code> as well. <code>I IA</code> marks a prefix leaked into a level-1 area with the up/down bit set (Cisco prints <code>i ia</code>). There is no <code>i E1</code>/<code>i E2</code> on IOS — a redistributed prefix appears as plain <code>i L2</code>.</p>
+<p><strong>Algorithm:</strong> Area-aware Dijkstra per RFC 2328 Section 16. Intra-area paths (O) are always preferred over inter-area (O IA) regardless of metric. Inter-area paths transit the backbone (area 0.0.0.0) through ABRs as a 3-segment path: source area to entry ABR, backbone traversal, exit ABR to destination area. For path-to-prefix, external route selection follows RFC 2328 Section 16.4: E1 routes are always preferred over E2; E1 sorts by total cost (path + external metric); E2 sorts by external metric with path cost as tiebreaker. ECMP alternatives are enumerated up to 8 paths via multi-predecessor Dijkstra.</p>
+<p>If no path exists, <code>total_cost</code> is <code>-1</code> and <code>hops</code> is an empty array.</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> — Missing parameters, source == destination, both destination and prefix specified, invalid <code>af</code> value, <code>af=clns</code> combined with <code>prefix</code>, or no areas in scope</li>
+<li><code>404 Not Found</code> — Source or destination device not found in topology</li>
+</ul>
+<h4 id="is-is-address-families">IS-IS Address Families</h4><pre><code>GET /api/v1/topology/isis-address-families?pi_id={piID}
+</code></pre>
+<p>Returns the address family visibility and enabled state for an IS-IS protocol instance. Used by the Route Path AF selector to determine which AF buttons to show.</p>
+<p><strong>Auth</strong>: all authenticated roles</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li><code>pi_id</code> (required) — UUID of the IS-IS protocol instance</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;address_families&quot;: [
+    { &quot;name&quot;: &quot;clns&quot;, &quot;visible&quot;: true, &quot;enabled&quot;: true },
+    { &quot;name&quot;: &quot;ipv4&quot;, &quot;visible&quot;: true, &quot;enabled&quot;: true },
+    { &quot;name&quot;: &quot;ipv6&quot;, &quot;visible&quot;: true, &quot;enabled&quot;: false }
+  ]
+}
+</code></pre>
+<p><strong>Address family fields:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>name</code></td>
+<td>string</td>
+<td>Address family name: <code>clns</code>, <code>ipv4</code>, or <code>ipv6</code></td>
+</tr>
+<tr>
+<td><code>visible</code></td>
+<td>bool</td>
+<td>Whether the AF button should be shown (based on TLV 129 NLPID presence or data-presence fallback for SNMP-only)</td>
+</tr>
+<tr>
+<td><code>enabled</code></td>
+<td>bool</td>
+<td>Whether actual data exists for this AF in the database</td>
+</tr>
+</tbody></table>
+<p><strong>Visibility logic:</strong></p>
+<ul>
+<li><strong>IPv4</strong>: visible if any device declares NLPID 0xCC (204) in <code>protocols_supported</code> (TLV 129). Enabled if <code>stub_network</code> rows with <code>family(network)=4</code> exist.</li>
+<li><strong>IPv6</strong>: visible if any device declares NLPID 0x8E (142) in <code>protocols_supported</code> (TLV 129). Enabled if <code>stub_network</code> rows with <code>family(network)=6</code> exist.</li>
+<li><strong>CLNS</strong>: always visible for IS-IS. Enabled if <code>isis_area_address</code> rows exist for this protocol instance.</li>
+<li><strong>Fallback</strong>: if no TLV 129 data exists (SNMP-only collectors), <code>visible = enabled</code> (data presence determines both).</li>
+</ul>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> — Missing <code>pi_id</code> parameter</li>
+</ul>
+<h4 id="compare-topology-diff">Compare Topology (Diff)</h4><pre><code>GET /api/v1/topology/diff?area_id={areaID}&amp;from={RFC3339}&amp;to={RFC3339}
+</code></pre>
+<p>Compares topology at two points in time, returning devices, links, and stub networks that were added, removed, or changed. Pure computation on existing snapshot data — no new database tables required.</p>
+<p><strong>Query parameters (scope — mutually exclusive, one required):</strong></p>
+<ul>
+<li><code>area_id</code> — UUID of the area</li>
+<li><code>pi_id</code> — UUID of the protocol instance (multi-area diff)</li>
+<li><code>rd_id</code> — UUID of the routing domain (multi-area diff)</li>
+<li><code>network_id</code> — UUID of the network (multi-area diff)</li>
+</ul>
+<p><strong>Required:</strong></p>
+<ul>
+<li><code>from</code> — RFC 3339 timestamp for the baseline snapshot</li>
+</ul>
+<p><strong>Optional:</strong></p>
+<ul>
+<li><code>to</code> — RFC 3339 timestamp for the comparison snapshot. If omitted, live topology is used.</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;from_time&quot;: &quot;2026-02-22T10:00:00Z&quot;,
+  &quot;to_time&quot;: &quot;2026-02-23T10:00:00Z&quot;,
+  &quot;summary&quot;: {
+    &quot;devices_added&quot;: 1,
+    &quot;devices_removed&quot;: 0,
+    &quot;devices_changed&quot;: 2,
+    &quot;links_added&quot;: 1,
+    &quot;links_removed&quot;: 1,
+    &quot;links_changed&quot;: 0,
+    &quot;stubs_added&quot;: 3,
+    &quot;stubs_removed&quot;: 0
+  },
+  &quot;devices&quot;: {
+    &quot;added&quot;: [{ &quot;router_id&quot;: &quot;10.0.0.5&quot;, &quot;hostname&quot;: &quot;rtr-05&quot; }],
+    &quot;removed&quot;: [],
+    &quot;changed&quot;: [{ &quot;router_id&quot;: &quot;10.0.0.1&quot;, &quot;hostname&quot;: &quot;rtr-01&quot;, &quot;detail&quot;: { &quot;old_abr&quot;: false, &quot;new_abr&quot;: true } }]
+  },
+  &quot;links&quot;: {
+    &quot;added&quot;: [{ &quot;source_router_id&quot;: &quot;10.0.0.1&quot;, &quot;target_router_id&quot;: &quot;10.0.0.5&quot; }],
+    &quot;removed&quot;: [{ &quot;source_router_id&quot;: &quot;10.0.0.2&quot;, &quot;target_router_id&quot;: &quot;10.0.0.3&quot; }],
+    &quot;changed&quot;: []
+  },
+  &quot;stubs&quot;: {
+    &quot;added&quot;: [{ &quot;network&quot;: &quot;192.168.1.0/24&quot;, &quot;device_router_id&quot;: &quot;10.0.0.5&quot; }],
+    &quot;removed&quot;: []
+  }
+}
+</code></pre>
+<p><strong>Diff algorithm:</strong></p>
+<ul>
+<li><strong>Devices:</strong> Indexed by <code>router_id</code> (stable canonical identifier). Set difference for added/removed. For common devices, compares <code>IsABR</code>, <code>IsASBR</code>, and <code>Hostname</code> flags.</li>
+<li><strong>Links:</strong> Normalized to <code>(min(srcRouterID, dstRouterID), max(...))</code> key. Set difference for added/removed. For common links, compares <code>CostForward</code>, <code>CostReverse</code>, and <code>State</code>.</li>
+<li><strong>Stubs:</strong> Keyed by <code>(network, deviceRouterID)</code>. Set difference for added/removed.</li>
+</ul>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> — Missing <code>from</code> parameter or invalid timestamp format</li>
+<li><code>500 Internal Server Error</code> — Database error</li>
+</ul>
+<h4 id="per-router-rib">Per-Router RIB</h4><pre><code>GET /api/v1/topology/rib?device_id={deviceID}&amp;area_id={areaID}
+GET /api/v1/topology/rib?device_id={deviceID}&amp;pi_id={piID}
+GET /api/v1/topology/rib?device_id={deviceID}&amp;rd_id={rdID}
+GET /api/v1/topology/rib?device_id={deviceID}&amp;network_id={networkID}
+GET /api/v1/topology/rib?device_id={deviceID}&amp;area_id={areaID}&amp;at={RFC3339}
+</code></pre>
+<p>Computes the full RIB (Routing Information Base) for a specific router from LSDB data, in the vocabulary of whatever protocol each area speaks (OSPF, IS-IS or EIGRP). Runs SPF from the target router&#39;s perspective, then assembles intra-area, inter-area, and external routes with next-hop resolution.</p>
+<p><strong>Query parameters:</strong></p>
+<p><strong>Required:</strong></p>
+<ul>
+<li><code>device_id</code> — UUID of the router to compute the RIB for</li>
+</ul>
+<p><strong>Scope (mutually exclusive, one required):</strong></p>
+<ul>
+<li><code>area_id</code> — UUID of the area</li>
+<li><code>pi_id</code> — UUID of the protocol instance (multi-area RIB)</li>
+<li><code>rd_id</code> — UUID of the routing domain (multi-area RIB)</li>
+<li><code>network_id</code> — UUID of the network (multi-area RIB)</li>
+</ul>
+<p><strong>Optional:</strong></p>
+<ul>
+<li><code>at</code> — RFC 3339 timestamp for historical mode. Runs SPF against historical topology and route validity at <code>T</code>. EIGRP <code>D</code>/<code>D EX</code> candidates come only from complete per-device snapshots covering <code>T</code>; there is no live fallback. A future timestamp is rejected.</li>
+<li><code>explain</code> — Boolean query parameter. When <code>true</code>, each route includes an <code>explanation: RouteStep[]</code> array with route computation reasoning (e.g., why intra-area was preferred over inter-area, external metric type selection).</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;device_id&quot;: &quot;uuid&quot;,
+  &quot;router_id&quot;: &quot;10.0.0.1&quot;,
+  &quot;hostname&quot;: &quot;rtr-core-01&quot;,
+  &quot;route_count&quot;: 42,
+  &quot;routes&quot;: [
+    {
+      &quot;prefix&quot;: &quot;192.168.1.0/24&quot;,
+      &quot;type&quot;: &quot;O&quot;,
+      &quot;metric&quot;: 20,
+      &quot;next_hops&quot;: [&quot;10.0.0.2&quot;],
+      &quot;via_area&quot;: &quot;0.0.0.0&quot;,
+      &quot;adv_router&quot;: &quot;10.0.0.3&quot;,
+      &quot;tag&quot;: 0,
+      &quot;explanation&quot;: [
+        {
+          &quot;step&quot;: 1,
+          &quot;description&quot;: &quot;Intra-area route computed via SPF&quot;,
+          &quot;detail&quot;: &quot;Device reachable via direct link cost 20&quot;
+        }
+      ]
+    }
+  ]
+}
+</code></pre>
+<p>Historical responses can additionally contain <code>history_scope</code> and
+<code>eigrp_history</code>. <code>history_scope.coverage=available</code> means only that historical
+membership/topology scope was found; it is deliberately not a freshness claim
+for OSPF/IS-IS. <code>history_scope.coverage=unavailable</code> with reason
+<code>device_scope_unavailable</code> means the device had no historical area membership;
+it is not an empty RIB. <code>eigrp_history</code> is omitted when no EIGRP evidence was
+consulted—an OSPF/IS-IS-only historical RIB therefore never claims <code>sampled</code>
+across zero devices. When present, it reports <code>coverage</code>, the weakest primary
+<code>temporal_evidence</code>, RIB/ECMP evidence quality, device count, and conservative
+observation/confirmation/lease bounds. Missing EIGRP coverage omits unprovable
+<code>D</code>/<code>D EX</code> rows and is shown as partial/unavailable, while a covered snapshot
+whose route list is empty is a genuine empty observation. Store/decode/hash
+errors return <code>500</code> rather than masquerading as missing history. <code>rib_ecmp</code> is
+computed only from D/D EX routes that contribute to the returned RIB. An
+optional alternate-tail gap preserves primary <code>coverage</code> and
+<code>temporal_evidence</code>, sets <code>rib_ecmp=partial</code>, and identifies the gap through
+<code>rib_unavailable_device_id</code> plus <code>rib_reason=ecmp_history_unavailable</code>.</p>
+<p><strong>Route fields:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>prefix</code></td>
+<td>string</td>
+<td>CIDR prefix (e.g., &quot;192.168.1.0/24&quot;)</td>
+</tr>
+<tr>
+<td><code>type</code></td>
+<td>string</td>
+<td>Route type (C, O, O IA, E1, E2, N1, N2)</td>
+</tr>
+<tr>
+<td><code>metric</code></td>
+<td>int</td>
+<td>OSPF metric/cost</td>
+</tr>
+<tr>
+<td><code>next_hops</code></td>
+<td>string[]</td>
+<td>List of next-hop router IDs</td>
+</tr>
+<tr>
+<td><code>via_area</code></td>
+<td>string</td>
+<td>Dotted-quad area label (0.0.0.0 for intra-area, backbone or destination area for inter-area)</td>
+</tr>
+<tr>
+<td><code>adv_router</code></td>
+<td>string</td>
+<td>Advertising router ID (for external routes, the ASBR)</td>
+</tr>
+<tr>
+<td><code>tag</code></td>
+<td>int</td>
+<td>OSPF route tag (0 for internal routes)</td>
+</tr>
+<tr>
+<td><code>explanation</code></td>
+<td>RouteStep[]</td>
+<td>(When <code>?explain=true</code>) Detailed route computation reasoning</td>
+</tr>
+</tbody></table>
+<p><strong>Route types:</strong></p>
+<ul>
+<li><code>C</code> — Connected (directly attached network). In OSPF &quot;advertised by this router&quot; and &quot;connected&quot; are the same thing; in IS-IS they are not, because an L1L2 router re-advertises its whole level-1 area in its level-2 LSP. For an IS-IS area the row is only typed <code>C</code> when the advertised cost is 0 (the router&#39;s own loopback/passive interface), or one of the device&#39;s own addresses <em>in the prefix&#39;s own address family</em> falls inside it. Addresses come from the device&#39;s <code>interface</code> rows (IPv4 <code>ip_address</code> <strong>and</strong> IPv6 <code>ipv6_address</code>) plus, on live requests only, its <code>device_ip</code> rows (<code>device_ip</code> is IPv4-only — the SNMP walk behind it reads <code>ipAdEntIfIndex</code>, and it has no as-of form, so a time-travel request reads the interface rows as of <code>at</code> and skips it). With no address known in that family the level rule decides: a level-1 self-advertisement is trusted (a level-1 LSP carries only attached prefixes), a level-2 one only for a router that is in no level-1 area in scope</li>
+<li><code>O</code> — Intra-area (SPF-computed within a single area)</li>
+<li><code>O IA</code> — Inter-area (learned via Type 3 Summary-LSA from ABR)</li>
+<li><code>E1</code> — External type 1 (metric = internal cost + external metric)</li>
+<li><code>E2</code> — External type 2 (metric = external metric only, default)</li>
+<li><code>N1</code> — NSSA type 1 (Type 7 LSA, metric includes internal cost)</li>
+<li><code>N2</code> — NSSA type 2 (Type 7 LSA, external metric only)</li>
+<li><code>I L1</code> — IS-IS level-1 (learned in the router&#39;s own level-1 area)</li>
+<li><code>I L2</code> — IS-IS level-2 (SPF inside the level-2 backbone — an ordinary route there, not a summary)</li>
+<li><code>I IA</code> — IS-IS leaked prefix (up/down bit set; Cisco prints <code>i ia</code>)</li>
+<li><code>D</code> / <code>D EX</code> — EIGRP internal / redistributed (observed from the device&#39;s own topology table)</li>
+</ul>
+<p>Route codes for a routing domain always follow that domain&#39;s protocol: a device in an IS-IS area never returns OSPF codes, and administrative distance follows the code (<code>routing.ad.isis</code>, default 115, for the <code>I *</code> family). Within one AD the route type ranks before the metric — intra-area before inter-area before external (RFC 2328 §11/§16), level-1 before level-2 (RFC 1195 §3.10.1: &quot;IS-IS will always make use of a path within the area (via level 1 routing), regardless of whether an alternate path exists outside of the area&quot;).</p>
+<p>A prefix an IS-IS router advertises itself but is <strong>not</strong> attached to (its level-2 re-advertisement of a level-1 prefix) has no next hop in the answer — the hop it really forwards on lives in the level-1 area. Such a row is held back and returned only when nothing else in scope covers the prefix, and <code>explain=true</code> then adds a &quot;No next hop in scope&quot; step saying the row is the advertisement, not an installed forwarding entry.</p>
+<p><strong>Auth:</strong> Required (all roles).</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> — Missing <code>device_id</code> or scope parameter</li>
+<li><code>404 Not Found</code> — Device not found in the specified scope</li>
+<li><code>500 Internal Server Error</code> — Database error</li>
+</ul>
+<h4 id="spf-tree-visualization">SPF Tree Visualization</h4><pre><code>GET /api/v1/topology/spf-tree?root={deviceID}&amp;area_id={areaID}
+GET /api/v1/topology/spf-tree?root={deviceID}&amp;area_id={areaID}&amp;at={RFC3339}
+</code></pre>
+<p>Computes the full SPF shortest-path tree rooted at a given device within a single OSPF area. The result is a recursive tree structure suitable for hierarchical visualization (e.g., radial tree layout, indented tree, or collapsible tree diagram).</p>
+<p>The algorithm runs Dijkstra from the root device, inverts the predecessor map to build a parent-to-children mapping, then performs a DFS to construct the tree. Children at each level are sorted by cumulative cost (ascending), with device ID as tiebreaker.</p>
+<p><strong>Query parameters:</strong></p>
+<p><strong>Required:</strong></p>
+<ul>
+<li><code>root</code> -- UUID of the device to use as the SPF tree root</li>
+<li><code>area_id</code> -- UUID of the area to compute the tree within</li>
+</ul>
+<p><strong>Optional:</strong></p>
+<ul>
+<li><code>at</code> -- RFC 3339 timestamp for historical mode (uses nearest topology snapshot)</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;root&quot;: {
+    &quot;device_id&quot;: &quot;uuid&quot;,
+    &quot;router_id&quot;: &quot;10.0.0.1&quot;,
+    &quot;hostname&quot;: &quot;rtr-core-01&quot;,
+    &quot;cost&quot;: 0,
+    &quot;link_cost&quot;: 0,
+    &quot;is_abr&quot;: true,
+    &quot;children&quot;: [
+      {
+        &quot;device_id&quot;: &quot;uuid&quot;,
+        &quot;router_id&quot;: &quot;10.0.0.2&quot;,
+        &quot;hostname&quot;: &quot;rtr-dist-01&quot;,
+        &quot;cost&quot;: 10,
+        &quot;link_cost&quot;: 10,
+        &quot;link_id&quot;: &quot;uuid&quot;,
+        &quot;children&quot;: [
+          {
+            &quot;device_id&quot;: &quot;uuid&quot;,
+            &quot;router_id&quot;: &quot;10.0.0.3&quot;,
+            &quot;hostname&quot;: &quot;rtr-access-01&quot;,
+            &quot;cost&quot;: 15,
+            &quot;link_cost&quot;: 5,
+            &quot;link_id&quot;: &quot;uuid&quot;,
+            &quot;is_asbr&quot;: true
+          }
+        ]
+      }
+    ]
+  },
+  &quot;total_nodes&quot;: 3,
+  &quot;area_id&quot;: &quot;uuid&quot;,
+  &quot;area_label&quot;: &quot;0.0.0.0&quot;
+}
+</code></pre>
+<p><strong>Tree node fields:</strong></p>
+<ul>
+<li><code>device_id</code> -- UUID of the device</li>
+<li><code>router_id</code> -- OSPF router ID (dotted-quad)</li>
+<li><code>hostname</code> -- Device hostname (omitted if empty)</li>
+<li><code>cost</code> -- Cumulative SPF cost from root to this node</li>
+<li><code>link_cost</code> -- Incremental cost of the edge from parent to this node (0 for root)</li>
+<li><code>link_id</code> -- UUID of the link connecting this node to its parent (empty for root)</li>
+<li><code>is_abr</code> -- True if the device is an ABR (omitted if false)</li>
+<li><code>is_asbr</code> -- True if the device is an ASBR (omitted if false)</li>
+<li><code>children</code> -- Array of child nodes (omitted if empty/leaf)</li>
+</ul>
+<p><strong>Auth:</strong> Required (all roles).</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Missing <code>root</code> or <code>area_id</code> parameter, or invalid <code>at</code> timestamp</li>
+<li><code>404 Not Found</code> -- Root device not found in the specified area</li>
+<li><code>500 Internal Server Error</code> -- Database error</li>
+</ul>
+<hr>
+</main></html>

@@ -1,0 +1,22 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SNMP Target Summary (Non-Admin) — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="snmp-target-summary-non-admin">SNMP Target Summary (Non-Admin)</h3><h4 id="get-snmp-target-summary">Get SNMP Target Summary</h4><pre><code>GET /api/v1/snmp-targets/summary
+</code></pre>
+<p>Returns aggregate counts of SNMP targets. Available to all authenticated users (not admin-only). Used by HealthPopover to show SNMP poller status without fetching the full target list.</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;total&quot;: 12,
+  &quot;active&quot;: 10,
+  &quot;stale&quot;: 2
+}
+</code></pre>
+<p><strong>Notes:</strong></p>
+<ul>
+<li><code>total</code> is the count of all SNMP targets.</li>
+<li><code>active</code> is the count of targets that have been polled recently (within 2x their poll interval).</li>
+<li><code>stale</code> is the count of targets that have not been polled within the expected window.</li>
+</ul>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>401 Unauthorized</code> -- Missing or invalid access token</li>
+</ul>
+<hr>
+</main></html>

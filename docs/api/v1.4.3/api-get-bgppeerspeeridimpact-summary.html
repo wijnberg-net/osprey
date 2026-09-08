@@ -1,0 +1,38 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>`GET /bgp/peers/{peerID}/impact-summary` — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="get-bgppeerspeeridimpact-summary"><code>GET /bgp/peers/{peerID}/impact-summary</code></h3><p>Lightweight blast-radius summary for a single BGP peer — a fast, static RIB re-run of the RFC 4271 decision process answering &quot;what breaks if this peering session is lost&quot;. No Monte Carlo, no SPF (target response time &lt; 50 ms). Backs the peer-detail impact widget.</p>
+<p><strong>Auth</strong>: all authenticated roles</p>
+<p><strong>Path params</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>peerID</code></td>
+<td>UUID</td>
+<td>Yes</td>
+<td>The BGP peer whose failure impact to assess</td>
+</tr>
+</tbody></table>
+<p><strong>Query params</strong>:</p>
+<ul>
+<li><code>at</code> (string, RFC 3339, optional) — Assess the blast radius as-of-<code>T</code> against the full-RIB history instead of live data. Requires a BMP target recording <code>history_mode=&quot;full&quot;</code> covering the peer&#39;s AS at <code>T</code>; if none exists, the response is a <code>200</code> with all counts <code>0</code> and a <code>notice</code>. If the peer had no recorded session at <code>T</code>, likewise <code>200</code> + <code>notice</code>.</li>
+</ul>
+<p><strong>Response</strong>: <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;prefix_count&quot;: 150000,
+  &quot;surviving_peer_count&quot;: 6,
+  &quot;unreachable_count&quot;: 12
+}
+</code></pre>
+<ul>
+<li><code>prefix_count</code> — total prefixes whose current best path is via this peer (the blast radius being assessed).</li>
+<li><code>surviving_peer_count</code> — number of distinct alternate peers that would absorb the shifted prefixes (one per best-path transition group after re-running selection without this peer).</li>
+<li><code>unreachable_count</code> — of those prefixes, how many have no alternate path and would become unreachable.</li>
+<li><code>notice</code> (string, optional) — Present only in historical mode when the assessment could not run (no full-RIB history at <code>T</code>, or no session at <code>T</code>).</li>
+</ul>
+<p><strong>Errors</strong>: <code>404</code> if the peer is not found (live mode only); <code>500</code> on store error.</p>
+</main></html>

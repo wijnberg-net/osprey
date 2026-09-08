@@ -1,0 +1,188 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>License — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="license">License</h3><h4 id="get-license-status">Get License Status</h4><pre><code>GET /api/v1/license
+</code></pre>
+<p>Returns the durable admission mode, deadlines, capacity and licensee information. Available to all authenticated users; no license mode blocks topology reads or WebSockets.</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;mode&quot;: &quot;overage_grace&quot;,
+  &quot;valid&quot;: true,
+  &quot;evaluation&quot;: false,
+  &quot;grace_period&quot;: true,
+  &quot;days_left&quot;: 312,
+  &quot;node_limit&quot;: 500,
+  &quot;current_nodes&quot;: 517,
+  &quot;over_by&quot;: 17,
+  &quot;new_nodes_allowed&quot;: true,
+  &quot;available_new_nodes&quot;: null,
+  &quot;existing_nodes_live&quot;: true,
+  &quot;restriction_reasons&quot;: [&quot;node_overage&quot;],
+  &quot;overage_ends_at&quot;: &quot;2026-09-30T12:00:00Z&quot;,
+  &quot;license_id&quot;: &quot;OSP-2027-0001&quot;,
+  &quot;licensee&quot;: &quot;Megacorp Inc. (USA)&quot;,
+  &quot;tier&quot;: &quot;enterprise&quot;,
+  &quot;issued_at&quot;: &quot;2026-03-07T10:00:00Z&quot;,
+  &quot;expires_at&quot;: &quot;2027-03-07T10:00:00Z&quot;
+}
+</code></pre>
+<p><strong>Evaluation mode</strong> (no license installed). Evaluation has no overage grace, so
+<code>available_new_nodes</code> is always present — it is the number of devices that may
+still be admitted, and <code>mode</code> becomes <code>restricted</code> the moment the count exceeds
+<code>node_limit</code>:</p>
+<pre><code class="language-json">{
+  &quot;mode&quot;: &quot;active&quot;,
+  &quot;valid&quot;: true,
+  &quot;evaluation&quot;: true,
+  &quot;grace_period&quot;: false,
+  &quot;days_left&quot;: 0,
+  &quot;node_limit&quot;: 32,
+  &quot;current_nodes&quot;: 5,
+  &quot;new_nodes_allowed&quot;: true,
+  &quot;available_new_nodes&quot;: 27
+}
+</code></pre>
+<p><strong>Response fields:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>mode</code></td>
+<td>string</td>
+<td><code>active</code>, <code>overage_grace</code>, <code>expiry_grace</code>, or <code>restricted</code>. The two grace modes require a signed license; an evaluation install over its cap goes straight to <code>restricted</code></td>
+</tr>
+<tr>
+<td><code>valid</code></td>
+<td>boolean</td>
+<td>Whether the license is currently valid (includes grace period)</td>
+</tr>
+<tr>
+<td><code>evaluation</code></td>
+<td>boolean</td>
+<td>True only when no signed license is installed</td>
+</tr>
+<tr>
+<td><code>grace_period</code></td>
+<td>boolean</td>
+<td>Compatibility summary for either grace mode</td>
+</tr>
+<tr>
+<td><code>frozen</code></td>
+<td>boolean</td>
+<td>Deprecated 1.4.x compatibility field; always <code>false</code></td>
+</tr>
+<tr>
+<td><code>days_left</code></td>
+<td>integer</td>
+<td>Days remaining until expiry (negative during grace period, 0 for evaluation)</td>
+</tr>
+<tr>
+<td><code>node_limit</code></td>
+<td>integer</td>
+<td>Maximum number of monitored devices (0 = unlimited)</td>
+</tr>
+<tr>
+<td><code>current_nodes</code></td>
+<td>integer</td>
+<td>Current deployment-wide non-collector device count; the status read is lock-free/read-only and returns 503 if durable state cannot be inspected safely</td>
+</tr>
+<tr>
+<td><code>over_by</code></td>
+<td>integer</td>
+<td>Nodes above the effective cap</td>
+</tr>
+<tr>
+<td><code>new_nodes_allowed</code></td>
+<td>boolean</td>
+<td>Whether at least one new identity can currently be admitted</td>
+</tr>
+<tr>
+<td><code>available_new_nodes</code></td>
+<td>integer/null</td>
+<td>Remaining admissible capacity. Non-null whenever a hard cap applies — always in evaluation mode (which has no grace) and after a licensed grace window ends. Null while unlimited, and null during a licensed overage or expiry grace, where admission is deliberately uncapped</td>
+</tr>
+<tr>
+<td><code>existing_nodes_live</code></td>
+<td>boolean</td>
+<td>Always true</td>
+</tr>
+<tr>
+<td><code>restriction_reasons</code></td>
+<td>array</td>
+<td>Applicable <code>node_overage</code> and/or <code>license_expired</code> reasons</td>
+</tr>
+<tr>
+<td><code>overage_started_at</code>, <code>overage_ends_at</code></td>
+<td>timestamp/null</td>
+<td>Durable node-overage episode. Always null in evaluation mode: no episode is recorded, so nothing can later re-arm a second grace window</td>
+</tr>
+<tr>
+<td><code>license_expires_at</code>, <code>expiry_grace_ends_at</code></td>
+<td>timestamp/null</td>
+<td>Signed expiry and 30-day expiry deadline</td>
+</tr>
+<tr>
+<td><code>clock_anomaly_at</code></td>
+<td>timestamp/null</td>
+<td>Last persisted continuous-process clock-step warning; does not freeze existing topology</td>
+</tr>
+<tr>
+<td><code>rejected_sources</code></td>
+<td>array</td>
+<td>Bounded/debounced admission-refusal summaries per discovery source and reason (<code>batch_exceeds_capacity</code> or <code>identity_conflict</code>)</td>
+</tr>
+<tr>
+<td><code>error</code></td>
+<td>string</td>
+<td>Error message if license validation failed (omitted when empty)</td>
+</tr>
+<tr>
+<td><code>license_id</code></td>
+<td>string</td>
+<td>License identifier (omitted in evaluation mode)</td>
+</tr>
+<tr>
+<td><code>licensee</code></td>
+<td>string</td>
+<td>Licensee name and country (omitted in evaluation mode)</td>
+</tr>
+<tr>
+<td><code>tier</code></td>
+<td>string</td>
+<td>License tier: <code>enterprise</code>, <code>professional</code>, etc. (omitted in evaluation mode)</td>
+</tr>
+<tr>
+<td><code>issued_at</code></td>
+<td>string</td>
+<td>ISO 8601 timestamp when the license was issued</td>
+</tr>
+<tr>
+<td><code>expires_at</code></td>
+<td>string</td>
+<td>ISO 8601 timestamp when the license expires</td>
+</tr>
+</tbody></table>
+<h4 id="upload-license-admin">Upload License (Admin)</h4><pre><code>POST /api/v1/license
+</code></pre>
+<p>Validates signature and payload without changing runtime state, then commits <code>license.key</code> and the reconciled singleton atomically under the same advisory lock as node admission. Runtime status, file copy and NATS events change only after commit. Admin-only.</p>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;license_key&quot;: &quot;eyJsaWNlbnNlX2lkIjoiT1NQLTIwMjctMDAwMSIs...&quot;
+}
+</code></pre>
+<p><strong>Response:</strong> <code>200 OK</code> — Same schema as <code>GET /api/v1/license</code>.</p>
+<p>A committed upload publishes a rediscovery edge whenever it removes a
+restriction or increases finite replacement capacity. An expired signed
+entitlement with <code>max_nodes=0</code> remains visibly expired but has no finite cap,
+so its mode is <code>active</code> and new discovery remains unrestricted.</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> — Invalid license format, tampered signature, or missing <code>license_key</code> field</li>
+<li><code>401 Unauthorized</code> — Missing or invalid access token</li>
+<li><code>403 Forbidden</code> — Non-admin user</li>
+<li><code>503 Service Unavailable</code> — Enforcer unavailable or the primary DB commit failed; the previous active license remains unchanged</li>
+</ul>
+<hr>
+</main></html>

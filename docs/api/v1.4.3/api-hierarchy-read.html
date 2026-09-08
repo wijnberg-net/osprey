@@ -1,0 +1,282 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hierarchy (Read) — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="hierarchy-read">Hierarchy (Read)</h3><p>All hierarchy GET routes are available to any authenticated user (admin, engineer, or operator).</p>
+<h4 id="networks">Networks</h4><pre><code>GET /api/v1/networks?limit=100&amp;offset=0
+</code></pre>
+<p>List all networks. Supports <a href="api-pagination.html#pagination">pagination</a>.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li><code>limit</code> (optional) — Max items to return (default 100, max 1000)</li>
+<li><code>offset</code> (optional) — Items to skip (default 0)</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code> — Paginated envelope</p>
+<pre><code class="language-json">{
+  &quot;data&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;name&quot;: &quot;Production&quot;,
+      &quot;description&quot;: &quot;Production network&quot;,
+      &quot;created_at&quot;: &quot;2024-01-01T00:00:00Z&quot;,
+      &quot;updated_at&quot;: &quot;2024-01-01T00:00:00Z&quot;
+    }
+  ],
+  &quot;total&quot;: 1,
+  &quot;limit&quot;: 100,
+  &quot;offset&quot;: 0
+}
+</code></pre>
+<pre><code>GET /api/v1/networks/{networkID}
+</code></pre>
+<p>Get a single network by ID.</p>
+<p><strong>Response:</strong> <code>200 OK</code> (single network object)</p>
+<p><strong>Error:</strong> <code>404 Not Found</code> — Network does not exist</p>
+<pre><code>GET /api/v1/networks/{networkID}/enrichment-summary
+</code></pre>
+<p>Get aggregated SNMP enrichment and L2 discovery health data for a single network. Used by the Network Enrichment Panel to display per-network capability cards.</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;network_id&quot;: &quot;uuid&quot;,
+  &quot;total_devices&quot;: 42,
+  &quot;devices_with_snmp&quot;: 38,
+  &quot;snmp_active&quot;: 35,
+  &quot;snmp_stale&quot;: 2,
+  &quot;snmp_errored&quot;: 1,
+  &quot;snmp_disabled&quot;: 0,
+  &quot;l2_neighbor_count&quot;: 120,
+  &quot;l2_unresolved_count&quot;: 3,
+  &quot;last_discovery_at&quot;: &quot;2026-03-22T10:30:00Z&quot;,
+  &quot;last_l2_enrichment_at&quot;: &quot;2026-03-22T08:00:00Z&quot;
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>network_id</code></td>
+<td>string</td>
+<td>UUID of the network</td>
+</tr>
+<tr>
+<td><code>total_devices</code></td>
+<td>int</td>
+<td>Total devices in this network (via <code>device_network_membership</code>)</td>
+</tr>
+<tr>
+<td><code>devices_with_snmp</code></td>
+<td>int</td>
+<td>Devices that have an <code>snmp_target</code> row</td>
+</tr>
+<tr>
+<td><code>snmp_active</code></td>
+<td>int</td>
+<td>SNMP targets with <code>status=&#39;active&#39;</code></td>
+</tr>
+<tr>
+<td><code>snmp_stale</code></td>
+<td>int</td>
+<td>SNMP targets with <code>status=&#39;stale&#39;</code></td>
+</tr>
+<tr>
+<td><code>snmp_errored</code></td>
+<td>int</td>
+<td>SNMP targets with <code>status=&#39;error&#39;</code></td>
+</tr>
+<tr>
+<td><code>snmp_disabled</code></td>
+<td>int</td>
+<td>SNMP targets with <code>enabled=false</code></td>
+</tr>
+<tr>
+<td><code>l2_neighbor_count</code></td>
+<td>int</td>
+<td>Total L2 neighbors discovered for devices in this network</td>
+</tr>
+<tr>
+<td><code>l2_unresolved_count</code></td>
+<td>int</td>
+<td>L2 neighbors not yet resolved to a known device</td>
+</tr>
+<tr>
+<td><code>last_discovery_at</code></td>
+<td>string?</td>
+<td>Most recent SNMP discovery timestamp (null if never run)</td>
+</tr>
+<tr>
+<td><code>last_l2_enrichment_at</code></td>
+<td>string?</td>
+<td>Most recent L2 enrichment timestamp (null if never run)</td>
+</tr>
+</tbody></table>
+<p><strong>Error:</strong> <code>500 Internal Server Error</code> — Database query failure</p>
+<h4 id="autonomous-systems">Autonomous Systems</h4><pre><code>GET /api/v1/networks/{networkID}/autonomous-systems?limit=100&amp;offset=0
+</code></pre>
+<p>List all autonomous systems within a network. Supports <a href="api-pagination.html#pagination">pagination</a>.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li><code>limit</code> (optional) — Max items to return (default 100, max 1000)</li>
+<li><code>offset</code> (optional) — Items to skip (default 0)</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code> — Paginated envelope</p>
+<pre><code class="language-json">{
+  &quot;data&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;network_id&quot;: &quot;uuid&quot;,
+      &quot;asn&quot;: 65000,
+      &quot;name&quot;: &quot;AS65000&quot;,
+      &quot;description&quot;: &quot;Primary AS&quot;,
+      &quot;created_at&quot;: &quot;2024-01-01T00:00:00Z&quot;,
+      &quot;updated_at&quot;: &quot;2024-01-01T00:00:00Z&quot;
+    }
+  ],
+  &quot;total&quot;: 1,
+  &quot;limit&quot;: 100,
+  &quot;offset&quot;: 0
+}
+</code></pre>
+<pre><code>GET /api/v1/networks/{networkID}/autonomous-systems/{asID}
+</code></pre>
+<p>Get a single AS by ID.</p>
+<p><strong>Response:</strong> <code>200 OK</code> (single AS object)</p>
+<p><strong>Error:</strong> <code>404 Not Found</code></p>
+<h4 id="routing-domains">Routing Domains</h4><pre><code>GET /api/v1/networks/{networkID}/autonomous-systems/{asID}/routing-domains?limit=100&amp;offset=0
+</code></pre>
+<p>List all routing domains within an AS. Supports <a href="api-pagination.html#pagination">pagination</a>.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li><code>limit</code> (optional) — Max items to return (default 100, max 1000)</li>
+<li><code>offset</code> (optional) — Items to skip (default 0)</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code> — Paginated envelope</p>
+<pre><code class="language-json">{
+  &quot;data&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;as_id&quot;: &quot;uuid&quot;,
+      &quot;name&quot;: &quot;Global&quot;,
+      &quot;description&quot;: &quot;Global routing table&quot;,
+      &quot;type&quot;: &quot;global&quot;,
+      &quot;rd&quot;: null,
+      &quot;created_at&quot;: &quot;2024-01-01T00:00:00Z&quot;,
+      &quot;updated_at&quot;: &quot;2024-01-01T00:00:00Z&quot;
+    }
+  ],
+  &quot;total&quot;: 1,
+  &quot;limit&quot;: 100,
+  &quot;offset&quot;: 0
+}
+</code></pre>
+<pre><code>GET /api/v1/networks/{networkID}/autonomous-systems/{asID}/routing-domains/{rdID}
+</code></pre>
+<p>Get a single routing domain by ID.</p>
+<p><strong>Response:</strong> <code>200 OK</code> (single routing domain object)</p>
+<p><strong>Error:</strong> <code>404 Not Found</code></p>
+<h4 id="protocol-instances">Protocol Instances</h4><pre><code>GET /api/v1/networks/{networkID}/autonomous-systems/{asID}/routing-domains/{rdID}/protocol-instances?limit=100&amp;offset=0
+</code></pre>
+<p>List all protocol instances within a routing domain. Supports <a href="api-pagination.html#pagination">pagination</a>.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li><code>limit</code> (optional) — Max items to return (default 100, max 1000)</li>
+<li><code>offset</code> (optional) — Items to skip (default 0)</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code> — Paginated envelope</p>
+<pre><code class="language-json">{
+  &quot;data&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;routing_domain_id&quot;: &quot;uuid&quot;,
+      &quot;protocol&quot;: &quot;ospfv2&quot;,
+      &quot;process_id&quot;: &quot;1&quot;,
+      &quot;address_family&quot;: &quot;ipv4&quot;,
+      &quot;description&quot;: &quot;Primary OSPF instance&quot;,
+      &quot;created_at&quot;: &quot;2024-01-01T00:00:00Z&quot;,
+      &quot;updated_at&quot;: &quot;2024-01-01T00:00:00Z&quot;
+    }
+  ],
+  &quot;total&quot;: 1,
+  &quot;limit&quot;: 100,
+  &quot;offset&quot;: 0
+}
+</code></pre>
+<pre><code>GET /api/v1/networks/{networkID}/autonomous-systems/{asID}/routing-domains/{rdID}/protocol-instances/{piID}
+</code></pre>
+<p>Get a single protocol instance by ID.</p>
+<p><strong>Response:</strong> <code>200 OK</code> (single protocol instance object)</p>
+<p><strong>Error:</strong> <code>404 Not Found</code></p>
+<h4 id="areas">Areas</h4><pre><code>GET /api/v1/networks/{networkID}/autonomous-systems/{asID}/routing-domains/{rdID}/protocol-instances/{piID}/areas?limit=100&amp;offset=0
+</code></pre>
+<p>List all areas within a protocol instance. Supports <a href="api-pagination.html#pagination">pagination</a>.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li><code>limit</code> (optional) — Max items to return (default 100, max 1000)</li>
+<li><code>offset</code> (optional) — Items to skip (default 0)</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code> — Paginated envelope</p>
+<pre><code class="language-json">{
+  &quot;data&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;protocol_instance_id&quot;: &quot;uuid&quot;,
+      &quot;area_id&quot;: &quot;0.0.0.0&quot;,
+      &quot;area_type&quot;: &quot;normal&quot;,
+      &quot;name&quot;: &quot;Area 0&quot;,
+      &quot;description&quot;: &quot;Backbone area&quot;,
+      &quot;created_at&quot;: &quot;2024-01-01T00:00:00Z&quot;,
+      &quot;updated_at&quot;: &quot;2024-01-01T00:00:00Z&quot;
+    }
+  ],
+  &quot;total&quot;: 1,
+  &quot;limit&quot;: 100,
+  &quot;offset&quot;: 0
+}
+</code></pre>
+<pre><code>GET /api/v1/networks/{networkID}/autonomous-systems/{asID}/routing-domains/{rdID}/protocol-instances/{piID}/areas/{areaID}
+</code></pre>
+<p>Get a single area by ID.</p>
+<p><strong>Response:</strong> <code>200 OK</code> (single area object)</p>
+<p><strong>Error:</strong> <code>404 Not Found</code></p>
+<h4 id="hierarchy-tree-bulk-query">Hierarchy Tree (Bulk Query)</h4><pre><code>GET /api/v1/hierarchy/tree
+</code></pre>
+<p>Returns the entire hierarchy tree in a single query (optimized for sidebar rendering).</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">[
+  {
+    &quot;network&quot;: { &quot;id&quot;: &quot;...&quot;, &quot;name&quot;: &quot;Production&quot;, ... },
+    &quot;autonomous_systems&quot;: [
+      {
+        &quot;as&quot;: { &quot;id&quot;: &quot;...&quot;, &quot;asn&quot;: 65000, ... },
+        &quot;routing_domains&quot;: [
+          {
+            &quot;rd&quot;: { &quot;id&quot;: &quot;...&quot;, &quot;name&quot;: &quot;Global&quot;, ... },
+            &quot;protocol_instances&quot;: [
+              {
+                &quot;pi&quot;: { &quot;id&quot;: &quot;...&quot;, &quot;protocol&quot;: &quot;ospf&quot;, ... },
+                &quot;areas&quot;: [
+                  { &quot;id&quot;: &quot;...&quot;, &quot;area_id&quot;: &quot;0.0.0.0&quot;, ... }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+]
+</code></pre>
+<p>Each area object carries <code>collectors</code> (the area&#39;s own home recorders — <code>collector_config</code> rows whose <code>area_id</code> is this area) and <code>covering_recorders</code> (read-only: recorders homed in a <em>different</em> area that also publish topology for this one — e.g. an IS-IS multi-area SNMP crawler seeded in the backbone that feeds each L1 area, or the SNMP side of an area also watched over GRE). Home collectors and covering recorders both carry the optional verified-health fields <code>verification_state</code>, <code>last_verified_at</code>, <code>verification_reason_code</code>, <code>lsdb_truncated</code>, <code>lsdb_lsa_count</code>, and <code>lsdb_truncated_at</code>. <code>verification_state</code> is <code>unknown</code>, <code>verified</code>, <code>pending</code>, <code>unreachable</code>, or <code>truncated</code>. It is health/UI evidence only: a retained degraded recorder continues to suppress BGP-LS overlap until its retention lease ends or the operator disables/deletes it.</p>
+<p>EIGRP home <code>collectors</code> and <code>covering_recorders</code> additionally carry optional
+<code>last_observed_at</code> (RFC3339), read from their own AS/AF context&#39;s
+<code>collector_area_coverage.last_seen</code> in the hierarchy response.
+This is the last poll observing that context (debounced per recorder/area), not
+the home recorder&#39;s <code>last_data_at</code>, a retention heartbeat, a complete route-table
+walk or proof that all devices were reached. The sidebar labels it <strong>Last IPv6
+observation</strong> (or IPv4), separately from recorder process status. It is omitted
+for non-EIGRP sources, home recorders without a coverage row, ordinary collector
+CRUD responses, and multi-area deletion-guard records. Older API
+responses without it remain supported and render unavailable freshness.</p>
+<p>An active IS-IS bootstrap parent additionally carries <code>isis_bootstrap: { generation_id, phase, handoff_started_at?, desired_count, acked_count, areas[] }</code>. Each area entry contains only orchestration identifiers, selected target, management source, acknowledgement, and retry timing. The object is derived from <code>collector_state</code>, sorted, and returned only when its embedded config version matches the collector row; raw state and credentials are never exposed. After handoff, transient status disappears and durable completion remains under <code>collector.config.isis_bootstrap</code>. Fully marked managed IS-IS child rows are read-only: update, toggle, and delete return <code>409</code>. A successfully transferred child instead carries derived <code>bootstrap_provisioned: true</code>; it is operator-owned and supports normal CRUD while its bootstrap identity and provenance fields remain immutable.</p>
+<hr>
+</main></html>

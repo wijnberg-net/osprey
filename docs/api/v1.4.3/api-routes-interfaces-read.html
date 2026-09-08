@@ -1,0 +1,513 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Routes &amp; Interfaces (Read) — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="routes-interfaces-read">Routes &amp; Interfaces (Read)</h3><p>All route and interface endpoints support multi-scope querying. In addition to <code>area_id</code>, you can pass <code>pi_id</code> (protocol instance), <code>rd_id</code> (routing domain), or <code>network_id</code> to query across all areas within that scope. The backend resolves the scope to a set of area IDs using the hierarchy. Exactly one scope parameter is required.</p>
+<h4 id="list-inter-area-route-summary">List Inter-Area Route Summary</h4><pre><code>GET /api/v1/routes/inter-area/summary?area_id={areaID}
+GET /api/v1/routes/inter-area/summary?pi_id={piID}
+GET /api/v1/routes/inter-area/summary?rd_id={rdID}
+GET /api/v1/routes/inter-area/summary?network_id={networkID}
+</code></pre>
+<p>Paginated inter-area routes grouped by network prefix. Returns aggregate statistics per prefix for the summary/drill-down UI pattern.</p>
+<p><strong>Query parameters (mutually exclusive, one required):</strong></p>
+<ul>
+<li><code>area_id</code> — UUID of the area</li>
+<li><code>pi_id</code> — UUID of the protocol instance (returns routes from all areas in the PI)</li>
+<li><code>rd_id</code> — UUID of the routing domain (returns routes from all areas in the RD)</li>
+<li><code>network_id</code> — UUID of the network (returns routes from all areas in the network)</li>
+</ul>
+<p><strong>Optional:</strong></p>
+<ul>
+<li><code>search</code> — Prefix substring filter (e.g. <code>10.1.</code>)</li>
+<li><code>sort</code> — Sort column (whitelisted). Default: <code>network</code>.</li>
+<li><code>sort_dir</code> — <code>asc</code> or <code>desc</code> (default <code>asc</code>)</li>
+<li><code>limit</code> — Page size (default 50, max 1000)</li>
+<li><code>offset</code> — Pagination offset</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;summaries&quot;: [
+    {
+      &quot;network&quot;: &quot;10.1.0.0/16&quot;,
+      &quot;router_count&quot;: 3,
+      &quot;min_metric&quot;: 10,
+      &quot;max_metric&quot;: 30,
+      &quot;area_count&quot;: 2
+    }
+  ],
+  &quot;total&quot;: 142
+}
+</code></pre>
+<p><strong>Error:</strong> <code>400 Bad Request</code> — Missing scope parameter</p>
+<h4 id="list-inter-area-routes">List Inter-Area Routes</h4><pre><code>GET /api/v1/routes/inter-area?area_id={areaID}
+GET /api/v1/routes/inter-area?pi_id={piID}
+GET /api/v1/routes/inter-area?rd_id={rdID}
+GET /api/v1/routes/inter-area?network_id={networkID}
+</code></pre>
+<p>List inter-area routes (Type 3 Summary-LSA) for a specific scope. When <code>network</code> is provided, returns paginated per-router detail for that prefix (drill-down mode with <code>display_name</code> enrichment). Without <code>network</code>, returns all routes (legacy behavior for time-travel).</p>
+<p><strong>Query parameters (mutually exclusive, one required):</strong></p>
+<ul>
+<li><code>area_id</code> — UUID of the area</li>
+<li><code>pi_id</code> — UUID of the protocol instance (returns routes from all areas in the PI)</li>
+<li><code>rd_id</code> — UUID of the routing domain (returns routes from all areas in the RD)</li>
+<li><code>network_id</code> — UUID of the network (returns routes from all areas in the network)</li>
+</ul>
+<p><strong>Optional:</strong></p>
+<ul>
+<li><code>network</code> — CIDR prefix filter for drill-down (e.g. <code>10.1.0.0/16</code>). Enables paginated mode with <code>display_name</code> enrichment.</li>
+<li><code>sort</code> — Sort column (whitelisted). Default: <code>network</code>.</li>
+<li><code>sort_dir</code> — <code>asc</code> or <code>desc</code> (default <code>asc</code>)</li>
+<li><code>limit</code> — Page size (default 50, max 1000; only used with <code>network</code>)</li>
+<li><code>offset</code> — Pagination offset (only used with <code>network</code>)</li>
+<li><code>at</code> — RFC 3339 timestamp (e.g. <code>2026-02-22T10:00:00Z</code>). When present, returns routes as they existed at that point in time (filters by <code>first_seen &lt;= at</code>; <code>last_seen</code> is a refresh timestamp, not an end of validity — still-present rows count even when not re-confirmed since <code>at</code>). Uses legacy unpaginated path.</li>
+</ul>
+<p><strong>Response (with <code>network</code>):</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;routes&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;network&quot;: &quot;10.1.0.0/16&quot;,
+      &quot;adv_router&quot;: &quot;10.0.0.2&quot;,
+      &quot;device_id&quot;: &quot;uuid&quot;,
+      &quot;display_name&quot;: &quot;rtr-core-01&quot;,
+      &quot;metric&quot;: 20,
+      &quot;area_id&quot;: &quot;uuid&quot;,
+      &quot;first_seen&quot;: &quot;2026-02-17T10:00:00Z&quot;,
+      &quot;last_seen&quot;: &quot;2026-02-18T14:00:00Z&quot;
+    }
+  ],
+  &quot;total&quot;: 3
+}
+</code></pre>
+<p><strong>Response (without <code>network</code>, legacy):</strong> <code>200 OK</code> — flat JSON array of routes (no pagination envelope).</p>
+<p><strong>Error:</strong> <code>400 Bad Request</code> — Missing scope parameter</p>
+<h4 id="list-external-route-summary">List External Route Summary</h4><pre><code>GET /api/v1/routes/external/summary?area_id={areaID}
+GET /api/v1/routes/external/summary?pi_id={piID}
+GET /api/v1/routes/external/summary?rd_id={rdID}
+GET /api/v1/routes/external/summary?network_id={networkID}
+</code></pre>
+<p>Paginated external routes grouped by (network, metric_type). Returns aggregate statistics per prefix for the summary/drill-down UI pattern.</p>
+<p><strong>Query parameters (mutually exclusive, one required):</strong></p>
+<ul>
+<li><code>area_id</code> — UUID of the area</li>
+<li><code>pi_id</code> — UUID of the protocol instance</li>
+<li><code>rd_id</code> — UUID of the routing domain</li>
+<li><code>network_id</code> — UUID of the network</li>
+</ul>
+<p><strong>Optional:</strong></p>
+<ul>
+<li><code>search</code> — Prefix substring filter</li>
+<li><code>sort</code> — Sort column (whitelisted). Default: <code>network</code>.</li>
+<li><code>sort_dir</code> — <code>asc</code> or <code>desc</code> (default <code>asc</code>)</li>
+<li><code>limit</code> — Page size (default 50, max 1000)</li>
+<li><code>offset</code> — Pagination offset</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;summaries&quot;: [
+    {
+      &quot;network&quot;: &quot;0.0.0.0/0&quot;,
+      &quot;metric_type&quot;: 2,
+      &quot;asbr_count&quot;: 2,
+      &quot;has_nssa&quot;: false,
+      &quot;has_fwd_addr&quot;: false
+    }
+  ],
+  &quot;total&quot;: 89
+}
+</code></pre>
+<p><strong>Error:</strong> <code>400 Bad Request</code> — Missing scope parameter</p>
+<h4 id="list-external-routes">List External Routes</h4><pre><code>GET /api/v1/routes/external?area_id={areaID}
+GET /api/v1/routes/external?pi_id={piID}
+GET /api/v1/routes/external?rd_id={rdID}
+GET /api/v1/routes/external?network_id={networkID}
+</code></pre>
+<p>List external routes (Type 5 AS-External and Type 7 NSSA-External LSA) for a specific scope. When <code>network</code> is provided, returns paginated per-ASBR detail for that prefix (drill-down mode with <code>display_name</code> enrichment). Without <code>network</code>, returns all routes (legacy behavior for time-travel).</p>
+<p><strong>Query parameters (mutually exclusive, one required):</strong></p>
+<ul>
+<li><code>area_id</code> — UUID of the area</li>
+<li><code>pi_id</code> — UUID of the protocol instance</li>
+<li><code>rd_id</code> — UUID of the routing domain</li>
+<li><code>network_id</code> — UUID of the network</li>
+</ul>
+<p><strong>Optional:</strong></p>
+<ul>
+<li><code>network</code> — CIDR prefix filter for drill-down (e.g. <code>0.0.0.0/0</code>). Enables paginated mode with <code>display_name</code> enrichment.</li>
+<li><code>sort</code> — Sort column (whitelisted). Default: <code>network</code>.</li>
+<li><code>sort_dir</code> — <code>asc</code> or <code>desc</code> (default <code>asc</code>)</li>
+<li><code>limit</code> — Page size (default 50, max 1000; only used with <code>network</code>)</li>
+<li><code>offset</code> — Pagination offset (only used with <code>network</code>)</li>
+<li><code>at</code> — RFC 3339 timestamp (e.g. <code>2026-02-22T10:00:00Z</code>). When present, returns routes as they existed at that point in time (filters by <code>first_seen &lt;= at</code>; <code>last_seen</code> is a refresh timestamp, not an end of validity — still-present rows count even when not re-confirmed since <code>at</code>). Uses legacy unpaginated path.</li>
+</ul>
+<p><strong>Response (with <code>network</code>):</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;routes&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;network&quot;: &quot;0.0.0.0/0&quot;,
+      &quot;adv_router&quot;: &quot;10.0.0.5&quot;,
+      &quot;device_id&quot;: &quot;uuid&quot;,
+      &quot;display_name&quot;: &quot;rtr-edge-01&quot;,
+      &quot;metric_type&quot;: 2,
+      &quot;metric&quot;: 1,
+      &quot;fwd_addr&quot;: null,
+      &quot;tag&quot;: 0,
+      &quot;is_nssa&quot;: false,
+      &quot;area_id&quot;: &quot;uuid&quot;,
+      &quot;first_seen&quot;: &quot;2026-02-17T10:00:00Z&quot;,
+      &quot;last_seen&quot;: &quot;2026-02-18T14:00:00Z&quot;
+    }
+  ],
+  &quot;total&quot;: 2
+}
+</code></pre>
+<p><strong>Response (without <code>network</code>, legacy):</strong> <code>200 OK</code> — flat JSON array of routes (no pagination envelope).</p>
+<p><strong>Notes:</strong></p>
+<ul>
+<li><code>metric_type</code> is 1 (E1, comparable with intra-AS metric) or 2 (E2, external-only metric).</li>
+<li><code>fwd_addr</code> is <code>null</code> when the forwarding address is 0.0.0.0 (traffic goes to the advertising ASBR).</li>
+<li><code>is_nssa</code> is <code>true</code> for routes learned from Type 7 (NSSA-External) LSAs.</li>
+</ul>
+<p><strong>Error:</strong> <code>400 Bad Request</code> — Missing scope parameter</p>
+<h4 id="list-asbr-entries">List ASBR Entries</h4><pre><code>GET /api/v1/routes/asbr?area_id={areaID}
+GET /api/v1/routes/asbr?pi_id={piID}
+GET /api/v1/routes/asbr?rd_id={rdID}
+GET /api/v1/routes/asbr?network_id={networkID}
+</code></pre>
+<p>List ASBR reachability entries (Type 4 Summary-LSA) for a specific scope.</p>
+<p><strong>Query parameters (mutually exclusive, one required):</strong></p>
+<ul>
+<li><code>area_id</code> — UUID of the area</li>
+<li><code>pi_id</code> — UUID of the protocol instance</li>
+<li><code>rd_id</code> — UUID of the routing domain</li>
+<li><code>network_id</code> — UUID of the network</li>
+</ul>
+<p><strong>Optional:</strong></p>
+<ul>
+<li><code>at</code> — RFC 3339 timestamp. When present, returns the as-of-T entry set from the snapshot validity windows (unpaginated array, like the sibling route reports; <code>search</code>/pagination apply to the live path only).</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">[
+  {
+    &quot;id&quot;: &quot;uuid&quot;,
+    &quot;asbr_id&quot;: &quot;10.0.0.5&quot;,
+    &quot;adv_router&quot;: &quot;10.0.0.2&quot;,
+    &quot;device_id&quot;: &quot;uuid&quot;,
+    &quot;metric&quot;: 10,
+    &quot;area_id&quot;: &quot;uuid&quot;,
+    &quot;first_seen&quot;: &quot;2026-02-17T10:00:00Z&quot;,
+    &quot;last_seen&quot;: &quot;2026-02-18T14:00:00Z&quot;
+  }
+]
+</code></pre>
+<p><strong>Notes:</strong></p>
+<ul>
+<li><code>asbr_id</code> is the router ID of the ASBR being advertised.</li>
+<li><code>adv_router</code> is the ABR that originates the Type 4 LSA to advertise ASBR reachability.</li>
+</ul>
+<p><strong>Error:</strong> <code>400 Bad Request</code> — Missing scope parameter</p>
+<h4 id="list-device-interfaces">List Device Interfaces</h4><pre><code>GET /api/v1/devices/{deviceID}/interfaces
+</code></pre>
+<p>List interfaces for a specific device. Interface data is extracted from Router-LSA P2P and transit link entries.</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">[
+  {
+    &quot;id&quot;: &quot;uuid&quot;,
+    &quot;device_id&quot;: &quot;uuid&quot;,
+    &quot;ip_address&quot;: &quot;10.0.12.1&quot;,
+    &quot;mask&quot;: &quot;255.255.255.252&quot;,
+    &quot;peer_id&quot;: &quot;10.0.0.2&quot;,
+    &quot;cost&quot;: 10,
+    &quot;link_type&quot;: &quot;p2p&quot;,
+    &quot;first_seen&quot;: &quot;2026-02-17T10:00:00Z&quot;,
+    &quot;last_seen&quot;: &quot;2026-02-18T14:00:00Z&quot;
+  }
+]
+</code></pre>
+<p><strong>Notes:</strong></p>
+<ul>
+<li><code>peer_id</code> is the peer router ID from the Router-LSA LinkID field.</li>
+<li><code>link_type</code> is the Router-LSA link type: <code>&quot;p2p&quot;</code>, <code>&quot;transit&quot;</code>, <code>&quot;stub&quot;</code>, or <code>&quot;virtual&quot;</code>.</li>
+<li>The response is the raw <code>store.Interface</code> shape. Beyond the fields shown above, each entry may carry the following (all <code>omitempty</code> — present only when populated):<ul>
+<li><strong>Identity/scope:</strong> <code>area_id</code>, <code>if_index</code>, <code>source</code>, <code>peer_system_id</code> (IS-IS peer system ID).</li>
+<li><strong>IPv6 / dual-stack (IS-IS):</strong> <code>ipv6_address</code> (string — the IPv6 address on the same ifIndex) and <code>ipv6_prefix_len</code> (integer — prefix length of <code>ipv6_address</code>, per RFC 4293 <code>ipAddressPrefix</code>).</li>
+<li><strong>SNMP enrichment:</strong> <code>if_name</code>, <code>if_descr</code>, <code>if_alias</code>, <code>speed_mbps</code>, <code>if_mtu</code>, <code>dns_name</code>.</li>
+<li><strong>OSPF timers/config:</strong> <code>ospf_hello_interval</code>, <code>ospf_dead_interval</code>, <code>ospf_auth_type</code>, <code>ospf_network_type</code>.</li>
+<li><strong>IS-IS timers/config:</strong> <code>isis_hello_interval</code>, <code>isis_hold_time</code>, <code>isis_metric</code>, <code>isis_circuit_type</code>, <code>isis_level</code>, <code>isis_priority</code>.</li>
+</ul>
+</li>
+<li>This per-device endpoint returns interfaces <strong>unmerged</strong>, so it does not emit the <code>ip_address_v6</code> / <code>mask_v6</code> merge-display fields — those appear only on the scoped <code>GET /interfaces</code> endpoint (below).</li>
+</ul>
+<p><strong>Error:</strong> <code>500 Internal Server Error</code> — Database error</p>
+<h4 id="list-device-neighbors">List Device Neighbors</h4><pre><code>GET /api/v1/devices/{deviceID}/neighbors
+GET /api/v1/devices/{deviceID}/neighbors?area_id={areaID}
+</code></pre>
+<p>List OSPF neighbors for a specific device. Returns neighbor adjacency details including link state, costs, interface names, and ABR/ASBR flags.</p>
+<p><strong>Path parameters:</strong></p>
+<ul>
+<li><code>deviceID</code> (required) — UUID of the device</li>
+</ul>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li><code>area_id</code> (optional) — Filter by area UUID or area label (e.g., <code>&quot;0.0.0.0&quot;</code>). When omitted, returns neighbors across all areas.</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;device_id&quot;: &quot;uuid&quot;,
+  &quot;router_id&quot;: &quot;10.0.0.1&quot;,
+  &quot;hostname&quot;: &quot;router1&quot;,
+  &quot;neighbors&quot;: [
+    {
+      &quot;neighbor_id&quot;: &quot;10.0.0.2&quot;,
+      &quot;device_id&quot;: &quot;uuid&quot;,
+      &quot;hostname&quot;: &quot;router2&quot;,
+      &quot;state&quot;: &quot;up&quot;,
+      &quot;address&quot;: &quot;10.1.1.2&quot;,
+      &quot;local_address&quot;: &quot;10.1.1.1&quot;,
+      &quot;interface&quot;: &quot;Gi0/0/1&quot;,
+      &quot;cost&quot;: 10,
+      &quot;reverse_cost&quot;: 10,
+      &quot;link_type&quot;: &quot;transit&quot;,
+      &quot;area_id&quot;: &quot;0.0.0.0&quot;,
+      &quot;is_abr&quot;: false,
+      &quot;is_asbr&quot;: false,
+      &quot;first_seen&quot;: &quot;2026-02-24T10:00:00Z&quot;,
+      &quot;last_seen&quot;: &quot;2026-02-24T12:00:00Z&quot;
+    }
+  ],
+  &quot;summary&quot;: {
+    &quot;total&quot;: 5,
+    &quot;up&quot;: 4,
+    &quot;down&quot;: 1
+  }
+}
+</code></pre>
+<p><strong>Notes:</strong></p>
+<ul>
+<li><code>neighbor_id</code> is the OSPF router ID of the neighbor.</li>
+<li><code>hostname</code> is the neighbor&#39;s display name, resolved as Hostname → DNSName (sysName) fallback. May be empty if neither is known.</li>
+<li><code>state</code> is the adjacency state: <code>&quot;up&quot;</code> or <code>&quot;down&quot;</code>.</li>
+<li><code>address</code> is the neighbor&#39;s interface IP on the shared link; <code>local_address</code> is this device&#39;s interface IP.</li>
+<li><code>interface</code> is the SNMP-enriched interface name on the neighbor (e.g., <code>&quot;Gi0/0/1&quot;</code>).</li>
+<li><code>cost</code> is the metric from this device to the neighbor; <code>reverse_cost</code> is the metric in the opposite direction.</li>
+<li><code>link_type</code> is the Router-LSA link type: <code>&quot;p2p&quot;</code>, <code>&quot;transit&quot;</code>, <code>&quot;stub&quot;</code>, or <code>&quot;virtual&quot;</code>.</li>
+<li><code>area_id</code> is the OSPF area label (dotted notation) for this adjacency.</li>
+<li><code>is_abr</code> / <code>is_asbr</code> indicate whether the neighbor has the ABR or ASBR flag set.</li>
+<li><code>summary</code> provides aggregate counts of total, up, and down neighbors.</li>
+</ul>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> — Invalid device ID or invalid area_id parameter</li>
+<li><code>404 Not Found</code> — Device does not exist</li>
+</ul>
+<h4 id="get-device-eigrp">Get Device EIGRP</h4><pre><code>GET /api/v1/devices/{deviceID}/eigrp
+</code></pre>
+<p>A device&#39;s EIGRP adjacencies and EIGRP-enabled interfaces, discovered passively via <code>CISCO-EIGRP-MIB</code> (SNMP). All-role read. An unknown device yields empty lists, not an error.</p>
+<p><strong>Path parameters:</strong></p>
+<ul>
+<li><code>deviceID</code> (required) — UUID of the device</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;neighbors&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;device_id&quot;: &quot;uuid&quot;,
+      &quot;peer_addr&quot;: &quot;10.0.12.1&quot;,
+      &quot;address_family&quot;: &quot;ipv4&quot;,
+      &quot;as_number&quot;: 100,
+      &quot;vrf_name&quot;: &quot;default&quot;,
+      &quot;local_ifindex&quot;: 2,
+      &quot;local_if_name&quot;: &quot;Et0/1&quot;,
+      &quot;remote_device_id&quot;: null,
+      &quot;remote_hostname&quot;: &quot;&quot;,
+      &quot;hold_time&quot;: 14,
+      &quot;srtt_ms&quot;: 1600,
+      &quot;rto_ms&quot;: 5000,
+      &quot;uptime&quot;: &quot;01:00:13&quot;,
+      &quot;source&quot;: &quot;snmp&quot;,
+      &quot;first_seen&quot;: &quot;2026-07-20T10:00:00Z&quot;,
+      &quot;last_seen&quot;: &quot;2026-07-20T12:00:00Z&quot;
+    }
+  ],
+  &quot;interfaces&quot;: [
+    { &quot;if_index&quot;: 2, &quot;name&quot;: &quot;Et0/1&quot;, &quot;hello_interval&quot;: 5, &quot;peer_count&quot;: 1, &quot;mean_srtt&quot;: 1600 }
+  ]
+}
+</code></pre>
+<p><strong>Notes:</strong></p>
+<ul>
+<li><code>peer_addr</code> is the neighbor address; IPv6 neighbors are link-local (<code>fe80::</code>) and not globally routable.</li>
+<li><code>as_number</code> is the EIGRP process AS, not the BGP-ASN hierarchy level. The same peer can appear once per (VRF, AF, AS).</li>
+<li><code>remote_device_id</code> / <code>remote_hostname</code> are resolved from the local port (<code>cEigrpPeerIfIndex</code>) + the L2 adjacency on it. Null/empty when unresolved (no L2 adjacency, or a multi-access port with ambiguous remotes) — honest degradation.</li>
+<li><code>neighbors</code> and <code>interfaces</code> always encode as <code>[]</code> when empty.</li>
+</ul>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> — Missing device ID</li>
+</ul>
+<h4 id="get-network-eigrp-topology">Get Network EIGRP Topology</h4><pre><code>GET /api/v1/networks/{networkID}/eigrp/topology
+</code></pre>
+<p>Every EIGRP neighbor whose device belongs to the network, for the topology overlay / EIGRP Topology Reports panel. The frontend derives undirected adjacency edges from the <code>(device_id, remote_device_id)</code> pairs (an edge is bidirectional when both endpoints observe each other, a half-adjacency otherwise). All-role read.</p>
+<p><strong>Path parameters:</strong></p>
+<ul>
+<li><code>networkID</code> (required) — UUID of the network</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;neighbors&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;device_id&quot;: &quot;uuid&quot;,
+      &quot;remote_device_id&quot;: &quot;uuid&quot;,
+      &quot;peer_addr&quot;: &quot;10.0.12.2&quot;,
+      &quot;address_family&quot;: &quot;ipv4&quot;,
+      &quot;as_number&quot;: 100,
+      &quot;vrf_name&quot;: &quot;default&quot;,
+      &quot;device_hostname&quot;: &quot;r1&quot;,
+      &quot;remote_hostname&quot;: &quot;r2&quot;
+    }
+  ]
+}
+</code></pre>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>Scoping mirrors the L2 topology: a device is in the network via <code>device_network_membership</code> or the routing hierarchy.</li>
+<li><code>neighbors</code> always encodes as <code>[]</code> when empty.</li>
+</ul>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> — Missing network ID</li>
+</ul>
+<h4 id="get-eigrp-observed-path">Get EIGRP Observed Path</h4><pre><code>GET /api/v1/eigrp/path?source_device_id={deviceID}&amp;dest_ip={address}
+GET /api/v1/eigrp/path?source_device_id={deviceID}&amp;dest_ip={address}&amp;at={RFC3339}
+</code></pre>
+<p>Reconstructs the EIGRP forwarding path from a source device toward a destination address by <strong>chaining the observed next-hops</strong> — not by running SPF. EIGRP&#39;s composite metric mixes min(bandwidth) with summed delay, so it is not expressible as one additive edge cost, and its components are not readable over SNMP. The routers have already run DUAL, so Osprey reads the resulting distributed FIB (<code>cEigrpTopoTable</code>) instead of modelling it. All-role read.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li><code>source_device_id</code> (required) — UUID of the starting device</li>
+<li><code>dest_ip</code> (required) — destination address (IPv4 or IPv6)</li>
+<li><code>vrf</code> (optional) — the routing context the walk lives in (default: the global table). A chain never crosses VRFs; a destination that continues only in another table terminates with <code>context_boundary</code> (§64)</li>
+<li><code>at</code> (optional) — historical sample time. Every visited and decision-relevant
+device is resolved from <code>eigrp_route_snapshot</code>; a gap terminates with
+<code>history_unavailable</code> and never borrows live routes. Future times are invalid.</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;hops&quot;: [
+    { &quot;device_id&quot;: &quot;uuid-a&quot;, &quot;route&quot;: { &quot;dest_prefix&quot;: &quot;10.0.99.0/24&quot;, &quot;next_hop&quot;: &quot;10.0.12.2&quot;, &quot;fdistance&quot;: 128256, &quot;route_origin&quot;: &quot;Internal&quot; }, &quot;next_device_id&quot;: &quot;uuid-b&quot; },
+    { &quot;device_id&quot;: &quot;uuid-b&quot;, &quot;route&quot;: { &quot;dest_prefix&quot;: &quot;10.0.99.0/24&quot;, &quot;route_origin&quot;: &quot;Connected&quot; } }
+  ],
+  &quot;devices&quot;: [&quot;uuid-a&quot;, &quot;uuid-b&quot;],
+  &quot;complete&quot;: true,
+  &quot;terminated&quot;: &quot;delivered&quot;
+}
+</code></pre>
+<p>Without <code>at</code>, the existing live response shape is unchanged. With <code>at</code>, the
+response also contains <code>eigrp_history</code> and uses a historical route DTO that
+intentionally has no live row <code>id</code>, <code>source</code>, or first/last/create/update
+timestamps. Coverage is <code>complete</code>, <code>partial</code>, or <code>unavailable</code>; temporal
+evidence is <code>sampled</code>, <code>bracketed</code>, <code>carried_forward</code>, or <code>unavailable</code>.</p>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>Each hop matches the destination by <strong>longest prefix</strong> among the walk&#39;s own VRF&#39;s rows, skipping rows DUAL holds with zero successors (not installed — §61). Equal specificity breaks on <strong>AD class first</strong> (connected &lt; internal 90 &lt; external 170 — the cross-process rule, §64), then the lower feasible distance, then the lower AS number (deterministic).</li>
+<li><code>complete</code> is true <strong>only</strong> when the walk ended on a connected route — the destination was genuinely reached. Every other outcome is a partial result, honestly labelled by <code>terminated</code>: <code>no_route</code>, <code>next_hop_unknown</code> (the next-hop was never resolved to a device — typically no L2 adjacency on that port, and IPv6 next-hops are link-local so they depend on L2 coverage), <code>loop</code>, <code>max_hops</code> (32), <code>invalid_destination</code>, <code>route_unreachable</code> (the device knows the prefix but DUAL has no feasible successor — §61), <code>context_boundary</code> (the destination is only routable in a different VRF — §64).</li>
+<li>Route rows carry the DUAL distance triplet where collected: <code>fdistance</code> (the feasibility threshold — a historical minimum per RFC 7868 §3.4, NULL when saturated/no-successor), <code>computed_distance</code> (the router&#39;s CURRENT metric, col 15) and <code>reported_distance</code> (successor-reported, col 16).</li>
+<li>The walk is loop-safe (visited set) and hop-bounded.</li>
+<li>The same engine backs the main path endpoint: a <code>GET /topology/path</code> query whose scope is EIGRP falls back to this chain when SPF finds nothing, and stitched cross-domain paths use it for EIGRP segments. Such a segment carries <code>total_cost: -1</code> (EIGRP costs never sum) and therefore does not take part in cost-based border selection.</li>
+<li>Through <code>GET /topology/path</code>, each chained hop pair also resolves to its <strong>real link row</strong> (<code>link_id</code>, <code>area_id</code>; a dual-stack pair picks the area matching the destination&#39;s address family, ties break on the lowest link ID) and gains ingress/egress interface enrichment like any SPF hop — this is what lets the canvas draw the path overlay on the actual edges. Per-hop <code>cost</code> stays a placeholder (0) and is not rendered. The bare <code>GET /eigrp/path</code> endpoint returns the raw device chain without link resolution.</li>
+<li><strong>ECMP variants:</strong> the topo table names ONE successor per destination while the RIB may install FD-equal brothers, so the poller additionally reads each device&#39;s <code>ipCidrRouteTable</code> (RFC 4292, IPv4) into <code>alt_next_hops</code> + an <code>installed</code> verdict per route. A complete chain then carries <code>variants</code> (this endpoint) / <code>ecmp_paths</code> (through <code>GET /topology/path</code>, capped at 4): alternate complete chains diverging onto a RIB brother, rendered by the panel&#39;s existing ECMP selector and drawn on the canvas at equal weight. The divergence hop shows the topo row&#39;s FD — the RIB does not expose per-brother distances, and brothers are installed precisely because DUAL rated them equal.</li>
+</ul>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> — Missing parameters, malformed timestamp, or future <code>at</code></li>
+<li><code>500 Internal Server Error</code> — Snapshot read, decode, or integrity failure</li>
+</ul>
+<blockquote>
+<p><strong>SPF tree and EIGRP.</strong> <code>GET /api/v1/topology/spf-tree</code> refuses an EIGRP area with <code>400</code>. EIGRP runs DUAL, not SPF, and its links are stored with cost 0 because the composite metric is a property of a whole path rather than of an edge — rendering a Dijkstra tree over them would produce a tidy all-zero result that looks authoritative and means nothing. Use the observed path endpoint above instead. For the same reason EIGRP areas are excluded from the shared per-area graph loader, so path, RIB and simulation never traverse a zero-cost EIGRP segment (which would otherwise win every cheapest-path comparison).</p>
+</blockquote>
+<h4 id="list-interfaces-by-scope">List Interfaces by Scope</h4><pre><code>GET /api/v1/interfaces?area_id={areaID}
+GET /api/v1/interfaces?pi_id={piID}
+GET /api/v1/interfaces?rd_id={rdID}
+GET /api/v1/interfaces?network_id={networkID}
+</code></pre>
+<p>List all interfaces for devices in a specific scope. Interface data is extracted from Router-LSA P2P and transit link entries. When OSPFv2 and OSPFv3 interfaces share the same (device_id, if_name, area_label), they are merged into a single entry with both IPv4 and IPv6 addresses.</p>
+<p><strong>Query parameters (mutually exclusive, one required):</strong></p>
+<ul>
+<li><code>area_id</code> — UUID of the area</li>
+<li><code>pi_id</code> — UUID of the protocol instance</li>
+<li><code>rd_id</code> — UUID of the routing domain</li>
+<li><code>network_id</code> — UUID of the network</li>
+</ul>
+<p><strong>Optional:</strong></p>
+<ul>
+<li><code>at</code> — RFC 3339 timestamp (e.g. <code>2026-02-22T10:00:00Z</code>). When present, returns interfaces as they existed at that point in time (filters by <code>first_seen &lt;= at</code>; <code>last_seen</code> is a refresh timestamp, not an end of validity — still-present rows count even when not re-confirmed since <code>at</code>).</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">[
+  {
+    &quot;id&quot;: &quot;uuid&quot;,
+    &quot;device_id&quot;: &quot;uuid&quot;,
+    &quot;ip_address&quot;: &quot;10.0.12.1&quot;,
+    &quot;mask&quot;: &quot;255.255.255.252&quot;,
+    &quot;ip_address_v6&quot;: &quot;2001:db8::1&quot;,
+    &quot;mask_v6&quot;: &quot;ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffc&quot;,
+    &quot;peer_id&quot;: &quot;10.0.0.2&quot;,
+    &quot;cost&quot;: 10,
+    &quot;link_type&quot;: &quot;p2p&quot;,
+    &quot;first_seen&quot;: &quot;2026-02-17T10:00:00Z&quot;,
+    &quot;last_seen&quot;: &quot;2026-02-18T14:00:00Z&quot;
+  }
+]
+</code></pre>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>Returns all interfaces for all devices in the specified scope.</li>
+<li>Each entry embeds the full <code>store.Interface</code> shape (same fields as the per-device endpoint above, including the <code>omitempty</code> <code>ipv6_address</code>, <code>ipv6_prefix_len</code>, <code>if_name</code>, <code>if_descr</code>, <code>if_alias</code>, <code>speed_mbps</code>, <code>if_mtu</code>, <code>dns_name</code>, <code>ospf_*</code>, and <code>isis_*</code> fields), <strong>plus</strong> the two merge-display fields below.</li>
+<li><code>ip_address_v6</code> and <code>mask_v6</code> are present when the entry has an IPv6 address to display — either an OSPFv2/OSPFv3 interface pair merged into one entry, or a single dual-stack IS-IS row that carries both an IPv4 and an IPv6 address on the same ifIndex. Single-protocol IPv4-only interfaces omit these two fields.</li>
+<li>The form of <code>mask_v6</code> depends on the source: for a merged OSPFv3 interface it is the full IPv6 netmask (e.g. <code>&quot;ffff:ffff:ffff:ffff:ffff:ffff:ffff:fffc&quot;</code>, copied from the v3 interface&#39;s mask); for a dual-stack IS-IS interface it is instead a <code>&quot;/NN&quot;</code> prefix-length string (e.g. <code>&quot;/64&quot;</code>, rendered from <code>ipv6_prefix_len</code> via <code>v6PrefixMask</code>).</li>
+</ul>
+<p><strong>Error:</strong> <code>400 Bad Request</code> — Missing scope parameter</p>
+<h4 id="list-stub-networks">List Stub Networks</h4><pre><code>GET /api/v1/stub-networks?area_id={areaID}
+GET /api/v1/stub-networks?pi_id={piID}
+GET /api/v1/stub-networks?rd_id={rdID}
+GET /api/v1/stub-networks?network_id={networkID}
+</code></pre>
+<p>List stub networks (host routes, loopbacks, attached networks with no adjacency) for a specific scope. Supports server-side pagination and search for live mode. Time-travel mode (<code>at</code> param) uses the legacy unpaginated path.</p>
+<p><strong>Query parameters (mutually exclusive, one required):</strong></p>
+<ul>
+<li><code>area_id</code> — UUID of the area</li>
+<li><code>pi_id</code> — UUID of the protocol instance</li>
+<li><code>rd_id</code> — UUID of the routing domain</li>
+<li><code>network_id</code> — UUID of the network</li>
+</ul>
+<p><strong>Optional:</strong></p>
+<ul>
+<li><code>search</code> — Prefix or device name substring filter</li>
+<li><code>sort</code> — Sort column (whitelisted). Default: <code>network</code>.</li>
+<li><code>sort_dir</code> — <code>asc</code> or <code>desc</code> (default <code>asc</code>)</li>
+<li><code>limit</code> — Page size (default 50, max 1000)</li>
+<li><code>offset</code> — Pagination offset</li>
+<li><code>at</code> — RFC 3339 timestamp (e.g. <code>2026-02-22T10:00:00Z</code>). When present, returns stub networks as they existed at that point in time (filters by <code>first_seen &lt;= at</code>; <code>last_seen</code> is a refresh timestamp, not an end of validity — still-present rows count even when not re-confirmed since <code>at</code>). Bypasses pagination (returns flat array).</li>
+</ul>
+<p><strong>Response (paginated, no <code>at</code>):</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;stubs&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;network&quot;: &quot;192.168.1.0/24&quot;,
+      &quot;device_id&quot;: &quot;uuid&quot;,
+      &quot;display_name&quot;: &quot;rtr-core-01&quot;,
+      &quot;cost&quot;: 1,
+      &quot;area_id&quot;: &quot;uuid&quot;,
+      &quot;first_seen&quot;: &quot;2026-02-17T10:00:00Z&quot;,
+      &quot;last_seen&quot;: &quot;2026-02-18T14:00:00Z&quot;
+    }
+  ],
+  &quot;total&quot;: 1204
+}
+</code></pre>
+<p><strong>Response (legacy, with <code>at</code>):</strong> <code>200 OK</code> — flat JSON array of stub networks (no <code>display_name</code>, no pagination envelope).</p>
+<p><strong>Notes:</strong></p>
+<ul>
+<li><code>display_name</code> is resolved server-side via the <code>display.device_name_mode</code> system setting (hostname, router_id, or dns).</li>
+</ul>
+<p><strong>Error:</strong> <code>400 Bad Request</code> — Missing scope parameter</p>
+<hr>
+</main></html>

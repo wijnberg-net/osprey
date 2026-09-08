@@ -1,0 +1,109 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>`GET /bgp/peers` — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="get-bgppeers"><code>GET /bgp/peers</code></h3><p>List BGP peers discovered via BMP or SNMP BGP4-MIB walks, with optional filtering and pagination. Each peer carries <code>source</code> (<code>&quot;bmp&quot;</code> — BMP Peer Up/Down evidence, the richer view — or <code>&quot;snmp&quot;</code> — a <code>bgpPeerTable</code> walk on a router without BMP export; IPv4-ADDRESSED sessions only, and a 4-byte remote ASN appears as AS_TRANS 23456 per the MIB&#39;s 2-byte fields). <code>prefixes_received</code> is <strong>absent when not measured</strong> — the plain BGP4-MIB has no prefix counter; on Cisco agents the walk also reads <code>cbgpPeerAcceptedPrefixes</code> (CISCO-BGP4-MIB, per AFI/SAFI), which fills real counts AND surfaces the further address families a session carries as their own peer rows (an IPv6-unicast AF over an IPv4 session appears as an <code>address_family: &quot;ipv6&quot;</code> row with the session&#39;s IPv4 <code>peer_ip</code>). Non-Cisco agents keep the documented v4-only view with no counts.</p>
+<p><strong>Auth</strong>: all authenticated roles</p>
+<p><strong>Query params</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>device_id</code></td>
+<td>UUID</td>
+<td>Filter by device</td>
+</tr>
+<tr>
+<td><code>as_id</code></td>
+<td>UUID</td>
+<td>Filter by autonomous system</td>
+</tr>
+<tr>
+<td><code>target_id</code></td>
+<td>UUID</td>
+<td>Filter by BMP target</td>
+</tr>
+<tr>
+<td><code>state</code></td>
+<td>string</td>
+<td>Filter by peer state (<code>up</code>, <code>down</code>)</td>
+</tr>
+<tr>
+<td><code>peer_type</code></td>
+<td>string</td>
+<td>Filter by peer type (<code>ibgp</code>, <code>ebgp</code>)</td>
+</tr>
+<tr>
+<td><code>af</code></td>
+<td>string</td>
+<td>Filter by address family (<code>ipv4</code>, <code>ipv6</code>, <code>vpnv4</code>, <code>vpnv6</code>)</td>
+</tr>
+<tr>
+<td><code>limit</code></td>
+<td>int</td>
+<td>Max results (default 50, max 1000)</td>
+</tr>
+<tr>
+<td><code>offset</code></td>
+<td>int</td>
+<td>Pagination offset (default 0)</td>
+</tr>
+<tr>
+<td><code>at</code></td>
+<td>RFC 3339</td>
+<td>As-of-T: return peer sessions from <code>bgp_peer_history</code> at this time instead of the live state. Malformed → <code>400</code>.</td>
+</tr>
+</tbody></table>
+<p><strong>Response</strong>: <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;peers&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;device_id&quot;: &quot;uuid&quot;,
+      &quot;as_id&quot;: &quot;uuid&quot;,
+      &quot;peer_ip&quot;: &quot;198.51.100.2&quot;,
+      &quot;peer_as&quot;: 65002,
+      &quot;local_ip&quot;: &quot;198.51.100.1&quot;,
+      &quot;local_as&quot;: 65001,
+      &quot;peer_type&quot;: &quot;ebgp&quot;,
+      &quot;address_family&quot;: &quot;ipv4&quot;,
+      &quot;state&quot;: &quot;up&quot;,
+      &quot;prefixes_received&quot;: 150000,
+      &quot;peer_router_id&quot;: &quot;198.51.100.2&quot;,
+      &quot;peer_bgp_id&quot;: &quot;198.51.100.2&quot;,
+      &quot;add_paths_negotiated&quot;: false,
+      &quot;send_community&quot;: true,
+      &quot;bmp_target_id&quot;: &quot;uuid&quot;,
+      &quot;hold_time&quot;: 90,
+      &quot;keepalive_interval&quot;: 30,
+      &quot;last_notification_code&quot;: null,
+      &quot;last_notification_subcode&quot;: null,
+      &quot;source&quot;: &quot;bmp&quot;,
+      &quot;first_seen&quot;: &quot;2026-03-01T00:00:00Z&quot;,
+      &quot;last_seen&quot;: &quot;2026-03-18T12:00:00Z&quot;,
+      &quot;created_at&quot;: &quot;2026-03-01T00:00:00Z&quot;,
+      &quot;updated_at&quot;: &quot;2026-03-18T12:00:00Z&quot;,
+      &quot;device_hostname&quot;: &quot;rr1&quot;,
+      &quot;peer_hostname&quot;: &quot;peer2.example.com&quot;
+    }
+  ],
+  &quot;total&quot;: 42,
+  &quot;up&quot;: 38,
+  &quot;unique_peers&quot;: 7,
+  &quot;limit&quot;: 50,
+  &quot;offset&quot;: 0
+}
+</code></pre>
+<p><code>created_at</code>/<code>updated_at</code> are always present. <code>peer_bgp_id</code> (the peer&#39;s BGP
+Identifier), <code>peer_hostname</code> (joined display name for the peer), and the timer /
+notification fields are <code>omitempty</code> — present only when populated.</p>
+<p><code>total</code> counts <strong>sessions</strong> — one row per reporting device × peer × address
+family, so a peer reported by six BMP-exporting routers contributes six rows
+(<code>device_hostname</code> identifies the reporter). <code>up</code> counts sessions in state
+<code>up</code> and <code>unique_peers</code> counts distinct (peer IP, AF) combinations; both are
+computed over the whole filtered set, not the returned page.</p>
+<p>When <code>at</code> is supplied, the counts and rows come from the session history as-of-T;
+a <code>notice</code> string is added (and <code>total</code> is <code>0</code>) when the window has no recorded
+sessions — BGP history may not cover the selected time.</p>
+</main></html>

@@ -1,0 +1,55 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Error Codes — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="error-codes">Error Codes</h3><table>
+<thead>
+<tr>
+<th>Code</th>
+<th>HTTP Status</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>BAD_REQUEST</code></td>
+<td>400</td>
+<td>Malformed JSON, invalid data</td>
+</tr>
+<tr>
+<td><code>VALIDATION_ERROR</code></td>
+<td>400</td>
+<td>Field value fails validation (e.g., exceeds max length, invalid format)</td>
+</tr>
+<tr>
+<td><code>VALIDATION_REQUIRED</code></td>
+<td>400</td>
+<td>Required field is missing or empty</td>
+</tr>
+<tr>
+<td><code>AUTH_REQUIRED</code></td>
+<td>401</td>
+<td>No token, invalid token, expired token, or wrong credentials</td>
+</tr>
+<tr>
+<td><code>AUTH_FORBIDDEN</code></td>
+<td>403</td>
+<td>Insufficient role or access denied to resource</td>
+</tr>
+<tr>
+<td><code>NOT_FOUND</code></td>
+<td>404</td>
+<td>Resource does not exist</td>
+</tr>
+<tr>
+<td><code>CONFLICT_DUPLICATE</code></td>
+<td>409</td>
+<td>Duplicate key or constraint violation (e.g., duplicate name)</td>
+</tr>
+<tr>
+<td><code>RATE_LIMITED</code></td>
+<td>429</td>
+<td>Too many requests (includes <code>Retry-After: 60</code> header)</td>
+</tr>
+<tr>
+<td><code>INTERNAL_ERROR</code></td>
+<td>500</td>
+<td>Unexpected database or server error</td>
+</tr>
+</tbody></table>
+</main></html>

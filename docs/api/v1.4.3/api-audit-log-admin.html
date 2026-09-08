@@ -1,0 +1,169 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Audit Log (Admin) — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="audit-log-admin">Audit Log (Admin)</h3><h4 id="list-audit-log-entries">List Audit Log Entries</h4><pre><code>GET /api/v1/audit-log
+</code></pre>
+<p>Returns a paginated list of recorded administrative and authentication events, including sampled read-only key denials. Admin-only.</p>
+<p><strong>Query parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Required</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>user_id</code></td>
+<td>string (UUID)</td>
+<td>No</td>
+<td>--</td>
+<td>Filter by user UUID</td>
+</tr>
+<tr>
+<td><code>entity_type</code></td>
+<td>string</td>
+<td>No</td>
+<td>--</td>
+<td>Filter by entity type (see values below)</td>
+</tr>
+<tr>
+<td><code>action</code></td>
+<td>string</td>
+<td>No</td>
+<td>--</td>
+<td>Filter by action (see values below)</td>
+</tr>
+<tr>
+<td><code>from</code></td>
+<td>string (RFC 3339)</td>
+<td>No</td>
+<td>--</td>
+<td>Filter entries after this timestamp</td>
+</tr>
+<tr>
+<td><code>to</code></td>
+<td>string (RFC 3339)</td>
+<td>No</td>
+<td>--</td>
+<td>Filter entries before this timestamp</td>
+</tr>
+<tr>
+<td><code>limit</code></td>
+<td>integer</td>
+<td>No</td>
+<td>50</td>
+<td>Page size</td>
+</tr>
+<tr>
+<td><code>offset</code></td>
+<td>integer</td>
+<td>No</td>
+<td>0</td>
+<td>Pagination offset</td>
+</tr>
+</tbody></table>
+<p><strong>entity_type values:</strong> <code>network</code>, <code>autonomous_system</code>, <code>routing_domain</code>, <code>protocol_instance</code>, <code>area</code>, <code>collector</code>, <code>alert_rule</code>, <code>user</code>, <code>snmp_target</code>, <code>system_settings</code>, <code>maintenance_window</code>, <code>notification_channel</code>, <code>auth</code>, <code>auth_provider</code>, <code>scim_token</code></p>
+<p><strong>action values:</strong> <code>create</code>, <code>update</code>, <code>delete</code>, <code>toggle</code>, <code>password_reset</code>, <code>login</code>, <code>login_failed</code>, <code>logout</code>, <code>password_change</code>, <code>token_replay</code>, <code>enable_local_login</code>, <code>provider_disabled</code>, <code>clear_mfa_requirement</code>, <code>mfa_required</code>, <code>mfa_enroll_required</code>, <code>mfa_enroll_started</code>, <code>mfa_enabled</code>, <code>mfa_disabled</code>, <code>mfa_reset</code>, <code>scim_provision</code>, <code>scim_deprovision</code></p>
+<p>Authentication events (entity type <code>auth</code>) are recorded claim-independently: <code>login</code>, <code>login_failed</code> (with a <code>reason</code> in <code>detail</code>: <code>unknown_user</code>, <code>bad_password</code>, <code>inactive</code>, <code>locked</code>, <code>sso_account</code>, <code>local_login_restricted</code>), <code>logout</code>, <code>password_change</code> and <code>token_replay</code> (refresh-token replay detection, includes the revoked <code>family</code>). Failed logins have <code>user_id: null</code> when the username does not exist. Break-glass actions from the <code>osprey auth</code> recovery CLI appear with <code>username</code> set to <code>cli:&lt;os-user&gt;</code> and no IP address.</p>
+<p>The filters also accept <code>entity_type=api_key</code> and <code>action=api_key.read_only_denied</code>.
+These records identify the key UUID and owner; detail contains <code>method</code>, <code>status</code>,
+<code>upgrade</code> and <code>suppressed_since_last_record</code>. See <a href="api-read-only-api-keys.html#read-only-api-keys">Read-only API Keys</a>
+for sampling, retention and failure semantics. They are not a complete request ledger.</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;entries&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;user_id&quot;: &quot;uuid&quot;,
+      &quot;username&quot;: &quot;admin&quot;,
+      &quot;action&quot;: &quot;create&quot;,
+      &quot;entity_type&quot;: &quot;network&quot;,
+      &quot;entity_id&quot;: &quot;uuid&quot;,
+      &quot;detail&quot;: { &quot;name&quot;: &quot;Example Network&quot; },
+      &quot;ip_address&quot;: &quot;192.0.2.100&quot;,
+      &quot;created_at&quot;: &quot;2026-02-24T12:00:00Z&quot;
+    }
+  ],
+  &quot;total&quot;: 42,
+  &quot;limit&quot;: 50,
+  &quot;offset&quot;: 0
+}
+</code></pre>
+<p><strong>Response fields:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>entries[].id</code></td>
+<td>string (UUID)</td>
+<td>Unique audit log entry ID</td>
+</tr>
+<tr>
+<td><code>entries[].user_id</code></td>
+<td>string (UUID)</td>
+<td>ID of the user who performed the action</td>
+</tr>
+<tr>
+<td><code>entries[].username</code></td>
+<td>string</td>
+<td>Username of the user who performed the action</td>
+</tr>
+<tr>
+<td><code>entries[].action</code></td>
+<td>string</td>
+<td>The action performed</td>
+</tr>
+<tr>
+<td><code>entries[].entity_type</code></td>
+<td>string</td>
+<td>The type of entity affected</td>
+</tr>
+<tr>
+<td><code>entries[].entity_id</code></td>
+<td>string (UUID)</td>
+<td>ID of the affected entity</td>
+</tr>
+<tr>
+<td><code>entries[].detail</code></td>
+<td>object</td>
+<td>Additional context about the action (varies by entity type)</td>
+</tr>
+<tr>
+<td><code>entries[].ip_address</code></td>
+<td>string</td>
+<td>Client IP address of the request</td>
+</tr>
+<tr>
+<td><code>entries[].created_at</code></td>
+<td>string (RFC 3339)</td>
+<td>Timestamp of the action</td>
+</tr>
+<tr>
+<td><code>total</code></td>
+<td>integer</td>
+<td>Total number of matching entries (for pagination)</td>
+</tr>
+<tr>
+<td><code>limit</code></td>
+<td>integer</td>
+<td>Page size used</td>
+</tr>
+<tr>
+<td><code>offset</code></td>
+<td>integer</td>
+<td>Pagination offset used</td>
+</tr>
+</tbody></table>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Invalid query parameter value (e.g., malformed UUID, invalid timestamp, unknown entity_type or action)</li>
+<li><code>401 Unauthorized</code> -- Missing or invalid access token</li>
+<li><code>403 Forbidden</code> -- Non-admin user</li>
+</ul>
+<hr>
+</main></html>

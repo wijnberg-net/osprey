@@ -1,0 +1,181 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Layouts — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="layouts">Layouts</h3><p>Topology layouts store positions, zoom/pan, hidden nodes, and node scale. The canvas uses one shared library across networks: <code>scope_type=workspace</code>. The server supplies the fixed workspace ID <code>00000000-0000-0000-0000-000000000001</code>; <code>scope_id</code> is optional and ignored for this scope. Existing area, protocol-instance, routing-domain and network layouts remain in the library with their original metadata. Users see shared layouts and their own private layouts. Admins can set a shared workspace default.</p>
+<h4 id="list-layouts">List Layouts</h4><pre><code>GET /api/v1/layouts?scope_type={scope_type}&amp;scope_id={scope_id}
+GET /api/v1/areas/{areaID}/layouts
+</code></pre>
+<p>List layouts for the requested library or legacy scope. Returns the authenticated user&#39;s own layouts plus any public layouts.</p>
+<p>With <code>scope_type=workspace</code>, returns these layouts from <strong>all</strong> scopes. Deleted entries are excluded. The response includes <code>owner_username</code> and <code>is_default</code>; the latter identifies the workspace default. An empty list is <code>[]</code>. Listing omits full <code>layout_data</code>.</p>
+<p><strong>Query parameters (first form):</strong></p>
+<ul>
+<li><code>scope_type</code> (required) — One of: <code>&quot;workspace&quot;</code>, <code>&quot;area&quot;</code>, <code>&quot;protocol_instance&quot;</code>, <code>&quot;routing_domain&quot;</code>, <code>&quot;network&quot;</code></li>
+<li><code>scope_id</code> — UUID of the scope; required only for non-workspace requests</li>
+</ul>
+<p><strong>Note:</strong> The second form (<code>/areas/{areaID}/layouts</code>) is backward-compatible and equivalent to <code>?scope_type=area&amp;scope_id={areaID}</code>.</p>
+<p><strong>Note:</strong> For parent scopes (<code>network</code>, <code>routing_domain</code>, <code>protocol_instance</code>), the response includes layouts from child scopes as well, so users can see layouts saved at lower levels.</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">[
+  {
+    &quot;id&quot;: &quot;uuid&quot;,
+    &quot;scope_type&quot;: &quot;area&quot;,
+    &quot;scope_id&quot;: &quot;uuid&quot;,
+    &quot;owner_id&quot;: &quot;uuid&quot;,
+    &quot;name&quot;: &quot;My Layout&quot;,
+    &quot;description&quot;: &quot;Custom layout for area 0&quot;,
+    &quot;is_public&quot;: false,
+    &quot;created_at&quot;: &quot;2024-01-01T00:00:00Z&quot;,
+    &quot;updated_at&quot;: &quot;2024-01-01T00:00:00Z&quot;
+  }
+]
+</code></pre>
+<p><strong>Note:</strong> <code>layout_data</code> is omitted from list responses for performance.</p>
+<p><strong>Error:</strong> <code>400 Bad Request</code> — Missing or invalid scope_type/scope_id</p>
+<h4 id="create-layout">Create Layout</h4><pre><code>POST /api/v1/layouts?scope_type={scope_type}&amp;scope_id={scope_id}
+POST /api/v1/areas/{areaID}/layouts
+</code></pre>
+<p>Create a new layout for a scope.</p>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;My Layout&quot;,
+  &quot;description&quot;: &quot;Optional description&quot;,
+  &quot;is_public&quot;: false,
+  &quot;layout_data&quot;: {
+    &quot;positions&quot;: {&quot;node-uuid&quot;: {&quot;x&quot;: 100, &quot;y&quot;: 200}},
+    &quot;zoom&quot;: 1.5,
+    &quot;pan&quot;: {&quot;x&quot;: 0, &quot;y&quot;: 0},
+    &quot;hidden_nodes&quot;: [&quot;router-id&quot;],
+    &quot;node_scale&quot;: 0.7
+  }
+}
+</code></pre>
+<p><code>layout_data</code> is stored as opaque JSONB; the frontend writes <code>positions</code>, viewport <code>zoom</code>/<code>pan</code>, <code>hidden_nodes</code> (router-id keys) and <code>node_scale</code> (global node/label scale, absent on layouts saved before the field existed).</p>
+<p><strong>Response:</strong> <code>201 Created</code></p>
+<pre><code class="language-json">{
+  &quot;id&quot;: &quot;uuid&quot;,
+  &quot;scope_type&quot;: &quot;area&quot;,
+  &quot;scope_id&quot;: &quot;uuid&quot;,
+  &quot;owner_id&quot;: &quot;uuid&quot;,
+  &quot;name&quot;: &quot;My Layout&quot;,
+  &quot;description&quot;: &quot;Optional description&quot;,
+  &quot;is_public&quot;: false,
+  &quot;layout_data&quot;: { ... },
+  &quot;created_at&quot;: &quot;2024-01-01T00:00:00Z&quot;,
+  &quot;updated_at&quot;: &quot;2024-01-01T00:00:00Z&quot;
+}
+</code></pre>
+<p><strong>Error:</strong> <code>400 Bad Request</code> — Missing required fields</p>
+<h4 id="get-layout">Get Layout</h4><pre><code>GET /api/v1/layouts/{layoutID}
+GET /api/v1/areas/{areaID}/layouts/{layoutID}
+</code></pre>
+<p>Get a single layout by ID (includes full <code>layout_data</code>).</p>
+<p><strong>Access control:</strong> Owner, public layouts, or admin.</p>
+<p><strong>Response:</strong> <code>200 OK</code> (full layout object with layout_data)</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>403 Forbidden</code> — User does not own the layout and it is not public</li>
+<li><code>404 Not Found</code> — Layout does not exist</li>
+</ul>
+<h4 id="update-layout">Update Layout</h4><pre><code>PUT /api/v1/layouts/{layoutID}
+PUT /api/v1/areas/{areaID}/layouts/{layoutID}
+</code></pre>
+<p>Update a layout. All fields are optional (partial update).</p>
+<p><strong>Access control:</strong> Owner or admin only.</p>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;Updated Name&quot;,
+  &quot;description&quot;: &quot;Updated description&quot;,
+  &quot;is_public&quot;: true,
+  &quot;layout_data&quot;: { ... }
+}
+</code></pre>
+<p><strong>Response:</strong> <code>200 OK</code> (updated layout object)</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>403 Forbidden</code> — User does not own the layout and is not an admin</li>
+<li><code>404 Not Found</code> — Layout does not exist</li>
+</ul>
+<h4 id="delete-layout">Delete Layout</h4><pre><code>DELETE /api/v1/layouts/{layoutID}
+DELETE /api/v1/areas/{areaID}/layouts/{layoutID}
+</code></pre>
+<p>Move a layout to trash (<code>deleted_at</code>), preserving its data. Clears its shared and legacy default status. Repeated deletion is idempotent. Personal selections are retained but ignored while the layout is deleted. Layouts also survive deletion of their original hierarchy entity.</p>
+<p><strong>Access control:</strong> Owner or admin only.</p>
+<p><strong>Response:</strong> <code>204 No Content</code></p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>403 Forbidden</code> — User does not own the layout and is not an admin</li>
+<li><code>404 Not Found</code> — Layout does not exist</li>
+</ul>
+<h4 id="deleted-layouts-and-restore">Deleted Layouts and Restore</h4><pre><code>GET /api/v1/layouts/trash
+PUT /api/v1/layouts/{layoutID}/restore
+</code></pre>
+<p>The trash list returns metadata including <code>deleted_at</code> for the owner&#39;s deleted layouts; admins see all deleted layouts. Restore requires ownership or the admin role and returns <code>204 No Content</code>. It restores the same ID and data. If the original name is now in use within the same owner/scope, it appends a distinct restored suffix. It never replaces the workspace default. A retained personal selection may become active again after restoration.</p>
+<p>Restore returns <code>403</code> for another user&#39;s layout, <code>404</code> for a missing ID, or <code>409</code> if the entry is already live or a concurrent name conflict prevents restoration. Deleted layouts cannot be updated or activated (<code>409</code>) and their contents can only be read by the owner or an admin. No automatic purge or permanent-delete endpoint is provided.</p>
+<h4 id="set-shared-default">Set Shared Default</h4><pre><code>PUT /api/v1/layouts/{layoutID}/set-default?scope_type=workspace
+</code></pre>
+<p>Admin only (<code>403</code> otherwise). The layout must be shared and outside the trash (<code>409</code> otherwise). Atomically replaces the workspace default and returns <code>200 OK</code> with <code>{&quot;message&quot;:&quot;default layout set&quot;}</code>. Explicit personal workspace selections keep precedence. Legacy scope parameters, or no scope to use the layout&#39;s own scope, remain supported.</p>
+<h4 id="get-active-layout">Get Active Layout</h4><pre><code>GET /api/v1/layouts/active?scope_type={scope_type}&amp;scope_id={scope_id}
+GET /api/v1/areas/{areaID}/active-layout
+</code></pre>
+<p>Get the currently active layout. For <code>scope_type=workspace</code>, resolution is: the user&#39;s explicit workspace selection, then the shared workspace default, then a retained personal selection from an older scope. When several legacy selections exist, choose the most recently updated layout, breaking ties by ID. Only accessible, non-deleted layouts qualify. Returns <code>204</code> if none qualifies.</p>
+<p>The hierarchy walk below applies only to legacy scope requests.</p>
+<p><strong>Query parameters (first form):</strong></p>
+<ul>
+<li><code>scope_type</code> (required) — One of: <code>&quot;workspace&quot;</code>, <code>&quot;area&quot;</code>, <code>&quot;protocol_instance&quot;</code>, <code>&quot;routing_domain&quot;</code>, <code>&quot;network&quot;</code></li>
+<li><code>scope_id</code> — UUID of the scope; required only for non-workspace requests</li>
+</ul>
+<p><strong>Hierarchy walk order (closest match wins):</strong></p>
+<p>The server checks the following scopes in order, stopping at the first match. At each scope level, a user&#39;s explicit active layout takes priority over the scope default.</p>
+<table>
+<thead>
+<tr>
+<th>Starting scope</th>
+<th>Walk order</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>area</code></td>
+<td>area → protocol_instance → routing_domain → network</td>
+</tr>
+<tr>
+<td><code>protocol_instance</code></td>
+<td>protocol_instance → routing_domain → network</td>
+</tr>
+<tr>
+<td><code>routing_domain</code></td>
+<td>routing_domain → network</td>
+</tr>
+<tr>
+<td><code>network</code></td>
+<td>network only</td>
+</tr>
+</tbody></table>
+<p><strong>Resolution at each scope level:</strong></p>
+<ol>
+<li>User&#39;s explicit active layout for the scope (set via Activate Layout)</li>
+<li>Scope default layout (set by admin via Set Default Layout)</li>
+</ol>
+<p>If no layout is found at any level, returns <code>204 No Content</code>.</p>
+<p><strong>Response:</strong> <code>200 OK</code> (full layout object) or <code>204 No Content</code></p>
+<p><strong>Note:</strong> The returned layout may belong to a different (ancestor) scope than the one requested. The response <code>scope_type</code> and <code>scope_id</code> fields reflect the layout&#39;s own scope, not the requested scope.</p>
+<p><strong>Error:</strong> <code>400 Bad Request</code> — Missing or invalid scope parameters</p>
+<h4 id="activate-layout">Activate Layout</h4><pre><code>PUT /api/v1/layouts/{layoutID}/activate
+PUT /api/v1/layouts/{layoutID}/activate?scope_type={scope_type}&amp;scope_id={scope_id}
+PUT /api/v1/areas/{areaID}/layouts/{layoutID}/activate
+</code></pre>
+<p>Set a layout as the authenticated user&#39;s active layout. By default, the activation is stored under the layout&#39;s own scope. When optional <code>scope_type</code> and <code>scope_id</code> query parameters are provided, the activation is stored under the specified viewing scope instead. This enables cross-scope layout reuse -- for example, activating an area-scoped layout while viewing at the protocol-instance or network level.</p>
+<p>The canvas always sends <code>scope_type=workspace</code>. This stores one selection for the user regardless of the layout&#39;s original scope, and it persists across network/area changes.</p>
+<p><strong>Query parameters (optional, first and second forms):</strong></p>
+<ul>
+<li><code>scope_type</code> — One of: <code>&quot;workspace&quot;</code>, <code>&quot;area&quot;</code>, <code>&quot;protocol_instance&quot;</code>, <code>&quot;routing_domain&quot;</code>, <code>&quot;network&quot;</code></li>
+<li><code>scope_id</code> — UUID of the viewing scope to store the activation under</li>
+</ul>
+<p>When <code>scope_type</code>/<code>scope_id</code> are omitted (or when using the backward-compatible <code>/areas/{areaID}/...</code> form), the activation is stored under the layout&#39;s own <code>scope_id</code>.</p>
+<p><strong>Access control:</strong> User must have access to the layout (owner, public, or admin).</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{&quot;message&quot;: &quot;layout activated&quot;}
+</code></pre>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>403 Forbidden</code> — User does not have access to the layout</li>
+<li><code>404 Not Found</code> — Layout does not exist</li>
+</ul>
+<hr>
+</main></html>

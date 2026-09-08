@@ -1,0 +1,17 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>`GET /bgp/history/as-flows` — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="get-bgphistoryas-flows"><code>GET /bgp/history/as-flows</code></h3><p>The <strong>movers diff</strong> between two instants <code>from</code> and <code>to</code>: how each identity&#39;s first external (upstream) AS changed, as mutually-exclusive per-category totals plus the by-upstream-pair movers list.</p>
+<p><strong>Auth</strong>: all authenticated roles</p>
+<p><strong>Query params</strong>: <code>as_id</code> (required); <code>from</code>/<code>to</code> (required, RFC 3339); optional <code>routing_domain_id</code>, <code>device_id</code>, <code>af</code>, <code>cap</code> (max movers rows, default 500, max 5000).</p>
+<p><strong>Response</strong>: <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;movers&quot;: [
+    { &quot;category&quot;: &quot;upstream_change&quot;, &quot;from_as&quot;: 3356, &quot;to_as&quot;: 1299, &quot;count&quot;: 214,
+      &quot;sample_prefixes&quot;: [&quot;192.0.2.0/24&quot;, &quot;203.0.113.0/24&quot;] },
+    { &quot;category&quot;: &quot;withdraw&quot;, &quot;from_as&quot;: 3356, &quot;to_as&quot;: 0, &quot;count&quot;: 9, &quot;sample_prefixes&quot;: [&quot;203.0.113.128/25&quot;] },
+    { &quot;category&quot;: &quot;announce&quot;, &quot;from_as&quot;: 0, &quot;to_as&quot;: 1299, &quot;count&quot;: 9, &quot;sample_prefixes&quot;: [&quot;198.51.100.64/26&quot;] }
+  ],
+  &quot;totals&quot;: { &quot;upstream_change&quot;: 214, &quot;path_internal&quot;: 3, &quot;announce&quot;: 9, &quot;withdraw&quot;: 9, &quot;unchanged&quot;: 615 },
+  &quot;truncated&quot;: false
+}
+</code></pre>
+<p>The five categories partition the identities in scope (Σ <code>totals</code> = total identities — mutual exclusivity): <code>upstream_change</code> (first AS differs), <code>path_internal</code> (same first AS, different path/attrs), <code>announce</code> (∅→AS), <code>withdraw</code> (AS→∅), <code>unchanged</code>. A <code>from_as</code>/<code>to_as</code> of <code>0</code> means ∅ (no path) or an unknown/confederation-leading path. The movers list excludes <code>unchanged</code>; <code>truncated</code> is <code>true</code> when more than <code>cap</code> distinct movers rows existed. <strong>Errors</strong>: <code>400</code> on a missing <code>as_id</code> or invalid window.</p>
+</main></html>

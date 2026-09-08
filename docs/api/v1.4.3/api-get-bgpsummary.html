@@ -1,0 +1,30 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>`GET /bgp/summary` — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="get-bgpsummary"><code>GET /bgp/summary</code></h3><p>Aggregate BGP statistics for an autonomous system: peer counts by state and <strong>unique</strong> prefix totals by address family. <code>prefixes_ipv4</code>/<code>prefixes_ipv6</code> count <code>DISTINCT prefix</code> across the AS&#39;s best-path table, so a prefix advertised by several route reflectors counts once (unlike the per-target received-path counts in the BMP sync/stats events, which sum across peers).</p>
+<p><strong>Auth</strong>: all authenticated roles</p>
+<p><strong>Query params</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>as_id</code></td>
+<td>UUID</td>
+<td>Yes</td>
+<td>Autonomous system to summarize</td>
+</tr>
+</tbody></table>
+<p><strong>Response</strong>: <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;peer_count&quot;: 12,
+  &quot;peers_up&quot;: 10,
+  &quot;peers_down&quot;: 2,
+  &quot;prefixes_ipv4&quot;: 850000,
+  &quot;prefixes_ipv6&quot;: 200000
+}
+</code></pre>
+<p><strong>Errors</strong>: <code>400</code> if <code>as_id</code> is missing.</p>
+</main></html>
