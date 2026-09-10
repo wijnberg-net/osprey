@@ -1,0 +1,140 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Alert Rules (Write) — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="alert-rules-write">Alert Rules (Write)</h3><p>Engineer or admin CRUD for alert rules. Alert rules define conditions that trigger alert instances when matching topology events occur.</p>
+<p><strong>Seeded system alert rules</strong> (created by migrations, can be toggled/edited by admins):</p>
+<ul>
+<li><code>SNMP target auto-disabled</code> -- event_type <code>snmp_target_disabled</code>, fires when a target is auto-disabled after 10 consecutive failures.</li>
+<li><code>Congestion Warning</code> -- event_type <code>traffic.high_utilization</code>, severity warning, threshold 80% utilization.</li>
+<li><code>Congestion Critical</code> -- event_type <code>traffic.high_utilization</code>, severity critical, threshold 95% utilization.</li>
+<li><code>Interface Errors</code> -- event_type <code>interface.errors</code>, severity warning, threshold 1 err/s. Evaluated by the SNMP poller with auto-resolve, cooldown, and deduplication.</li>
+</ul>
+<h4 id="create-alert-rule">Create Alert Rule</h4><pre><code>POST /api/v1/alerts/rules
+</code></pre>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;Link Down&quot;,
+  &quot;description&quot;: &quot;Alert when a link goes down&quot;,
+  &quot;severity&quot;: &quot;critical&quot;,
+  &quot;event_type&quot;: &quot;link_state_changed&quot;,
+  &quot;condition&quot;: {&quot;state&quot;: &quot;down&quot;},
+  &quot;scope_type&quot;: &quot;area&quot;,
+  &quot;scope_id&quot;: &quot;uuid&quot;,
+  &quot;enabled&quot;: true,
+  &quot;cooldown_secs&quot;: 600
+}
+</code></pre>
+<p><strong>Validation:</strong></p>
+<ul>
+<li><code>name</code>, <code>event_type</code>, and <code>scope_id</code> are required</li>
+<li><code>event_type</code> must be a documented event type (see the event-type list under GET /events plus the seeded-rule types <code>snmp_target_disabled</code> / <code>traffic.high_utilization</code> / <code>interface.errors</code> and the service events <code>eigrp_neighbor_down</code>, <code>evpn_mac_move</code>, <code>evpn_pe_lost</code>, <code>l3vpn_vrf_down</code>, <code>mpls_pw_down</code>, <code>mpls_tunnel_down</code>, <code>bgp_moas_observed</code>/<code>bgp_moas_cleared</code>/<code>bgp_own_as_offered</code>, <code>area_stale</code>/<code>area_recovered</code>/<code>area_partition</code>, <code>lsp_purge</code>) or a <code>prefix*</code> glob — anything else is a <code>400</code>.</li>
+<li><code>severity</code> defaults to <code>&quot;warning&quot;</code> if omitted (valid values: <code>&quot;critical&quot;</code>, <code>&quot;warning&quot;</code>, <code>&quot;info&quot;</code> — anything else is a <code>400</code>)</li>
+<li><code>scope_type</code> defaults to <code>&quot;area&quot;</code> if omitted (valid values: <code>&quot;area&quot;</code>, <code>&quot;protocol_instance&quot;</code>, <code>&quot;routing_domain&quot;</code>, <code>&quot;network&quot;</code> — anything else is a <code>400</code>)</li>
+<li><code>enabled</code> defaults to <strong>true</strong> if omitted; explicit <code>false</code> creates the rule disabled</li>
+<li><code>cooldown_secs</code> defaults to <code>300</code> (5 minutes) if omitted or &lt;= 0</li>
+<li><code>condition</code> defaults to <code>{}</code> if omitted</li>
+<li>The same vocabulary checks apply on <code>PUT</code> (per present field)</li>
+</ul>
+<p><strong>Response:</strong> <code>201 Created</code></p>
+<pre><code class="language-json">{
+  &quot;id&quot;: &quot;uuid&quot;,
+  &quot;name&quot;: &quot;Link Down&quot;,
+  &quot;description&quot;: &quot;Alert when a link goes down&quot;,
+  &quot;severity&quot;: &quot;critical&quot;,
+  &quot;event_type&quot;: &quot;link_state_changed&quot;,
+  &quot;condition&quot;: {&quot;state&quot;: &quot;down&quot;},
+  &quot;scope_type&quot;: &quot;area&quot;,
+  &quot;scope_id&quot;: &quot;uuid&quot;,
+  &quot;enabled&quot;: true,
+  &quot;cooldown_secs&quot;: 600,
+  &quot;created_by&quot;: &quot;uuid&quot;,
+  &quot;created_at&quot;: &quot;2026-02-17T12:00:00Z&quot;,
+  &quot;updated_at&quot;: &quot;2026-02-17T12:00:00Z&quot;
+}
+</code></pre>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Missing required fields or invalid request body</li>
+<li><code>403 Forbidden</code> -- Non-admin user</li>
+</ul>
+<h4 id="get-alert-rule">Get Alert Rule</h4><pre><code>GET /api/v1/alerts/rules/{ruleID}
+</code></pre>
+<p>Get a single alert rule by ID.</p>
+<p><strong>Response:</strong> <code>200 OK</code> (single alert rule object)</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>403 Forbidden</code> -- Non-admin user</li>
+<li><code>404 Not Found</code> -- Rule does not exist</li>
+</ul>
+<h4 id="update-alert-rule">Update Alert Rule</h4><pre><code>PUT /api/v1/alerts/rules/{ruleID}
+</code></pre>
+<p>Partial update of an alert rule. Uses read-merge-write -- only fields present in the request body are updated; other fields are preserved.</p>
+<p><strong>Request body (all fields optional):</strong></p>
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;Updated Rule Name&quot;,
+  &quot;description&quot;: &quot;Updated description&quot;,
+  &quot;severity&quot;: &quot;warning&quot;,
+  &quot;event_type&quot;: &quot;device_removed&quot;,
+  &quot;condition&quot;: {&quot;new_condition&quot;: true},
+  &quot;scope_type&quot;: &quot;protocol_instance&quot;,
+  &quot;scope_id&quot;: &quot;uuid&quot;,
+  &quot;enabled&quot;: false,
+  &quot;cooldown_secs&quot;: 120
+}
+</code></pre>
+<p><strong>Response:</strong> <code>200 OK</code> (updated alert rule object)</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Invalid request body</li>
+<li><code>403 Forbidden</code> -- Non-admin user</li>
+<li><code>404 Not Found</code> -- Rule does not exist</li>
+</ul>
+<h4 id="delete-alert-rule">Delete Alert Rule</h4><pre><code>DELETE /api/v1/alerts/rules/{ruleID}
+</code></pre>
+<p>Delete an alert rule.</p>
+<p><strong>Response:</strong> <code>204 No Content</code></p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>403 Forbidden</code> -- Non-admin user</li>
+<li><code>500 Internal Server Error</code> -- Database error</li>
+</ul>
+<h4 id="toggle-alert-rule">Toggle Alert Rule</h4><pre><code>POST /api/v1/alerts/rules/{ruleID}/toggle
+</code></pre>
+<p>Flip the <code>enabled</code> flag on an alert rule. If the rule is currently enabled, it becomes disabled, and vice versa.</p>
+<p><strong>Response:</strong> <code>200 OK</code> (updated alert rule object with toggled <code>enabled</code> field)</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>403 Forbidden</code> -- Non-admin user</li>
+<li><code>404 Not Found</code> -- Rule does not exist</li>
+</ul>
+<h4 id="list-rule-notification-channels">List Rule Notification Channels</h4><pre><code>GET /api/v1/alerts/rules/{ruleID}/channels
+</code></pre>
+<p>Returns notification channels linked to this alert rule, including the <code>notify_on</code> setting for each.</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">[
+  {
+    &quot;channel_id&quot;: &quot;uuid&quot;,
+    &quot;channel_name&quot;: &quot;Slack Ops&quot;,
+    &quot;channel_type&quot;: &quot;slack&quot;,
+    &quot;notify_on&quot;: &quot;both&quot;,
+    &quot;enabled&quot;: true
+  }
+]
+</code></pre>
+<h4 id="set-rule-notification-channels">Set Rule Notification Channels</h4><pre><code>PUT /api/v1/alerts/rules/{ruleID}/channels
+</code></pre>
+<p>Replaces all notification channel links for an alert rule. Existing links are removed and replaced with the provided list.</p>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">[
+  { &quot;channel_id&quot;: &quot;uuid-1&quot;, &quot;notify_on&quot;: &quot;both&quot; },
+  { &quot;channel_id&quot;: &quot;uuid-2&quot;, &quot;notify_on&quot;: &quot;firing&quot; }
+]
+</code></pre>
+<ul>
+<li><code>notify_on</code> must be <code>&quot;firing&quot;</code>, <code>&quot;resolved&quot;</code>, or <code>&quot;both&quot;</code>.</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code> (updated list of linked channels)</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Invalid <code>notify_on</code> value or missing <code>channel_id</code></li>
+<li><code>403 Forbidden</code> -- Non-admin user</li>
+</ul>
+<hr>
+</main></html>

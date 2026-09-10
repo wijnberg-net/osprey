@@ -1,0 +1,114 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Maintenance Windows (Admin) — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="maintenance-windows-admin">Maintenance Windows (Admin)</h3><p>Engineer or admin CRUD for scheduled maintenance windows. During a maintenance window, alert evaluation is suppressed for entities within the window&#39;s hierarchical scope.</p>
+<h4 id="create-maintenance-window">Create Maintenance Window</h4><pre><code>POST /api/v1/maintenance-windows
+</code></pre>
+<p>Creates a new maintenance window.</p>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;Router Upgrade - Building A&quot;,
+  &quot;description&quot;: &quot;Firmware upgrade for core routers&quot;,
+  &quot;scope_type&quot;: &quot;area&quot;,
+  &quot;scope_id&quot;: &quot;uuid&quot;,
+  &quot;start_time&quot;: &quot;2026-02-25T02:00:00Z&quot;,
+  &quot;end_time&quot;: &quot;2026-02-25T06:00:00Z&quot;,
+  &quot;recurring&quot;: false,
+  &quot;recurrence&quot;: null
+}
+</code></pre>
+<p><strong>scope_type values</strong>: <code>global</code>, <code>network</code>, <code>routing_domain</code>, <code>protocol_instance</code>, <code>area</code>, <code>device</code>. For <code>global</code> scope, <code>scope_id</code> should be omitted or null.</p>
+<p><strong>Response:</strong> <code>201 Created</code></p>
+<pre><code class="language-json">{
+  &quot;id&quot;: &quot;uuid&quot;,
+  &quot;name&quot;: &quot;Router Upgrade - Building A&quot;,
+  &quot;description&quot;: &quot;Firmware upgrade for core routers&quot;,
+  &quot;scope_type&quot;: &quot;area&quot;,
+  &quot;scope_id&quot;: &quot;uuid&quot;,
+  &quot;start_time&quot;: &quot;2026-02-25T02:00:00Z&quot;,
+  &quot;end_time&quot;: &quot;2026-02-25T06:00:00Z&quot;,
+  &quot;recurring&quot;: false,
+  &quot;recurrence&quot;: null,
+  &quot;created_by&quot;: &quot;uuid&quot;,
+  &quot;created_at&quot;: &quot;2026-02-24T10:00:00Z&quot;,
+  &quot;updated_at&quot;: &quot;2026-02-24T10:00:00Z&quot;
+}
+</code></pre>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Missing required fields, invalid scope_type, or end_time not after start_time</li>
+<li><code>401 Unauthorized</code> -- Missing or invalid access token</li>
+<li><code>403 Forbidden</code> -- Non-admin user</li>
+</ul>
+<hr>
+<h4 id="list-maintenance-windows">List Maintenance Windows</h4><pre><code>GET /api/v1/maintenance-windows
+</code></pre>
+<p>List all maintenance windows.</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">[
+  {
+    &quot;id&quot;: &quot;uuid&quot;,
+    &quot;name&quot;: &quot;Router Upgrade - Building A&quot;,
+    &quot;description&quot;: &quot;Firmware upgrade for core routers&quot;,
+    &quot;scope_type&quot;: &quot;area&quot;,
+    &quot;scope_id&quot;: &quot;uuid&quot;,
+    &quot;start_time&quot;: &quot;2026-02-25T02:00:00Z&quot;,
+    &quot;end_time&quot;: &quot;2026-02-25T06:00:00Z&quot;,
+    &quot;recurring&quot;: false,
+    &quot;recurrence&quot;: null,
+    &quot;created_by&quot;: &quot;uuid&quot;,
+    &quot;created_at&quot;: &quot;2026-02-24T10:00:00Z&quot;,
+    &quot;updated_at&quot;: &quot;2026-02-24T10:00:00Z&quot;
+  }
+]
+</code></pre>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>401 Unauthorized</code> -- Missing or invalid access token</li>
+<li><code>403 Forbidden</code> -- Non-admin user</li>
+</ul>
+<hr>
+<h4 id="get-maintenance-window">Get Maintenance Window</h4><pre><code>GET /api/v1/maintenance-windows/{windowID}
+</code></pre>
+<p>Get a single maintenance window by ID.</p>
+<p><strong>Response:</strong> <code>200 OK</code> (single maintenance window object)</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>401 Unauthorized</code> -- Missing or invalid access token</li>
+<li><code>403 Forbidden</code> -- Non-admin user</li>
+<li><code>404 Not Found</code> -- Window does not exist</li>
+</ul>
+<hr>
+<h4 id="update-maintenance-window">Update Maintenance Window</h4><pre><code>PUT /api/v1/maintenance-windows/{windowID}
+</code></pre>
+<p>Update a maintenance window.</p>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;Router Upgrade - Building A (extended)&quot;,
+  &quot;description&quot;: &quot;Firmware upgrade for core routers - extended window&quot;,
+  &quot;scope_type&quot;: &quot;area&quot;,
+  &quot;scope_id&quot;: &quot;uuid&quot;,
+  &quot;start_time&quot;: &quot;2026-02-25T02:00:00Z&quot;,
+  &quot;end_time&quot;: &quot;2026-02-25T08:00:00Z&quot;,
+  &quot;recurring&quot;: false,
+  &quot;recurrence&quot;: null
+}
+</code></pre>
+<p><strong>Response:</strong> <code>200 OK</code> (updated maintenance window object)</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Missing required fields, invalid scope_type, or end_time not after start_time</li>
+<li><code>401 Unauthorized</code> -- Missing or invalid access token</li>
+<li><code>403 Forbidden</code> -- Non-admin user</li>
+<li><code>404 Not Found</code> -- Window does not exist</li>
+</ul>
+<hr>
+<h4 id="delete-maintenance-window">Delete Maintenance Window</h4><pre><code>DELETE /api/v1/maintenance-windows/{windowID}
+</code></pre>
+<p>Delete a maintenance window.</p>
+<p><strong>Response:</strong> <code>204 No Content</code></p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>401 Unauthorized</code> -- Missing or invalid access token</li>
+<li><code>403 Forbidden</code> -- Non-admin user</li>
+<li><code>404 Not Found</code> -- Window does not exist</li>
+</ul>
+<hr>
+</main></html>

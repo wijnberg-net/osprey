@@ -1,0 +1,131 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Incidents — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="incidents">Incidents</h3><p>Incidents group related topology events (e.g., a flapping link producing multiple <code>link_state_changed</code> events) into a single correlated entity. All authenticated users can list, view, acknowledge, and resolve incidents.</p>
+<h4 id="list-incidents">List Incidents</h4><p>These existing reads are included in the 1.4.4 OpenAPI reference. Ordinary authenticated roles are supported. Installations from 1.4.4 advertising <code>api_keys.read_only_incidents</code> also allow restricted read-only keys. Access remains installation-wide; acknowledge/resolve and upgrades remain denied.</p>
+<pre><code>GET /api/v1/incidents
+GET /api/v1/incidents?area_id={areaID}&amp;status={status}&amp;from={from}&amp;to={to}&amp;limit=100&amp;offset=0
+</code></pre>
+<p>List incidents with optional filters. Returns newest created first. Invalid dates are ignored; limits outside 1–1000 or invalid limits fall back to 100. Negative offsets fall back to zero. Unknown status values are passed to the query rather than rejected. Without area_id, the query covers the installation.</p>
+<p><strong>Query parameters (all optional):</strong></p>
+<ul>
+<li><code>area_id</code> -- Filter by area UUID</li>
+<li><code>status</code> -- Filter by incident status (<code>&quot;active&quot;</code>, <code>&quot;acknowledged&quot;</code>, <code>&quot;resolved&quot;</code>)</li>
+<li><code>from</code> -- Start time filter, RFC3339 (e.g., <code>&quot;2026-02-16T00:00:00Z&quot;</code>)</li>
+<li><code>to</code> -- End time filter, RFC3339 (e.g., <code>&quot;2026-02-17T00:00:00Z&quot;</code>)</li>
+<li><code>limit</code> -- Maximum number of incidents to return (default: 100)</li>
+<li><code>offset</code> -- Number of incidents to skip for pagination (default: 0)</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;incidents&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;area_id&quot;: &quot;uuid&quot;,
+      &quot;status&quot;: &quot;active&quot;,
+      &quot;severity&quot;: &quot;warning&quot;,
+      &quot;root_cause_type&quot;: &quot;device_down&quot;,
+      &quot;root_cause_id&quot;: &quot;10.0.0.1&quot;,
+      &quot;summary&quot;: &quot;Router 10.0.0.1 failure: 3 links down, 2 adjacencies lost&quot;,
+      &quot;event_count&quot;: 5,
+      &quot;first_event_at&quot;: &quot;2026-02-17T14:30:00Z&quot;,
+      &quot;last_event_at&quot;: &quot;2026-02-17T14:30:02Z&quot;,
+      &quot;detail&quot;: {
+        &quot;root_cause_type&quot;: &quot;device_down&quot;,
+        &quot;affected_routers&quot;: [&quot;10.0.0.1&quot;, &quot;10.0.0.2&quot;]
+      },
+      &quot;created_at&quot;: &quot;2026-02-17T14:30:05Z&quot;
+    }
+  ],
+  &quot;total&quot;: 12,
+  &quot;limit&quot;: 100,
+  &quot;offset&quot;: 0
+}
+</code></pre>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>The <code>total</code> field contains the total count of incidents matching the filter (before <code>limit</code>/<code>offset</code>), for pagination.</li>
+<li><code>resolved_at</code>, <code>acknowledged_at</code>, <code>acknowledged_by</code>, and <code>root_cause_id</code> are omitted when unset.</li>
+<li><code>root_cause_type</code> values: <code>device_down</code>, <code>node_failure</code>, <code>asbr_withdrawal</code>, <code>unknown</code> (event-correlated), and <code>area_partition</code> (detector-driven, see below).</li>
+<li><strong><code>area_partition</code> incidents</strong> (RFC 2328 §3.7) are raised by the engine&#39;s partition detector, not by event correlation: <code>event_count</code> is <code>0</code>, <code>root_cause_id</code> is absent, and <code>detail</code> carries the split — <code>area_label</code>, <code>consequence</code> (<code>&quot;bridged&quot;</code> | <code>&quot;isolated&quot;</code> | <code>&quot;backbone_partition&quot;</code> | <code>&quot;unknown&quot;</code>), and <code>components</code>, an array of islands each with <code>collector_ids</code>, <code>collector_names</code>, <code>router_ids</code>, and <code>has_backbone_abr</code>. They auto-resolve on positive evidence; <code>detail.resolution_reason</code> records why (e.g. <code>&quot;recorder views overlap again&quot;</code>). Severity follows the consequence: bridged/unknown → <code>warning</code>, isolated/backbone_partition → <code>critical</code>.</li>
+</ul>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>500 Internal Server Error</code> -- Failed incident query; malformed query UUIDs can also fail the query.</li>
+<li><code>401 Unauthorized</code> -- Missing or invalid access token</li>
+</ul>
+<h4 id="get-incident">Get Incident</h4><p>These existing reads are included in the 1.4.4 OpenAPI reference. Ordinary authenticated roles are supported. Installations from 1.4.4 advertising <code>api_keys.read_only_incidents</code> also allow restricted read-only keys. Access remains installation-wide; acknowledge/resolve and upgrades remain denied.</p>
+<pre><code>GET /api/v1/incidents/{incidentID}
+</code></pre>
+<p>Get a single incident by ID, including child events when present. From 1.4.4, missing incidents return 404 and database or child-event loading failures return 500. Display-name enrichment remains best effort. Empty child events are omitted; retention may remove historical events. Older versions can return 404 for database failures or silently omit events after a failed read.</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;id&quot;: &quot;uuid&quot;,
+  &quot;area_id&quot;: &quot;uuid&quot;,
+  &quot;status&quot;: &quot;active&quot;,
+  &quot;severity&quot;: &quot;warning&quot;,
+  &quot;root_cause_type&quot;: &quot;device_down&quot;,
+  &quot;root_cause_id&quot;: &quot;10.0.0.2&quot;,
+  &quot;summary&quot;: &quot;Router 10.0.0.2 failure: 3 links down&quot;,
+  &quot;event_count&quot;: 3,
+  &quot;first_event_at&quot;: &quot;2026-02-17T14:30:00Z&quot;,
+  &quot;last_event_at&quot;: &quot;2026-02-17T14:35:00Z&quot;,
+  &quot;detail&quot;: {
+    &quot;root_cause_type&quot;: &quot;device_down&quot;,
+    &quot;affected_routers&quot;: [&quot;10.0.0.2&quot;, &quot;10.0.0.3&quot;]
+  },
+  &quot;created_at&quot;: &quot;2026-02-17T14:30:05Z&quot;,
+  &quot;events&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;event_time&quot;: &quot;2026-02-17T14:35:00Z&quot;,
+      &quot;area_id&quot;: &quot;uuid&quot;,
+      &quot;collector_id&quot;: &quot;collector-nyc-dc1-01&quot;,
+      &quot;event_type&quot;: &quot;link_state_changed&quot;,
+      &quot;entity_type&quot;: &quot;link&quot;,
+      &quot;entity_id&quot;: &quot;uuid&quot;,
+      &quot;router_id&quot;: &quot;10.0.0.2&quot;,
+      &quot;detail&quot;: {
+        &quot;router_a&quot;: &quot;10.0.0.2&quot;,
+        &quot;router_b&quot;: &quot;10.0.0.3&quot;,
+        &quot;old_state&quot;: &quot;up&quot;,
+        &quot;new_state&quot;: &quot;down&quot;
+      },
+      &quot;incident_id&quot;: &quot;uuid&quot;
+    }
+  ],
+  &quot;display_names&quot;: {
+    &quot;10.0.0.2&quot;: &quot;core-rtr-01.ams&quot;,
+    &quot;10.0.0.3&quot;: &quot;edge-rtr-02.ams&quot;
+  }
+}
+</code></pre>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>The <code>events</code> array contains the child topology events belonging to this incident, ordered by <code>event_time</code> descending (newest first).</li>
+<li>The <code>display_names</code> field maps router IDs found across all child events to human-readable device names (hostname preferred, dns_name as fallback). Omitted when no names are available.</li>
+</ul>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>404 Not Found</code> -- Incident does not exist</li>
+<li><code>401 Unauthorized</code> -- Missing or invalid access token</li>
+</ul>
+<h4 id="acknowledge-incident">Acknowledge Incident</h4><pre><code>PUT /api/v1/incidents/{incidentID}/acknowledge
+</code></pre>
+<p>Acknowledge an open incident. Sets <code>acknowledged_at</code> to the current time and records the acknowledging user&#39;s ID in <code>acknowledged_by</code>. No request body required.</p>
+<p><strong>Response:</strong> <code>200 OK</code> (updated incident object with <code>status: &quot;acknowledged&quot;</code>, <code>acknowledged_at</code> and <code>acknowledged_by</code> set)</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>401 Unauthorized</code> -- Missing or invalid access token</li>
+<li><code>404 Not Found</code> -- Incident does not exist</li>
+<li><code>500 Internal Server Error</code> -- Database error</li>
+</ul>
+<h4 id="resolve-incident">Resolve Incident</h4><pre><code>PUT /api/v1/incidents/{incidentID}/resolve
+</code></pre>
+<p>Manually resolve an incident. Sets <code>status</code> to <code>&quot;resolved&quot;</code> and <code>resolved_at</code> to the current time. No request body required. (<code>area_partition</code> incidents also resolve automatically when the partition heals — see List Incidents notes.)</p>
+<p><strong>Response:</strong> <code>200 OK</code> (updated incident object with <code>status: &quot;resolved&quot;</code> and <code>resolved_at</code> set)</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>401 Unauthorized</code> -- Missing or invalid access token</li>
+<li><code>404 Not Found</code> -- Incident does not exist</li>
+<li><code>500 Internal Server Error</code> -- Database error</li>
+</ul>
+<hr>
+</main></html>

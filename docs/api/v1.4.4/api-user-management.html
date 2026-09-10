@@ -1,0 +1,101 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>User Management — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="user-management">User Management</h3><h4 id="list-users">List Users</h4><pre><code>GET /api/v1/users?limit=100&amp;offset=0
+</code></pre>
+<p>List all users. Supports <a href="api-pagination.html#pagination">pagination</a>.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li><code>limit</code> (optional) — Max items to return (default 100, max 1000)</li>
+<li><code>offset</code> (optional) — Items to skip (default 0)</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code> — Paginated envelope</p>
+<pre><code class="language-json">{
+  &quot;data&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;username&quot;: &quot;admin&quot;,
+      &quot;display_name&quot;: &quot;&quot;,
+      &quot;role&quot;: &quot;admin&quot;,
+      &quot;is_active&quot;: true,
+      &quot;created_at&quot;: &quot;2024-01-01T00:00:00Z&quot;,
+      &quot;updated_at&quot;: &quot;2024-01-01T00:00:00Z&quot;
+    }
+  ],
+  &quot;total&quot;: 1,
+  &quot;limit&quot;: 100,
+  &quot;offset&quot;: 0
+}
+</code></pre>
+<p><strong>Note:</strong> <code>password_hash</code> is never included in responses.</p>
+<h4 id="create-user">Create User</h4><pre><code>POST /api/v1/users
+</code></pre>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;username&quot;: &quot;jsmith&quot;,
+  &quot;password&quot;: &quot;minimum-8-chars&quot;,
+  &quot;role&quot;: &quot;operator&quot;,
+  &quot;display_name&quot;: &quot;John Smith&quot;
+}
+</code></pre>
+<p><strong>Validation:</strong></p>
+<ul>
+<li><code>username</code> and <code>password</code> are required</li>
+<li><code>role</code> must be <code>&quot;admin&quot;</code>, <code>&quot;engineer&quot;</code> or <code>&quot;operator&quot;</code> (defaults to <code>&quot;operator&quot;</code>)</li>
+<li><code>password</code> must be 8-72 characters (bcrypt limit)</li>
+</ul>
+<p><strong>Response:</strong> <code>201 Created</code> (user object, no password_hash)</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> — Validation failure</li>
+<li><code>409 Conflict</code> — Username already exists</li>
+</ul>
+<h4 id="get-user">Get User</h4><pre><code>GET /api/v1/users/{userID}
+</code></pre>
+<p>Get a single user by ID.</p>
+<p><strong>Response:</strong> <code>200 OK</code> (user object)</p>
+<p><strong>Error:</strong> <code>404 Not Found</code></p>
+<h4 id="update-user">Update User</h4><pre><code>PUT /api/v1/users/{userID}
+</code></pre>
+<p>Update user fields (partial update). Does NOT update password (use <code>PUT /auth/password</code> for password changes).</p>
+<p><strong>Request body (all fields optional):</strong></p>
+<pre><code class="language-json">{
+  &quot;username&quot;: &quot;jsmith&quot;,
+  &quot;role&quot;: &quot;admin&quot;,
+  &quot;display_name&quot;: &quot;Jane Smith&quot;,
+  &quot;is_active&quot;: false
+}
+</code></pre>
+<p><strong>Validation:</strong> <code>role</code> must be <code>&quot;admin&quot;</code>, <code>&quot;engineer&quot;</code> or <code>&quot;operator&quot;</code>.</p>
+<p><strong>Response:</strong> <code>200 OK</code> (updated user object)</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> — Invalid role</li>
+<li><code>404 Not Found</code> — User does not exist</li>
+</ul>
+<h4 id="delete-user">Delete User</h4><pre><code>DELETE /api/v1/users/{userID}
+</code></pre>
+<p>Delete a user. Self-deletion is prevented.</p>
+<p><strong>Response:</strong> <code>204 No Content</code></p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> — Attempting to delete your own account</li>
+<li><code>404 Not Found</code> — User does not exist</li>
+</ul>
+<h4 id="reset-user-password-admin">Reset User Password (Admin)</h4><pre><code>PUT /api/v1/users/{userID}/password
+</code></pre>
+<p>Admin-only. Reset another user&#39;s password.</p>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;password&quot;: &quot;new-password-here&quot;
+}
+</code></pre>
+<p><strong>Validation:</strong></p>
+<ul>
+<li><code>password</code> must be 8-72 characters (bcrypt limit)</li>
+</ul>
+<p><strong>Response:</strong> <code>204 No Content</code></p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> — Missing or invalid password</li>
+<li><code>404 Not Found</code> — User does not exist</li>
+</ul>
+<hr>
+</main></html>

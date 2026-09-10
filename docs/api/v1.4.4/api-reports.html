@@ -1,0 +1,236 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Reports — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="reports">Reports</h3><h4 id="get-topology-change-summary">Get Topology Change Summary</h4><pre><code>GET /api/v1/reports/change-summary?area_id=&lt;uuid&gt;&amp;period=24h
+GET /api/v1/reports/change-summary?pi_id=&lt;uuid&gt;&amp;period=7d
+GET /api/v1/reports/change-summary?rd_id=&lt;uuid&gt;&amp;period=30d
+GET /api/v1/reports/change-summary?network_id=&lt;uuid&gt;&amp;period=1h
+</code></pre>
+<p>Aggregates topology events by type over the specified period. Groups event type counts into structured categories (devices, links, stubs) with raw counts preserved.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li>Scope: <code>area_id</code>, <code>area_ids</code>, <code>pi_id</code>, <code>rd_id</code>, or <code>network_id</code> (same as other endpoints)</li>
+<li><code>period</code> — Time window: <code>1h</code>, <code>6h</code>, <code>24h</code> (default), <code>7d</code>, <code>30d</code></li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;period&quot;: {
+    &quot;from&quot;: &quot;2026-02-23T08:00:00Z&quot;,
+    &quot;to&quot;: &quot;2026-02-24T08:00:00Z&quot;
+  },
+  &quot;devices&quot;: { &quot;added&quot;: 2, &quot;removed&quot;: 1, &quot;changed&quot;: 3 },
+  &quot;links&quot;: { &quot;added&quot;: 5, &quot;removed&quot;: 2, &quot;state_changes&quot;: 8, &quot;cost_changes&quot;: 1 },
+  &quot;stubs&quot;: { &quot;added&quot;: 4, &quot;removed&quot;: 1, &quot;changed&quot;: 0 },
+  &quot;total_events&quot;: 27,
+  &quot;raw_counts&quot;: {
+    &quot;device_added&quot;: 2,
+    &quot;device_removed&quot;: 1,
+    &quot;device_flags_changed&quot;: 3,
+    &quot;link_added&quot;: 5,
+    &quot;link_removed&quot;: 2,
+    &quot;link_state_changed&quot;: 8,
+    &quot;link_cost_changed&quot;: 1,
+    &quot;stub_added&quot;: 4,
+    &quot;stub_removed&quot;: 1
+  }
+}
+</code></pre>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Missing scope parameter</li>
+</ul>
+<hr>
+<h4 id="get-congestion-trend-report">Get Congestion Trend Report</h4><pre><code>GET /api/v1/reports/congestion?area_id=&lt;uuid&gt;
+GET /api/v1/reports/congestion?pi_id=&lt;uuid&gt;
+GET /api/v1/reports/congestion?rd_id=&lt;uuid&gt;
+GET /api/v1/reports/congestion?network_id=&lt;uuid&gt;
+</code></pre>
+<p>Identifies interfaces that have consistently exceeded a utilization threshold over a configurable time period. Uses hourly bucketed data from the <code>utilization_history</code> table (populated by the SNMP poller). Returns hotspots sorted by hours above threshold, with per-hour history for sparkline rendering.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li>Scope (mutually exclusive, one required): <code>area_id</code>, <code>area_ids</code>, <code>pi_id</code>, <code>rd_id</code>, or <code>network_id</code></li>
+<li><code>threshold</code> — Utilization percentage threshold (default <code>80</code>, range 1-100)</li>
+<li><code>period</code> — Time window: <code>1h</code>, <code>6h</code>, <code>24h</code>, <code>7d</code> (default), <code>30d</code></li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;hotspots&quot;: [
+    {
+      &quot;interface_id&quot;: &quot;uuid&quot;,
+      &quot;device_id&quot;: &quot;uuid&quot;,
+      &quot;router_id&quot;: &quot;10.0.0.1&quot;,
+      &quot;hostname&quot;: &quot;rtr-core-01&quot;,
+      &quot;if_name&quot;: &quot;Gi0/0/0&quot;,
+      &quot;speed_mbps&quot;: 1000,
+      &quot;max_utilization&quot;: 97.3,
+      &quot;avg_utilization&quot;: 82.1,
+      &quot;hours_above_threshold&quot;: 42,
+      &quot;total_hours&quot;: 168,
+      &quot;trend&quot;: &quot;increasing&quot;,
+      &quot;history&quot;: [
+        { &quot;bucket_time&quot;: &quot;2026-02-17T00:00:00Z&quot;, &quot;max_util&quot;: 85.2 }
+      ]
+    }
+  ],
+  &quot;summary&quot;: {
+    &quot;interfaces_checked&quot;: 64,
+    &quot;above_threshold&quot;: 3,
+    &quot;threshold&quot;: 80,
+    &quot;period&quot;: &quot;7d&quot;
+  }
+}
+</code></pre>
+<p><strong>Notes:</strong></p>
+<ul>
+<li><code>trend</code> is one of <code>&quot;increasing&quot;</code>, <code>&quot;stable&quot;</code>, or <code>&quot;decreasing&quot;</code>, computed by comparing the first-half and second-half average utilization of the period.</li>
+<li><code>history</code> contains one entry per hour for sparkline rendering in the frontend.</li>
+<li>Only interfaces with at least one hourly bucket exceeding the threshold are returned as hotspots.</li>
+</ul>
+<p><strong>Auth:</strong> Required (all roles).</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Missing scope parameter</li>
+<li><code>500 Internal Server Error</code> -- Database error</li>
+</ul>
+<hr>
+<h4 id="get-lsdb-link-state-database">Get LSDB (Link-State Database)</h4><pre><code>GET /api/v1/lsdb?area_id=&lt;uuid&gt;
+GET /api/v1/lsdb?pi_id=&lt;uuid&gt;
+GET /api/v1/lsdb?rd_id=&lt;uuid&gt;
+GET /api/v1/lsdb?network_id=&lt;uuid&gt;
+</code></pre>
+<p>Reconstructs the OSPF LSDB from existing topology tables (devices, interfaces, stub_networks, inter_area_route, asbr_entry, external_route). Returns summary counts and per-type LSA arrays.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li>Scope (mutually exclusive, one required): <code>area_id</code>, <code>pi_id</code>, <code>rd_id</code>, or <code>network_id</code></li>
+<li><code>lsa_limit</code> — Max LSAs returned per type (default 500, max 5000). When a type is truncated, the summary includes <code>*_full</code> fields with the actual total count (e.g. <code>summary_lsas_full: 2800</code> when <code>summary_lsas: 500</code>).</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;summary&quot;: {
+    &quot;router_lsas&quot;: 12,
+    &quot;network_lsas&quot;: 4,
+    &quot;summary_lsas&quot;: 28,
+    &quot;asbr_summaries&quot;: 2,
+    &quot;external_lsas&quot;: 15,
+    &quot;nssa_externals&quot;: 0,
+    &quot;total&quot;: 61
+  },
+  &quot;router_lsas&quot;: [
+    {
+      &quot;link_state_id&quot;: &quot;10.0.0.1&quot;,
+      &quot;adv_router&quot;: &quot;10.0.0.1&quot;,
+      &quot;hostname&quot;: &quot;rtr-core-01&quot;,
+      &quot;is_abr&quot;: true,
+      &quot;is_asbr&quot;: false,
+      &quot;link_count&quot;: 4,
+      &quot;links&quot;: [
+        { &quot;type&quot;: &quot;point_to_point&quot;, &quot;link_id&quot;: &quot;10.0.0.2&quot;, &quot;link_data&quot;: &quot;10.1.0.1&quot;, &quot;metric&quot;: 10 },
+        { &quot;type&quot;: &quot;stub&quot;, &quot;link_id&quot;: &quot;192.168.1.0&quot;, &quot;link_data&quot;: &quot;255.255.255.0&quot;, &quot;metric&quot;: 1 }
+      ],
+      &quot;header&quot;: {
+        &quot;seq_number&quot;: 2147483648,
+        &quot;ls_age&quot;: 45,
+        &quot;checksum&quot;: 12345,
+        &quot;options&quot;: 34,
+        &quot;updated_at&quot;: &quot;2026-03-05T14:23:46.456Z&quot;
+      }
+    }
+  ],
+  &quot;network_lsas&quot;: [
+    {
+      &quot;link_state_id&quot;: &quot;10.1.0.1&quot;,
+      &quot;adv_router&quot;: &quot;10.0.0.1&quot;,
+      &quot;network_mask&quot;: &quot;255.255.255.252&quot;,
+      &quot;attached_routers&quot;: [&quot;10.0.0.1&quot;, &quot;10.0.0.2&quot;],
+      &quot;header&quot;: {
+        &quot;seq_number&quot;: 2147483648,
+        &quot;ls_age&quot;: 120,
+        &quot;checksum&quot;: 56789,
+        &quot;options&quot;: 34,
+        &quot;updated_at&quot;: &quot;2026-03-05T14:20:15.123Z&quot;
+      }
+    }
+  ],
+  &quot;summary_lsas&quot;: [
+    {
+      &quot;link_state_id&quot;: &quot;192.0.2.0&quot;,
+      &quot;adv_router&quot;: &quot;10.0.0.1&quot;,
+      &quot;network_mask&quot;: &quot;255.255.255.0&quot;,
+      &quot;metric&quot;: 100
+    }
+  ],
+  &quot;asbr_summaries&quot;: [
+    {
+      &quot;link_state_id&quot;: &quot;10.0.0.5&quot;,
+      &quot;adv_router&quot;: &quot;10.0.0.1&quot;,
+      &quot;metric&quot;: 50
+    }
+  ],
+  &quot;external_lsas&quot;: [
+    {
+      &quot;link_state_id&quot;: &quot;0.0.0.0&quot;,
+      &quot;adv_router&quot;: &quot;10.0.0.5&quot;,
+      &quot;network_mask&quot;: &quot;0.0.0.0&quot;,
+      &quot;metric&quot;: 1,
+      &quot;metric_type&quot;: &quot;E2&quot;,
+      &quot;forward_address&quot;: &quot;0.0.0.0&quot;,
+      &quot;tag&quot;: 0
+    }
+  ],
+  &quot;nssa_externals&quot;: []
+}
+</code></pre>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>Each LSA entry optionally includes a <code>header</code> field (when live LSDB data is available) with fields: <code>seq_number</code>, <code>ls_age</code>, <code>checksum</code>, <code>options</code>, <code>updated_at</code>.</li>
+<li>Router-LSA links are derived from the interface and link tables. Network-LSA attached routers are derived from transit link endpoints.</li>
+<li>LSA headers (seq_number, ls_age, checksum, options) are sourced from the <code>lsdb_header</code> table, which is populated by the engine from LSA update events. If the engine has not yet received headers for an LSA, the <code>header</code> field is omitted.</li>
+</ul>
+<hr>
+<h4 id="get-is-is-lsdb-link-state-pdu-database">Get IS-IS LSDB (Link-State PDU Database)</h4><pre><code>GET /api/v1/isis-lsdb?area_id=&lt;uuid&gt;
+</code></pre>
+<p>Returns IS-IS LSP headers from the <code>isis_lsp_header</code> table for the IS-IS LSDB browser. Enriched with device hostnames resolved from system_id.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li><code>area_id</code> (required) — Area UUID (IS-IS level)</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;lsp_count&quot;: 3,
+  &quot;lsps&quot;: [
+    {
+      &quot;lsp_id&quot;: &quot;0100.0000.0001.00-00&quot;,
+      &quot;system_id&quot;: &quot;0100.0000.0001&quot;,
+      &quot;pseudonode_id&quot;: 0,
+      &quot;fragment&quot;: 0,
+      &quot;seq_number&quot;: 42,
+      &quot;remaining_lifetime&quot;: 1100,
+      &quot;checksum&quot;: 12345,
+      &quot;overload_bit&quot;: false,
+      &quot;attached_bit&quot;: false,
+      &quot;is_type_bits&quot;: 3,
+      &quot;pdu_length&quot;: 350,
+      &quot;first_seen&quot;: &quot;2026-03-15T10:00:00Z&quot;,
+      &quot;updated_at&quot;: &quot;2026-03-15T14:30:00Z&quot;,
+      &quot;hostname&quot;: &quot;rtr-core-01&quot;
+    }
+  ]
+}
+</code></pre>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>LSP ID format: <code>&lt;system_id&gt;.&lt;pseudonode_id hex&gt;-&lt;fragment hex&gt;</code> (e.g. <code>0100.0000.0001.00-00</code>)</li>
+<li>Pseudonode LSPs (pseudonode_id &gt; 0) represent DIS-originated pseudonode LSPs on broadcast circuits</li>
+<li><code>is_type_bits</code>: 1 = L1 only, 2 = L2 only, 3 = L1/L2</li>
+<li>Hostname resolved from device table via system_id match</li>
+<li>All LSP header fields are <strong>flat on each entry</strong> — unlike the OSPF <code>/lsdb</code> endpoint, IS-IS LSP entries have no nested <code>header</code> object.</li>
+<li><code>seq_number</code> — LSP sequence number (32-bit). <code>checksum</code> — LSP checksum (16-bit, ISO 10589 Fletcher checksum).</li>
+<li><code>remaining_lifetime</code> — seconds until the LSP expires; per ISO 10589 it counts <strong>down</strong> from the originator&#39;s maximum lifetime (default 1200s) toward 0 (contrast OSPF&#39;s LS Age, which counts up). There is no <code>ls_age</code> or <code>options</code> field.</li>
+<li><code>overload_bit</code> — LSP Overload (OL) bit: the originator requests that it not be used for transit. <code>attached_bit</code> — Attached (ATT) bit: an L1/L2 router signalling L1-only routers that it can reach other areas.</li>
+<li><code>pdu_length</code> (<code>omitempty</code>) — total LSP PDU length in bytes, when known. <code>first_seen</code> / <code>updated_at</code> — RFC 3339 timestamps for first observation and last update.</li>
+</ul>
+<p><strong>Auth:</strong> Required (all roles).</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Missing scope parameter</li>
+<li><code>500 Internal Server Error</code> -- Database error</li>
+</ul>
+<hr>
+</main></html>

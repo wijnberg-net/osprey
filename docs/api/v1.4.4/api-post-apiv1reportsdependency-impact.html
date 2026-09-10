@@ -1,0 +1,52 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dependency impact report — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="post-apiv1reportsdependency-impact">Dependency impact report <!-- topic: post-apiv1reportsdependency-impact --></h3><p><code>POST /api/v1/reports/dependency-impact</code></p>
+<pre><code>POST /api/v1/reports/dependency-impact
+</code></pre>
+<p>Computes detailed impact for a specific failure scenario (drill-down from overview).</p>
+<p><strong>Auth:</strong> Any authenticated user.</p>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;scenario_type&quot;: &quot;peer_as&quot;,
+  &quot;scenario_id&quot;: &quot;64512&quot;,
+  &quot;pi_id&quot;: &quot;uuid&quot;,
+  &quot;as_id&quot;: &quot;uuid&quot;
+}
+</code></pre>
+<ul>
+<li><code>scenario_type</code> -- One of: <code>peer_as</code>, <code>srlg</code>, <code>device</code>, <code>critical_pair</code></li>
+<li><code>scenario_id</code> -- Entity identifier (peer AS number, SRLG UUID, device UUID, or comma-separated link UUIDs)</li>
+<li><code>pi_id</code> (optional) -- Protocol Instance for topology scope</li>
+<li><code>as_id</code> (optional) -- Autonomous System for BGP scope</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;scenario_type&quot;: &quot;peer_as&quot;,
+  &quot;scenario_id&quot;: &quot;64512&quot;,
+  &quot;isolated_devices&quot;: [
+    { &quot;device_id&quot;: &quot;uuid&quot;, &quot;router_id&quot;: &quot;10.0.0.5&quot;, &quot;hostname&quot;: &quot;branch-1&quot;, &quot;stub_networks&quot;: 3, &quot;external_routes&quot;: 1, &quot;ipv4_space&quot;: 768, &quot;cidr_equiv&quot;: &quot;/22.4&quot; }
+  ],
+  &quot;prefix_impact&quot;: {
+    &quot;total_stub_networks&quot;: 5,
+    &quot;total_external_routes&quot;: 2,
+    &quot;total_ipv4_space&quot;: 1280,
+    &quot;cidr_equiv&quot;: &quot;/21.7&quot;
+  },
+  &quot;peer_as_dependency&quot;: {
+    &quot;total_prefixes&quot;: 150,
+    &quot;no_alternative&quot;: 45,
+    &quot;with_alternative&quot;: 105,
+    &quot;ipv4_space_lost&quot;: 32768,
+    &quot;cidr_equiv&quot;: &quot;/17.0&quot;,
+    &quot;transit_prefixes&quot;: 12,
+    &quot;prefixes&quot;: [
+      { &quot;prefix&quot;: &quot;10.2.0.0/16&quot;, &quot;has_alternative&quot;: false, &quot;ipv4_space&quot;: 65536, &quot;cidr_equiv&quot;: &quot;/16.0&quot;, &quot;origin_as&quot;: 64513 }
+    ]
+  },
+  &quot;computation_time_ms&quot;: 85
+}
+</code></pre>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Missing scope parameter</li>
+</ul>
+<hr>
+</main></html>

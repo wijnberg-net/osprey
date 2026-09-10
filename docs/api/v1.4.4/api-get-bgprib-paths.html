@@ -1,0 +1,80 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BGP RIB paths — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="get-bgprib-paths">BGP RIB paths <!-- topic: get-bgprib-paths --></h3><p><code>GET /bgp/rib-paths</code></p>
+<p>List all received BGP paths for a specific prefix. Returns per-peer path detail from <code>bgp_rib_entry</code> with joined peer metadata (peer IP, peer AS, peer router ID). Enables &quot;show ip bgp &lt;prefix&gt;&quot; style analysis.</p>
+<p><strong>Auth</strong>: all authenticated roles</p>
+<p><strong>Query params</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>prefix</code></td>
+<td>CIDR</td>
+<td>Yes</td>
+<td>Exact prefix to look up (e.g. <code>203.0.113.0/24</code>)</td>
+</tr>
+<tr>
+<td><code>device_id</code></td>
+<td>UUID</td>
+<td>Yes</td>
+<td>Selecting device (BMP target perspective)</td>
+</tr>
+<tr>
+<td><code>as_id</code></td>
+<td>UUID</td>
+<td>Yes</td>
+<td>Autonomous system</td>
+</tr>
+<tr>
+<td><code>at</code></td>
+<td>RFC 3339</td>
+<td>No</td>
+<td>Time-travel timestamp. See the historical-mode note below.</td>
+</tr>
+</tbody></table>
+<p>The three ID/prefix parameters are required; the endpoint returns <code>400</code> if any is missing.</p>
+<p><strong>Historical mode (<code>at</code>)</strong>: per-peer received-path history exists where full-RIB
+recording (<code>history_mode: &quot;full&quot;</code>) covered the AS at <code>at</code>. The endpoint
+gates on that capability: with coverage it serves the recorded per-peer paths
+from <code>bgp_rib_entry_history</code> (the requesting device&#39;s own rows only); without it
+— or when the covered prefix simply had no recorded paths at <code>at</code> — it returns
+an empty <code>paths</code> array, <code>path_count: 0</code>, and a <code>notice</code> explaining why, rather
+than returning misleading live data.</p>
+<p><strong>Response</strong>: <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;prefix&quot;: &quot;203.0.113.0/24&quot;,
+  &quot;device_id&quot;: &quot;uuid&quot;,
+  &quot;paths&quot;: [
+    {
+      &quot;peer_id&quot;: &quot;uuid&quot;,
+      &quot;prefix&quot;: &quot;203.0.113.0/24&quot;,
+      &quot;path_id&quot;: 0,
+      &quot;next_hop&quot;: &quot;198.51.100.2&quot;,
+      &quot;as_path&quot;: &quot;65002 65099&quot;,
+      &quot;as_path_len&quot;: 2,
+      &quot;origin&quot;: &quot;igp&quot;,
+      &quot;local_pref&quot;: 100,
+      &quot;med&quot;: 0,
+      &quot;communities&quot;: &quot;65001:100&quot;,
+      &quot;ext_communities&quot;: &quot;RT:65001:100&quot;,
+      &quot;large_communities&quot;: &quot;&quot;,
+      &quot;is_best&quot;: true,
+      &quot;origin_as&quot;: 65099,
+      &quot;igp_metric&quot;: 20,
+      &quot;first_seen&quot;: &quot;2026-03-20T10:00:00Z&quot;,
+      &quot;last_seen&quot;: &quot;2026-03-26T12:00:00Z&quot;,
+      &quot;peer_ip&quot;: &quot;198.51.100.2&quot;,
+      &quot;peer_as&quot;: 65002,
+      &quot;peer_router_id&quot;: &quot;198.51.100.2&quot;
+    }
+  ],
+  &quot;path_count&quot;: 3
+}
+</code></pre>
+<p>The response echoes the requested <code>prefix</code> and <code>device_id</code>, and <code>path_count</code> is the number of entries in <code>paths</code>.</p>
+<p><strong>Errors</strong>: <code>400</code> if any of <code>prefix</code>, <code>device_id</code>, or <code>as_id</code> is missing.</p>
+</main></html>

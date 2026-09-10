@@ -1,0 +1,7 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Authentication — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h2 id="authentication">Authentication</h2><p>Osprey supports two authentication methods:</p>
+<ol>
+<li><strong>JWT Cookies</strong> — The primary method for browser-based clients. JWT access and refresh tokens are transported via httpOnly cookies. The browser sends cookies automatically on every request (including WebSocket upgrades).</li>
+<li><strong>API Key Header</strong> — An alternative for programmatic/API clients. Pass the key in the <code>X-API-Key</code> header. See <a href="api-api-key-authentication.html#api-key-authentication">API Key Authentication</a> below.</li>
+</ol>
+<p>The auth middleware checks <code>X-API-Key</code> first, then falls back to the JWT cookie. Only one method is required per request.</p>
+</main></html>

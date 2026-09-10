@@ -1,0 +1,229 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>System Settings (Admin) — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="system-settings-admin">System Settings (Admin)</h3><h4 id="get-system-settings">Get System Settings</h4><pre><code>GET /api/v1/settings/system
+</code></pre>
+<p>Returns all system settings as a flat key/value map. Admin-only.</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;topology.stale_retention_hours&quot;: &quot;168&quot;,
+  &quot;retention.events_days&quot;: &quot;90&quot;,
+  &quot;retention.snapshots_days&quot;: &quot;90&quot;,
+  &quot;retention.ssh_sessions_days&quot;: &quot;90&quot;,
+  &quot;snmp.default_community&quot;: &quot;public&quot;,
+  &quot;snmp.default_timeout_seconds&quot;: &quot;5&quot;,
+  &quot;snmp.default_retries&quot;: &quot;2&quot;,
+  &quot;snmp.auto_disable_threshold&quot;: &quot;10&quot;,
+  &quot;snmp.counters_enabled&quot;: &quot;true&quot;,
+  &quot;snmp.discovery_enabled&quot;: &quot;true&quot;,
+  &quot;snmp.fallback_credential_profile_id&quot;: &quot;&quot;,
+  &quot;display.device_name_mode&quot;: &quot;hostname&quot;,
+  &quot;display.area_format&quot;: &quot;dotted_quad&quot;,
+  &quot;ssh.allow_telnet_fallback&quot;: &quot;false&quot;
+}
+</code></pre>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>401 Unauthorized</code> -- Missing or invalid access token</li>
+<li><code>403 Forbidden</code> -- Non-admin user</li>
+</ul>
+<h4 id="update-system-settings">Update System Settings</h4><pre><code>PUT /api/v1/settings/system
+</code></pre>
+<p>Updates one or more system settings. Only known keys are accepted. Values are validated per the rules below. Returns the full updated settings map. Admin-only.</p>
+<p><strong>Known keys:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Key</th>
+<th>Type</th>
+<th>Range</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>topology.stale_retention_hours</code></td>
+<td>integer</td>
+<td>1--8760</td>
+<td>168</td>
+<td>Hours before unreachable devices are removed</td>
+</tr>
+<tr>
+<td><code>retention.events_days</code></td>
+<td>integer</td>
+<td>1--365</td>
+<td>90</td>
+<td>Days to retain topology event history</td>
+</tr>
+<tr>
+<td><code>retention.snapshots_days</code></td>
+<td>integer</td>
+<td>1--365</td>
+<td>90</td>
+<td>Days to retain time-travel snapshots</td>
+</tr>
+<tr>
+<td><code>retention.ssh_sessions_days</code></td>
+<td>integer</td>
+<td>1--365</td>
+<td>90</td>
+<td>Days to retain SSH/telnet session recordings</td>
+</tr>
+<tr>
+<td><code>retention.bgp_history_days</code></td>
+<td>integer</td>
+<td>1--365</td>
+<td>90</td>
+<td>Days to retain closed BGP best-path / peer-session history (open intervals are always kept)</td>
+</tr>
+<tr>
+<td><code>snmp.default_community</code></td>
+<td>string</td>
+<td>non-empty</td>
+<td>public</td>
+<td>Legacy default SNMP community string (fallback for auto-discovery)</td>
+</tr>
+<tr>
+<td><code>snmp.default_credential_profile_id</code></td>
+<td>string (UUID)</td>
+<td>valid UUID or empty</td>
+<td><em>(empty)</em></td>
+<td>Default credential profile for auto-discovery (overrides community)</td>
+</tr>
+<tr>
+<td><code>snmp.default_timeout_seconds</code></td>
+<td>integer</td>
+<td>1--30</td>
+<td>5</td>
+<td>SNMP poll timeout in seconds</td>
+</tr>
+<tr>
+<td><code>snmp.default_retries</code></td>
+<td>integer</td>
+<td>0--10</td>
+<td>2</td>
+<td>SNMP poll retry count</td>
+</tr>
+<tr>
+<td><code>snmp.auto_disable_threshold</code></td>
+<td>integer</td>
+<td>1--100</td>
+<td>10</td>
+<td>Consecutive failures before auto-disabling SNMP target</td>
+</tr>
+<tr>
+<td><code>display.device_name_mode</code></td>
+<td>string</td>
+<td><code>hostname</code>, <code>dns</code>, <code>router_id</code>, <code>hostname_ip</code></td>
+<td>hostname</td>
+<td>How devices are labeled across the application (topology, events, incidents, diagnostics, reports)</td>
+</tr>
+<tr>
+<td><code>display.area_format</code></td>
+<td>string</td>
+<td><code>dotted_quad</code>, <code>decimal</code></td>
+<td>dotted_quad</td>
+<td>OSPF area ID display format. Visual only — stored values always use dotted quad notation</td>
+</tr>
+<tr>
+<td><code>snmp.poller_paused</code></td>
+<td>boolean</td>
+<td><code>true</code>, <code>false</code></td>
+<td>false</td>
+<td>Pause all SNMP polling (stealth mode). Boost-on-click still works.</td>
+</tr>
+<tr>
+<td><code>snmp.counters_enabled</code></td>
+<td>boolean</td>
+<td><code>true</code>, <code>false</code></td>
+<td>true</td>
+<td>Enable traffic counter collection (bytes, packets, errors per interface every poll interval)</td>
+</tr>
+<tr>
+<td><code>snmp.discovery_enabled</code></td>
+<td>boolean</td>
+<td><code>true</code>, <code>false</code></td>
+<td>true</td>
+<td>Enable interface discovery and enrichment (IF-MIB walks at the configured discovery interval: names, speeds, MTU, timers)</td>
+</tr>
+<tr>
+<td><code>snmp.fallback_credential_profile_id</code></td>
+<td>string (UUID)</td>
+<td>valid UUID or empty</td>
+<td><em>(empty)</em></td>
+<td>Fallback credential profile for automatic retry when primary credentials fail. Single failure counted regardless of fallback attempt. Logs warning when fallback succeeds suggesting credential profile update</td>
+</tr>
+<tr>
+<td><code>ssh.allow_telnet_fallback</code></td>
+<td>boolean</td>
+<td><code>true</code>, <code>false</code></td>
+<td>false</td>
+<td>Allow cleartext telnet fallback when SSH connection fails in the terminal proxy</td>
+</tr>
+<tr>
+<td><code>ssh.session_recording</code></td>
+<td>boolean</td>
+<td><code>true</code>, <code>false</code></td>
+<td>false</td>
+<td>Record SSH/telnet terminal device output (banner, prompts, session) to the encrypted session log. Overrides the <code>ssh_recording</code> config flag. Typed input is never recorded</td>
+</tr>
+<tr>
+<td><code>auth.external_url</code></td>
+<td>string</td>
+<td>absolute http(s) URL or empty</td>
+<td><em>(empty)</em></td>
+<td>Canonical base URL for SSO redirect-URI derivation — never taken from request headers. Required before SSO works</td>
+</tr>
+<tr>
+<td><code>auth.local_login</code></td>
+<td>string</td>
+<td><code>enabled</code>, <code>admins_only</code>, <code>disabled</code></td>
+<td>enabled</td>
+<td>Password-login policy; the restricted values gate non-admins at the API, <code>disabled</code> also hides the form (break-glass <code>/?local=1</code>)</td>
+</tr>
+<tr>
+<td><code>auth.link_by_email</code></td>
+<td>boolean</td>
+<td><code>true</code>, <code>false</code></td>
+<td>false</td>
+<td>Allow JIT linking of an SSO identity to an existing local account by email claim (account-takeover risk — leave off unless the IdP verifies email)</td>
+</tr>
+<tr>
+<td><code>auth.mfa.required_roles</code></td>
+<td>string</td>
+<td>comma-separated roles or empty</td>
+<td><em>(empty)</em></td>
+<td>Roles for which TOTP MFA is mandatory (enforced from the MFA phase)</td>
+</tr>
+</tbody></table>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;settings&quot;: {
+    &quot;topology.stale_retention_hours&quot;: &quot;24&quot;,
+    &quot;retention.events_days&quot;: &quot;60&quot;,
+    &quot;snmp.default_timeout_seconds&quot;: &quot;10&quot;
+  }
+}
+</code></pre>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;topology.stale_retention_hours&quot;: &quot;24&quot;,
+  &quot;retention.events_days&quot;: &quot;60&quot;,
+  &quot;retention.snapshots_days&quot;: &quot;90&quot;,
+  &quot;retention.ssh_sessions_days&quot;: &quot;90&quot;,
+  &quot;snmp.default_community&quot;: &quot;public&quot;,
+  &quot;snmp.default_timeout_seconds&quot;: &quot;10&quot;,
+  &quot;snmp.default_retries&quot;: &quot;2&quot;,
+  &quot;snmp.auto_disable_threshold&quot;: &quot;10&quot;,
+  &quot;snmp.counters_enabled&quot;: &quot;true&quot;,
+  &quot;snmp.discovery_enabled&quot;: &quot;true&quot;,
+  &quot;snmp.fallback_credential_profile_id&quot;: &quot;&quot;,
+  &quot;display.device_name_mode&quot;: &quot;hostname&quot;,
+  &quot;ssh.allow_telnet_fallback&quot;: &quot;false&quot;
+}
+</code></pre>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Unknown key or invalid value</li>
+<li><code>401 Unauthorized</code> -- Missing or invalid access token</li>
+<li><code>403 Forbidden</code> -- Non-admin user</li>
+</ul>
+<hr>
+</main></html>

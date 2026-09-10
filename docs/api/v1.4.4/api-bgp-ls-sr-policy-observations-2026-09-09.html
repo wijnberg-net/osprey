@@ -1,0 +1,16 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BGP-LS SR-policy observations (2026-09-09) — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="bgp-ls-sr-policy-observations-2026-09-09">BGP-LS SR-policy observations (2026-09-09)</h3><p><code>GET /api/v1/bgpls/objects?type=policy</code> uses the existing authenticated paginated
+reader, with <code>as_id</code>, <code>protocol_id=9</code>, <code>target_id</code>, <code>peer_id</code>, <code>include_stale</code>,
+<code>limit</code> and <code>offset</code> filters. Each row is an exporter/peer-view/Add-Path
+observation, never a best-policy selection. Rows include <code>path_id</code>,
+<code>reporter.policy_source</code>, <code>reporter.policy_peer</code> and <code>policy</code>. The latter has
+<code>wire_format</code>, optional <code>headend_ipv4/headend_ipv6</code>, <code>origin</code>, <code>endpoint</code>,
+<code>color</code>, <code>originator_asn</code>, <code>originator_address</code>, <code>discriminator</code>, optional names
+and <code>state:{priority,flags,preference}</code>, and <code>segment_lists</code> in wire order.
+Each list carries flags, mt_id, algorithm, weight and segments; segments carry
+type, flags, encoded_sid or label when decoded, sid_present and base64 raw.
+Base64 <code>attributes_raw</code>, <code>unconsumed_tlvs</code> and <code>notes</code> preserve diagnostic scope.
+<code>withheld/attrs_discarded/stale</code> retain their existing meanings; absent state
+is not inactive. No new route registration or read-only-key permission.
+The measured <code>junos-legacy-v6</code> layout is explicitly labeled; raw flags do not
+prove forwarding installation. Other extension attributes remain unconsumed.</p>
+</main></html>

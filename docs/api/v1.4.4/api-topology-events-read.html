@@ -1,0 +1,90 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Topology Events (Read) — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="topology-events-read">Topology Events (Read)</h3><h4 id="list-events">List Events</h4><pre><code>GET /api/v1/events
+GET /api/v1/events?area_id={areaID}
+GET /api/v1/events?area_id={areaID}&amp;type={eventType}&amp;entity_type={entityType}&amp;router_id={routerID}&amp;from={from}&amp;to={to}&amp;limit={limit}&amp;offset={offset}
+</code></pre>
+<p>Query the topology event log. Returns time-ordered events (newest first) matching the filter criteria. With no <code>area_id</code>, the result is deployment-wide, as used by the Activity panel.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li><code>area_id</code> (optional) — UUID of one area; omit for deployment-wide events</li>
+<li><code>type</code> (optional) — Filter by event type. Valid event types: <code>device_added</code>, <code>device_removed</code>, <code>device_flags_changed</code>, <code>link_added</code>, <code>link_removed</code>, <code>link_state_changed</code>, <code>link_cost_changed</code>, <code>stub_added</code>, <code>stub_removed</code>, <code>stub_cost_changed</code>, <code>adjacency_up</code>, <code>adjacency_down</code>, <code>adjacency_change</code>, <code>lsa_maxage</code>. Note: <code>snapshot_processed</code> and <code>lsa_received</code> are no longer generated; only actual topology-changing events are persisted.</li>
+<li><code>entity_type</code> (optional) — Filter by entity type (<code>&quot;device&quot;</code>, <code>&quot;link&quot;</code>, <code>&quot;stub_network&quot;</code>, <code>&quot;adjacency&quot;</code>, <code>&quot;lsa&quot;</code>)</li>
+<li><code>router_id</code> (optional) — Filter by OSPF router ID (e.g., <code>&quot;10.0.0.2&quot;</code>)</li>
+<li><code>from</code> (optional) — Start time filter, RFC3339 (e.g., <code>&quot;2026-02-16T00:00:00Z&quot;</code>)</li>
+<li><code>to</code> (optional) — End time filter, RFC3339 (e.g., <code>&quot;2026-02-17T00:00:00Z&quot;</code>)</li>
+<li><code>limit</code> (optional) — Maximum number of events to return (default: 100, max: 1000)</li>
+<li><code>entity_id</code> (optional) — Filter by entity UUID (link or device ID). Returns only events whose <code>entity_id</code> matches the given UUID. Useful for per-link or per-device timeline views.</li>
+<li><code>include_related</code> (optional) — When <code>&quot;true&quot;</code> and <code>entity_type=device</code>, also returns link events (state changes, cost changes, etc.) for all links where this device is an endpoint. Enables a unified device timeline showing both device-level and link-level events.</li>
+<li><code>offset</code> (optional) — Number of events to skip for pagination (default: 0)</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;events&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;event_time&quot;: &quot;2026-02-16T14:23:46.456Z&quot;,
+      &quot;area_id&quot;: &quot;uuid&quot;,
+      &quot;collector_id&quot;: &quot;collector-nyc-dc1-01&quot;,
+      &quot;event_type&quot;: &quot;link_cost_changed&quot;,
+      &quot;entity_type&quot;: &quot;link&quot;,
+      &quot;entity_id&quot;: &quot;uuid&quot;,
+      &quot;router_id&quot;: &quot;10.0.0.2&quot;,
+      &quot;detail&quot;: {
+        &quot;router_a&quot;: &quot;10.0.0.2&quot;,
+        &quot;router_b&quot;: &quot;10.0.0.3&quot;,
+        &quot;old_cost&quot;: 10,
+        &quot;new_cost&quot;: 100
+      },
+      &quot;incident_id&quot;: &quot;uuid&quot;,
+      &quot;display_names&quot;: {
+        &quot;10.0.0.2&quot;: &quot;core-rtr-01.ams&quot;,
+        &quot;10.0.0.3&quot;: &quot;edge-rtr-02.ams&quot;
+      }
+    }
+  ],
+  &quot;total&quot;: 42,
+  &quot;limit&quot;: 100,
+  &quot;offset&quot;: 0
+}
+</code></pre>
+<p><strong>Optional cursor pagination (from 1.4.4):</strong></p>
+<p>Use <code>pagination=cursor</code> to traverse recorded history without offset shifts:</p>
+<pre><code class="language-text">GET /api/v1/events?pagination=cursor&amp;area_id={areaID}&amp;limit=100
+GET /api/v1/events?pagination=cursor&amp;area_id={areaID}&amp;limit=100&amp;cursor={next_cursor}
+</code></pre>
+<p>This mode returns <code>pagination: &quot;cursor&quot;</code>, <code>events</code>, <code>limit</code>, <code>has_more</code>,
+<code>next_cursor</code> and <code>window_to</code>. It does not return <code>total</code> or <code>offset</code>. The
+last page has <code>has_more: false</code> and <code>next_cursor: null</code>. Event objects retain
+all the ordinary fields and enrichment described above.</p>
+<p>Keep the same filters, including the presence or absence of <code>from</code> and <code>to</code>,
+on every page; <code>limit</code> may change. Copy <code>next_cursor</code> as an opaque URL-encoded
+query value. Do not send <code>offset</code>, including <code>offset=0</code>, with this mode.
+The first request fixes <code>window_to</code> to <code>to</code>, or the current server time if
+omitted, at microsecond precision. Future <code>to</code> values and <code>from &gt; window_to</code>
+are rejected. Rows are ordered by event time and UUID, descending.</p>
+<p>Cursors expire after 24 hours or an installation signing-key rotation. A
+malformed, modified, expired or filter-mismatched cursor returns <code>400</code>; start
+a new traversal when it expires. Every page still requires authentication.
+A cursor grants no access and does not extend history retention.</p>
+<p>This is historical traversal, not a consistent database snapshot or lossless
+incremental feed. Newer events do not shift the next page, but a later insert
+with an older event time in an already traversed range can be missed. Retention
+can remove rows between requests. Related-link membership, display names and
+incident attribution reflect their state when each page is read.</p>
+<p>Always check that the response says <code>pagination: &quot;cursor&quot;</code>: release 1.4.3
+ignores these unknown query parameters and returns the ordinary offset envelope.
+Omitting <code>pagination=cursor</code> keeps the existing behavior used by the application.</p>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>Events are returned in descending order by <code>event_time</code> (newest first).</li>
+<li>The <code>total</code> field contains the total count of events matching the filter (before <code>limit</code>/<code>offset</code>), for pagination.</li>
+<li>The <code>entity_id</code> field is omitted for events that do not map to a stored entity (e.g., <code>adjacency_up</code>, <code>lsa_maxage</code>).</li>
+<li>The <code>incident_id</code> field contains the incident UUID when the event belongs to one; otherwise it is omitted.</li>
+<li>The <code>display_names</code> field is an API-side enrichment (not stored in the database). It maps router IDs found in <code>router_id</code>, <code>detail.router_id</code>, <code>detail.router_a</code>, and <code>detail.router_b</code> to human-readable device names (hostname preferred, dns_name as fallback). Omitted when no names are available.</li>
+</ul>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> — Invalid area UUID or RFC3339 timestamp; <code>limit</code> outside 1–1000; or a non-integer/negative <code>offset</code></li>
+<li><code>401 Unauthorized</code> — Missing or invalid access token</li>
+</ul>
+<hr>
+</main></html>

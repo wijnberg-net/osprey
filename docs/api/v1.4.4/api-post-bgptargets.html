@@ -1,0 +1,25 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Create BMP target — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="post-bgptargets">Create BMP target <!-- topic: post-bgptargets --></h3><p><code>POST /bgp/targets</code></p>
+<p>Create a new BMP monitoring target. The BMP server will connect to this router&#39;s management IP on TCP port 11019 (configured in the router, not in Osprey).</p>
+<p><code>routing_domain_id</code> must exist AND belong to <code>as_id</code>, else <code>400</code> — the same scope check lane B applies (the FK proves only that the UUID names a real routing domain). A BGP-LS-enabled target is a projector source that takes the domain&#39;s NAME, so an out-of-scope pair silently lands the canvas rows under a different hierarchy than the configuration shows. <code>PUT /bgp/targets/{id}</code> re-checks the MERGED pair, since either half can move on a partial PUT.</p>
+<p><strong>Auth</strong>: admin, engineer</p>
+<p><strong>Request Body</strong>:</p>
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;rr1&quot;,
+  &quot;description&quot;: &quot;Route Reflector 1&quot;,
+  &quot;sys_name&quot;: &quot;rr1.example.com&quot;,
+  &quot;router_ip&quot;: &quot;198.51.100.1&quot;,
+  &quot;as_id&quot;: &quot;uuid&quot;,
+  &quot;routing_domain_id&quot;: &quot;uuid&quot;,
+  &quot;protocol_instance_id&quot;: &quot;uuid&quot;,
+  &quot;rib_mode&quot;: &quot;loc_rib&quot;,
+  &quot;max_prefixes&quot;: 2000000,
+  &quot;max_initial_dump_seconds&quot;: 300,
+  &quot;history_mode&quot;: &quot;best_path_peer&quot;,
+  &quot;history_prefix_filter&quot;: [&quot;10.0.0.0/8&quot;]
+}
+</code></pre>
+<p><strong>Required fields</strong>: <code>name</code>, <code>router_ip</code>, <code>as_id</code>, <code>routing_domain_id</code>.</p>
+<p><strong>Optional fields</strong>: <code>protocol_instance_id</code> (must reference a BGP PI if provided), <code>max_initial_dump_seconds</code> (EoR timeout, default 300), <code>history_mode</code>, <code>history_prefix_filter</code>.</p>
+<p><strong>Defaults</strong>: <code>rib_mode</code> defaults to <code>&quot;loc_rib&quot;</code> if empty. <code>max_prefixes</code> defaults to <code>2000000</code> if zero. <code>history_mode</code> defaults to <code>&quot;best_path_peer&quot;</code> if empty and must be one of <code>off</code> / <code>best_path</code> / <code>best_path_peer</code> / <code>full</code> (<code>full</code> records the per-peer RIB and enables as-of-<code>T</code> failure simulation — substantially more history data, depending on route count and churn); <code>history_prefix_filter</code> entries must be valid CIDRs and are capped at 1024 (invalid → <code>400</code>). <strong><code>enabled</code> in the request body is ignored</strong> — new targets are always created enabled (<code>enabled=true</code>). Use <code>PUT /bgp/targets/{id}/toggle</code> to disable a target afterward.</p>
+<p><strong>Response</strong>: <code>201 Created</code> -- returns the created target with generated <code>id</code>, <code>state</code>, <code>created_at</code>, <code>updated_at</code>.</p>
+</main></html>

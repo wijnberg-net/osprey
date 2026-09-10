@@ -1,0 +1,46 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>HTTP Status Codes — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="http-status-codes">HTTP Status Codes</h3><table>
+<thead>
+<tr>
+<th>Code</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>400</code></td>
+<td>Bad request — missing fields, invalid data, or malformed JSON</td>
+</tr>
+<tr>
+<td><code>401</code></td>
+<td>Unauthorized — no token, invalid token, expired token, or wrong credentials</td>
+</tr>
+<tr>
+<td><code>403</code></td>
+<td>Forbidden — insufficient role or access denied to resource</td>
+</tr>
+<tr>
+<td><code>404</code></td>
+<td>Not found — resource or endpoint does not exist</td>
+</tr>
+<tr>
+<td><code>405</code></td>
+<td>Method not allowed — includes an <code>Allow</code> header</td>
+</tr>
+<tr>
+<td><code>409</code></td>
+<td>Conflict — duplicate key or constraint violation (e.g., duplicate name)</td>
+</tr>
+<tr>
+<td><code>413</code></td>
+<td>Payload too large — request exceeds the limit for this endpoint or reverse proxy</td>
+</tr>
+<tr>
+<td><code>429</code></td>
+<td>Too many requests — rate limit exceeded (includes <code>Retry-After: 60</code> header)</td>
+</tr>
+<tr>
+<td><code>500</code></td>
+<td>Internal server error — unexpected database or server error</td>
+</tr>
+</tbody></table>
+<hr>
+</main></html>

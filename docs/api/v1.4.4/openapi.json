@@ -1,0 +1,6706 @@
+{
+  "openapi": "3.1.1",
+  "info": {
+    "title": "Osprey observation API",
+    "contact": {
+      "url": "https://www.wijnberg.net"
+    },
+    "license": {
+      "name": "Proprietary"
+    },
+    "version": "1.4.4",
+    "description": "Reviewed OpenAPI subset: 20 observation operations, not the complete Osprey API. Reference edition: 1.4.4. Read-only API-key restrictions require version 1.4.3 or later; older servers ignore unknown creation fields. Do not infer enforcement from a successful key-creation request alone."
+  },
+  "servers": [
+    {
+      "url": "https://{host}/api/v1",
+      "description": "Set host to your Osprey installation before sending requests.",
+      "variables": {
+        "host": {
+          "default": "osprey.example.com",
+          "description": "Installation hostname, optionally including its HTTPS port."
+        }
+      }
+    }
+  ],
+  "security": [
+    {
+      "APIKey": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Observation"
+    },
+    {
+      "name": "Reports"
+    }
+  ],
+  "paths": {
+    "/version": {
+      "get": {
+        "operationId": "getVersion",
+        "summary": "Read the installed version",
+        "description": "Public endpoint. Compare the installed version with the reference edition.",
+        "tags": [
+          "Observation"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "version": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "version"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Operation not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Endpoint or resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "description": "Comma-separated methods supported by this endpoint.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "GET"
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; honor Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "RATE_LIMITED",
+                    "message": "too many requests, please try again later"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before another request.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "example": 60
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [],
+        "x-osprey-read-only": true
+      }
+    },
+    "/networks": {
+      "get": {
+        "operationId": "listNetworks",
+        "summary": "List networks",
+        "description": "Network settings and discovery indicators. No configuration changes.",
+        "tags": [
+          "Observation"
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 100
+            },
+            "description": ""
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "description": ""
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Network"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "limit": {
+                      "type": "integer"
+                    },
+                    "offset": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "total",
+                    "limit",
+                    "offset"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Operation not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Endpoint or resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "description": "Comma-separated methods supported by this endpoint.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "GET"
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; honor Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "RATE_LIMITED",
+                    "message": "too many requests, please try again later"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before another request.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "example": 60
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-osprey-read-only": true
+      }
+    },
+    "/devices": {
+      "get": {
+        "operationId": "listDevices",
+        "summary": "List devices in a scope",
+        "description": "One scope is required. Devices are deduplicated by UUID before pagination. Empty scopes return an empty data array and total 0. Additional scope selectors require the development snapshot; release 1.4.3 requires area_id. Live observations. last_seen is a refresh time, not proof of reachability. Development snapshot: conditional requests save response transfer only; ordinary database reads still run. All returned fields, including last_seen, affect the validator.",
+        "tags": [
+          "Observation"
+        ],
+        "parameters": [
+          {
+            "name": "area_ids",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Supply one scope. If several are given, precedence is area_ids, area_id, pi_id, rd_id, network_id. area_ids is comma-separated."
+          },
+          {
+            "name": "area_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Supply one scope. If several are given, precedence is area_ids, area_id, pi_id, rd_id, network_id. area_ids is comma-separated."
+          },
+          {
+            "name": "pi_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Supply one scope. If several are given, precedence is area_ids, area_id, pi_id, rd_id, network_id. area_ids is comma-separated."
+          },
+          {
+            "name": "rd_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Supply one scope. If several are given, precedence is area_ids, area_id, pi_id, rd_id, network_id. area_ids is comma-separated."
+          },
+          {
+            "name": "network_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Supply one scope. If several are given, precedence is area_ids, area_id, pi_id, rd_id, network_id. area_ids is comma-separated."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 100
+            },
+            "description": ""
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "description": ""
+          },
+          {
+            "name": "If-None-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "ETag from the same list URL. Matching representations return 304 without a body; omit for the ordinary 200 response."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Device"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "limit": {
+                      "type": "integer"
+                    },
+                    "offset": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "total",
+                    "limit",
+                    "offset"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "description": "Weak validator for the complete selected page.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "description": "Private cache requiring revalidation.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "private, no-cache"
+              },
+              "Vary": {
+                "description": "Includes authentication headers and middleware representation selectors.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Selected page is unchanged. No response body; reuse the locally cached representation.",
+            "headers": {
+              "ETag": {
+                "description": "Weak validator for the complete selected page.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "description": "Private cache requiring revalidation.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "private, no-cache"
+              },
+              "Vary": {
+                "description": "Includes authentication headers and middleware representation selectors.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Operation not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Endpoint or resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "description": "Comma-separated methods supported by this endpoint.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "GET"
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; honor Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "RATE_LIMITED",
+                    "message": "too many requests, please try again later"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before another request.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "example": 60
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-osprey-read-only": true
+      }
+    },
+    "/links": {
+      "get": {
+        "operationId": "listLinks",
+        "summary": "List links in a scope",
+        "description": "One scope is required. Pagination covers the selected areas; parallel link identities remain separate. Empty scopes return an empty data array and total 0. Additional scope selectors require the development snapshot; release 1.4.3 requires area_id. Live observations; absent destination fields mean an unresolved endpoint. Evidence source describes provenance, not a measured packet path. Development snapshot: conditional requests save response transfer only; ordinary database reads still run. All returned fields, including last_seen, affect the validator.",
+        "tags": [
+          "Observation"
+        ],
+        "parameters": [
+          {
+            "name": "area_ids",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Supply one scope. If several are given, precedence is area_ids, area_id, pi_id, rd_id, network_id. area_ids is comma-separated."
+          },
+          {
+            "name": "area_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Supply one scope. If several are given, precedence is area_ids, area_id, pi_id, rd_id, network_id. area_ids is comma-separated."
+          },
+          {
+            "name": "pi_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Supply one scope. If several are given, precedence is area_ids, area_id, pi_id, rd_id, network_id. area_ids is comma-separated."
+          },
+          {
+            "name": "rd_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Supply one scope. If several are given, precedence is area_ids, area_id, pi_id, rd_id, network_id. area_ids is comma-separated."
+          },
+          {
+            "name": "network_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Supply one scope. If several are given, precedence is area_ids, area_id, pi_id, rd_id, network_id. area_ids is comma-separated."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 100
+            },
+            "description": ""
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "description": ""
+          },
+          {
+            "name": "If-None-Match",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "ETag from the same list URL. Matching representations return 304 without a body; omit for the ordinary 200 response."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Link"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "limit": {
+                      "type": "integer"
+                    },
+                    "offset": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "data",
+                    "total",
+                    "limit",
+                    "offset"
+                  ]
+                }
+              }
+            },
+            "headers": {
+              "ETag": {
+                "description": "Weak validator for the complete selected page.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "description": "Private cache requiring revalidation.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "private, no-cache"
+              },
+              "Vary": {
+                "description": "Includes authentication headers and middleware representation selectors.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Selected page is unchanged. No response body; reuse the locally cached representation.",
+            "headers": {
+              "ETag": {
+                "description": "Weak validator for the complete selected page.",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "Cache-Control": {
+                "description": "Private cache requiring revalidation.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "private, no-cache"
+              },
+              "Vary": {
+                "description": "Includes authentication headers and middleware representation selectors.",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Operation not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Endpoint or resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "description": "Comma-separated methods supported by this endpoint.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "GET"
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; honor Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "RATE_LIMITED",
+                    "message": "too many requests, please try again later"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before another request.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "example": 60
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-osprey-read-only": true
+      }
+    },
+    "/events": {
+      "get": {
+        "operationId": "listEvents",
+        "summary": "Read recorded topology events",
+        "description": "Newest first. No area_id means deployment-wide. include_related=true with entity_type=device also includes related link events. Invalid time or pagination values return 400. Empty results do not prove no change outside recording coverage. Development snapshot only: pagination=cursor freezes window_to and returns events/limit/has_more/next_cursor without total or offset. Offset cannot be combined with this mode. Cursors expire after 24 hours or a signing-key rotation. This is historical traversal, not lossless delivery: late backdated inserts in already traversed ranges can be missed, and retention still applies. Always verify pagination is cursor before treating the response as a cursor page; older servers ignore unknown parameters.",
+        "tags": [
+          "Observation"
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 100
+            },
+            "description": ""
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "description": ""
+          },
+          {
+            "name": "area_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": ""
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "x-extensible-enum": [
+                "device_added",
+                "device_removed",
+                "device_flags_changed",
+                "link_added",
+                "link_removed",
+                "link_state_changed",
+                "link_cost_changed",
+                "stub_added",
+                "stub_removed",
+                "stub_cost_changed",
+                "adjacency_up",
+                "adjacency_down",
+                "adjacency_change",
+                "lsa_maxage",
+                "lsp_purge",
+                "area_stale",
+                "area_recovered",
+                "area_partition",
+                "snmp_target_disabled",
+                "traffic.high_utilization",
+                "interface.errors",
+                "eigrp_neighbor_down",
+                "evpn_mac_move",
+                "evpn_pe_lost",
+                "l3vpn_vrf_down",
+                "mpls_pw_down",
+                "mpls_tunnel_down",
+                "bgp_moas_observed",
+                "bgp_moas_cleared",
+                "bgp_own_as_offered"
+              ],
+              "examples": [
+                "adjacency_down"
+              ]
+            },
+            "description": ""
+          },
+          {
+            "name": "entity_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": ""
+          },
+          {
+            "name": "entity_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": ""
+          },
+          {
+            "name": "router_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": ""
+          },
+          {
+            "name": "include_related",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": ""
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": ""
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": ""
+          },
+          {
+            "name": "pagination",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "cursor"
+              ]
+            },
+            "description": "Optional historical traversal mode. Omit for the established offset response."
+          },
+          {
+            "name": "cursor",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Opaque next_cursor from the previous page; requires pagination=cursor and unchanged filters."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "events": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/TopologyEvent"
+                          }
+                        },
+                        "total": {
+                          "type": "integer"
+                        },
+                        "limit": {
+                          "type": "integer"
+                        },
+                        "offset": {
+                          "type": "integer"
+                        }
+                      },
+                      "required": [
+                        "events",
+                        "total",
+                        "limit",
+                        "offset"
+                      ]
+                    },
+                    {
+                      "$ref": "#/components/schemas/EventCursorPage"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Operation not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Endpoint or resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "description": "Comma-separated methods supported by this endpoint.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "GET"
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; honor Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "RATE_LIMITED",
+                    "message": "too many requests, please try again later"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before another request.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "example": 60
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-osprey-read-only": true
+      }
+    },
+    "/alerts": {
+      "get": {
+        "operationId": "listAlerts",
+        "summary": "Read alerts",
+        "description": "No status filter means all states. Invalid dates are ignored; invalid limits fall back to 100. Reading does not acknowledge, resolve or ignore an alert.",
+        "tags": [
+          "Observation"
+        ],
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 100
+            },
+            "description": ""
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "description": ""
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "firing",
+                "resolved",
+                "acknowledged"
+              ]
+            },
+            "description": ""
+          },
+          {
+            "name": "severity",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "info",
+                "warning",
+                "critical"
+              ]
+            },
+            "description": ""
+          },
+          {
+            "name": "area_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": ""
+          },
+          {
+            "name": "rule_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": ""
+          },
+          {
+            "name": "router_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": ""
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": ""
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": ""
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "alerts": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/AlertInstance"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "limit": {
+                      "type": "integer"
+                    },
+                    "offset": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "alerts",
+                    "total",
+                    "limit",
+                    "offset"
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Operation not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Endpoint or resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "description": "Comma-separated methods supported by this endpoint.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "GET"
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; honor Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "RATE_LIMITED",
+                    "message": "too many requests, please try again later"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before another request.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "example": 60
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-osprey-read-only": true
+      }
+    },
+    "/reports/change-summary": {
+      "get": {
+        "operationId": "getChangeSummary",
+        "summary": "Summarize recorded changes",
+        "description": "One scope is required. Counts describe recorded events, not independently verified outages. An empty scope returns zero counts and empty period strings.",
+        "tags": [
+          "Reports"
+        ],
+        "parameters": [
+          {
+            "name": "area_ids",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Supply one scope. If several are given, precedence is area_ids, area_id, pi_id, rd_id, network_id. area_ids is comma-separated."
+          },
+          {
+            "name": "area_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Supply one scope. If several are given, precedence is area_ids, area_id, pi_id, rd_id, network_id. area_ids is comma-separated."
+          },
+          {
+            "name": "pi_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Supply one scope. If several are given, precedence is area_ids, area_id, pi_id, rd_id, network_id. area_ids is comma-separated."
+          },
+          {
+            "name": "rd_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Supply one scope. If several are given, precedence is area_ids, area_id, pi_id, rd_id, network_id. area_ids is comma-separated."
+          },
+          {
+            "name": "network_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Supply one scope. If several are given, precedence is area_ids, area_id, pi_id, rd_id, network_id. area_ids is comma-separated."
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Positive duration such as 1h or 24h, or 1d, 7d, 30d. Default and invalid-value fallback: 24h."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChangeSummaryResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Operation not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Endpoint or resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "description": "Comma-separated methods supported by this endpoint.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "GET"
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; honor Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "RATE_LIMITED",
+                    "message": "too many requests, please try again later"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before another request.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "example": 60
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-osprey-read-only": true
+      }
+    },
+    "/reports/congestion": {
+      "get": {
+        "operationId": "getCongestionReport",
+        "summary": "Find persistently congested interfaces",
+        "description": "One scope is required. Invalid thresholds use 80%. Uses recorded utilization buckets; absent traffic observations do not establish absence of congestion.",
+        "tags": [
+          "Reports"
+        ],
+        "parameters": [
+          {
+            "name": "area_ids",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Supply one scope. If several are given, precedence is area_ids, area_id, pi_id, rd_id, network_id. area_ids is comma-separated."
+          },
+          {
+            "name": "area_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Supply one scope. If several are given, precedence is area_ids, area_id, pi_id, rd_id, network_id. area_ids is comma-separated."
+          },
+          {
+            "name": "pi_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Supply one scope. If several are given, precedence is area_ids, area_id, pi_id, rd_id, network_id. area_ids is comma-separated."
+          },
+          {
+            "name": "rd_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Supply one scope. If several are given, precedence is area_ids, area_id, pi_id, rd_id, network_id. area_ids is comma-separated."
+          },
+          {
+            "name": "network_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Supply one scope. If several are given, precedence is area_ids, area_id, pi_id, rd_id, network_id. area_ids is comma-separated."
+          },
+          {
+            "name": "threshold",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 100,
+              "default": 80
+            },
+            "description": ""
+          },
+          {
+            "name": "period",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Default 7d. Positive duration or 1d, 7d, 30d; invalid values use 24h."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CongestionResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Operation not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Endpoint or resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "description": "Comma-separated methods supported by this endpoint.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "GET"
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; honor Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "RATE_LIMITED",
+                    "message": "too many requests, please try again later"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before another request.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "example": 60
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-osprey-read-only": true
+      }
+    },
+    "/hierarchy/tree": {
+      "get": {
+        "operationId": "getHierarchyTree",
+        "summary": "Discover networks and area UUIDs",
+        "description": "The response is an object with a networks array. Follow autonomous_systems, routing_domains (including recursive children), protocol_instances and areas. Use area.id as the resource UUID; area.area_id is a protocol label. Child arrays may be null. Recorder credentials are redacted for operator users and read-only keys.",
+        "tags": [
+          "Observation"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HierarchyTree"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Operation not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Endpoint or resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "description": "Comma-separated methods supported by this endpoint.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "GET"
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; honor Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "RATE_LIMITED",
+                    "message": "too many requests, please try again later"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before another request.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "example": 60
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-osprey-read-only": true
+      }
+    },
+    "/devices/{deviceID}": {
+      "get": {
+        "operationId": "getDevice",
+        "summary": "Inspect a device",
+        "description": "Current device observation, without a list envelope. last_seen does not prove reachability.",
+        "tags": [
+          "Observation"
+        ],
+        "parameters": [
+          {
+            "name": "deviceID",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Device"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Operation not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Endpoint or resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "description": "Comma-separated methods supported by this endpoint.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "GET"
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; honor Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "RATE_LIMITED",
+                    "message": "too many requests, please try again later"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before another request.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "example": 60
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-osprey-read-only": true
+      }
+    },
+    "/devices/{deviceID}/interfaces": {
+      "get": {
+        "operationId": "listDeviceInterfaces",
+        "summary": "Inspect device interfaces",
+        "description": "Unpaginated interface array, without a data envelope. An unknown device may return an empty array.",
+        "tags": [
+          "Observation"
+        ],
+        "parameters": [
+          {
+            "name": "deviceID",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Interface"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Operation not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Endpoint or resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "description": "Comma-separated methods supported by this endpoint.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "GET"
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; honor Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "RATE_LIMITED",
+                    "message": "too many requests, please try again later"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before another request.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "example": 60
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-osprey-read-only": true
+      }
+    },
+    "/links/{linkID}": {
+      "get": {
+        "operationId": "getLink",
+        "summary": "Inspect a link and its endpoints",
+        "description": "Contains link, source, target, source_interface and target_interface. Unresolved endpoints or interfaces are null.",
+        "tags": [
+          "Observation"
+        ],
+        "parameters": [
+          {
+            "name": "linkID",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/linkDetailResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Operation not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Endpoint or resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "description": "Comma-separated methods supported by this endpoint.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "GET"
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; honor Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "RATE_LIMITED",
+                    "message": "too many requests, please try again later"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before another request.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "example": 60
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-osprey-read-only": true
+      }
+    },
+    "/alerts/{alertID}": {
+      "get": {
+        "operationId": "getAlert",
+        "summary": "Inspect an alert",
+        "description": "Returns the alert object without a list envelope. Reading does not acknowledge or resolve it.",
+        "tags": [
+          "Observation"
+        ],
+        "parameters": [
+          {
+            "name": "alertID",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertInstance"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Operation not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Endpoint or resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "description": "Comma-separated methods supported by this endpoint.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "GET"
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; honor Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "RATE_LIMITED",
+                    "message": "too many requests, please try again later"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before another request.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "example": 60
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-osprey-read-only": true
+      }
+    },
+    "/capabilities": {
+      "get": {
+        "operationId": "getCapabilities",
+        "summary": "Discover supported API features",
+        "description": "Authenticated software support metadata, available to read-only keys. Feature identifiers are extensible; ignore unfamiliar values. Features do not describe configured protocols, observed coverage or account permissions. Resolve openapi_url against the Osprey installation origin. Older installations may return 404; that does not establish absence of network observations.",
+        "tags": [
+          "Observation"
+        ],
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Successful query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/capabilitiesResponse"
+                }
+              }
+            },
+            "headers": {
+              "Cache-Control": {
+                "description": "Authenticated support metadata is not cached.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "private, no-store"
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Operation not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Endpoint or resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "description": "Comma-separated methods supported by this endpoint.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "GET"
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; honor Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "RATE_LIMITED",
+                    "message": "too many requests, please try again later"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before another request.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "example": 60
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-osprey-read-only": true
+      }
+    },
+    "/incidents": {
+      "get": {
+        "operationId": "listIncidents",
+        "summary": "Read correlated incidents",
+        "description": "Newest created first. Invalid dates are ignored; invalid or out-of-range limits fall back to 100 and negative offsets to 0. Without area_id the query is deployment-wide. Display-name enrichment is best effort; area_deleted marks retained incidents whose area was deleted. Reading does not acknowledge or resolve incidents. Available to authenticated roles and, in the development snapshot, restricted read-only API keys. Capability api_keys.read_only_incidents advertises that access. Incident actions and upgrades remain denied. Access is deployment-wide, not tenant-bound.",
+        "tags": [
+          "Observation"
+        ],
+        "parameters": [
+          {
+            "name": "area_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": ""
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter value; known states are active, acknowledged and resolved. Unknown values are not rejected by the handler."
+          },
+          {
+            "name": "from",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": ""
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": ""
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 100
+            },
+            "description": ""
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "description": ""
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "incidents": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/TopologyIncident"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "limit": {
+                      "type": "integer"
+                    },
+                    "offset": {
+                      "type": "integer"
+                    }
+                  },
+                  "required": [
+                    "incidents",
+                    "total",
+                    "limit",
+                    "offset"
+                  ]
+                },
+                "example": {
+                  "incidents": [
+                    {
+                      "id": "11111111-1111-4111-8111-111111111111",
+                      "area_id": "11111111-1111-4111-8111-111111111111",
+                      "status": "active",
+                      "severity": "warning",
+                      "root_cause_type": "unknown",
+                      "summary": "Recorded adjacency change",
+                      "event_count": 0,
+                      "first_event_at": "2026-01-02T12:00:00Z",
+                      "last_event_at": "2026-01-02T12:00:00Z",
+                      "detail": {
+                        "source": "correlation"
+                      },
+                      "created_at": "2026-01-02T12:00:00Z"
+                    }
+                  ],
+                  "limit": 100,
+                  "offset": 0,
+                  "total": 1
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Operation not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Endpoint or resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "description": "Comma-separated methods supported by this endpoint.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "GET"
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; honor Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "RATE_LIMITED",
+                    "message": "too many requests, please try again later"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before another request.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "example": 60
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-osprey-read-only": true
+      }
+    },
+    "/incidents/{incidentID}": {
+      "get": {
+        "operationId": "getIncident",
+        "summary": "Inspect a correlated incident",
+        "description": "Returns an incident directly with child events when present. Missing incidents return 404; incident or child-event read failures return 500. Display names remain best-effort decoration. Empty events are omitted and retention can remove historical events. Available to authenticated roles and, in the development snapshot, restricted read-only API keys. Capability api_keys.read_only_incidents advertises that access. Incident actions and upgrades remain denied. Access is deployment-wide, not tenant-bound.",
+        "tags": [
+          "Observation"
+        ],
+        "parameters": [
+          {
+            "name": "incidentID",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TopologyIncident"
+                },
+                "example": {
+                  "id": "11111111-1111-4111-8111-111111111111",
+                  "area_id": "11111111-1111-4111-8111-111111111111",
+                  "status": "active",
+                  "severity": "warning",
+                  "root_cause_type": "unknown",
+                  "summary": "",
+                  "event_count": 1,
+                  "first_event_at": "2026-01-02T12:00:00Z",
+                  "last_event_at": "2026-01-02T12:00:00Z",
+                  "detail": null,
+                  "created_at": "2026-01-02T12:00:00Z",
+                  "events": [
+                    {
+                      "id": "11111111-1111-4111-8111-111111111111",
+                      "event_time": "2026-01-02T12:00:00Z",
+                      "area_id": "",
+                      "event_type": "adjacency_down",
+                      "entity_type": "",
+                      "detail": {
+                        "state": "down"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Operation not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Endpoint or resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "description": "Comma-separated methods supported by this endpoint.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "GET"
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; honor Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "RATE_LIMITED",
+                    "message": "too many requests, please try again later"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before another request.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "example": 60
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-osprey-read-only": true
+      }
+    },
+    "/bgp/peers": {
+      "get": {
+        "operationId": "listBGPPeers",
+        "summary": "Read observed BGP peer sessions",
+        "description": "BMP/SNMP observations with per-address-family rows. Optional filters; no filter is deployment-wide. Counters cover all matching rows, not only this page. Absent prefixes_received means unmeasured, not zero. Historical empty results include a notice and do not prove there were no peers. Offset pagination is not a snapshot. Available to authenticated operator, engineer and admin roles with ordinary credentials. Restricted read-only API keys receive 403; OpenAPI inclusion does not grant access.",
+        "tags": [
+          "Observation"
+        ],
+        "parameters": [
+          {
+            "name": "device_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Observed device UUID."
+          },
+          {
+            "name": "as_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Autonomous-system UUID."
+          },
+          {
+            "name": "target_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "BMP target UUID."
+          },
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Peer state filter, usually up or down."
+          },
+          {
+            "name": "peer_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Session type filter: ibgp or ebgp."
+          },
+          {
+            "name": "af",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Session address family, such as ipv4, ipv6, vpnv4 or vpnv6."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 1000,
+              "default": 50
+            },
+            "description": "Positive values are capped; invalid/nonpositive values use 50."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            },
+            "description": "Invalid or negative values use 0."
+          },
+          {
+            "name": "at",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Historical observation time. Malformed or future values return 400 (small clock skew tolerated). Omit for live data."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "peers": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/BGPPeer"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "limit": {
+                      "type": "integer"
+                    },
+                    "offset": {
+                      "type": "integer"
+                    },
+                    "up": {
+                      "type": "integer"
+                    },
+                    "unique_peers": {
+                      "type": "integer"
+                    },
+                    "notice": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "peers",
+                    "total",
+                    "limit",
+                    "offset",
+                    "up",
+                    "unique_peers"
+                  ]
+                },
+                "example": {
+                  "limit": 50,
+                  "offset": 0,
+                  "peers": [
+                    {
+                      "id": "11111111-1111-4111-8111-111111111111",
+                      "device_id": "11111111-1111-4111-8111-111111111111",
+                      "as_id": "11111111-1111-4111-8111-111111111111",
+                      "peer_ip": "192.0.2.2",
+                      "peer_as": 64512,
+                      "peer_type": "ebgp",
+                      "address_family": "ipv4",
+                      "state": "up",
+                      "add_paths_negotiated": false,
+                      "send_community": false,
+                      "source": "bmp",
+                      "first_seen": "2026-01-02T12:00:00Z",
+                      "last_seen": "2026-01-02T12:00:00Z",
+                      "created_at": "2026-01-02T12:00:00Z",
+                      "updated_at": "2026-01-02T12:00:00Z"
+                    }
+                  ],
+                  "total": 2,
+                  "unique_peers": 2,
+                  "up": 1
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Operation not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Endpoint or resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "description": "Comma-separated methods supported by this endpoint.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "GET"
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; honor Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "RATE_LIMITED",
+                    "message": "too many requests, please try again later"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before another request.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "example": 60
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-osprey-read-only": false
+      }
+    },
+    "/bgp/routes": {
+      "get": {
+        "operationId": "listBGPRoutes",
+        "summary": "Read BGP best-path observations",
+        "description": "Best-path rows from recorded or computed source perspectives, not proof of packet forwarding. device_id selects the next-hop device; selecting_device_id selects the reporting perspective. match accepts longest or covered; omitted means exact. community is substring matching. Offset is capped at 100000; narrow filters for deeper results. Counters cover the matching set. Historical empty results include a notice; history coverage and retention apply. Available to authenticated operator, engineer and admin roles with ordinary credentials. Restricted read-only API keys receive 403; OpenAPI inclusion does not grant access.",
+        "tags": [
+          "Observation"
+        ],
+        "parameters": [
+          {
+            "name": "as_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Autonomous-system UUID."
+          },
+          {
+            "name": "prefix",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "CIDR prefix to match."
+          },
+          {
+            "name": "match",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Omit for exact; longest selects longest matching prefixes, covered selects contained prefixes."
+          },
+          {
+            "name": "device_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Next-hop device UUID, not the selecting device."
+          },
+          {
+            "name": "selecting_device_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Selecting device UUID: the reporting perspective."
+          },
+          {
+            "name": "next_hop",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Next-hop IP address."
+          },
+          {
+            "name": "community",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Community substring filter."
+          },
+          {
+            "name": "af",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Prefix family: ipv4 or ipv6."
+          },
+          {
+            "name": "origin_as",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Invalid integers are ignored."
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 10000,
+              "default": 50
+            },
+            "description": "Positive values are capped; invalid/nonpositive values use 50."
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "maximum": 100000
+            },
+            "description": "Invalid or negative values use 0."
+          },
+          {
+            "name": "at",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Historical observation time. Malformed or future values return 400 (small clock skew tolerated). Omit for live data."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "routes": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/BGPBestPath"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "limit": {
+                      "type": "integer"
+                    },
+                    "offset": {
+                      "type": "integer"
+                    },
+                    "unique_prefixes": {
+                      "type": "integer"
+                    },
+                    "notice": {
+                      "type": "string"
+                    }
+                  },
+                  "required": [
+                    "routes",
+                    "total",
+                    "limit",
+                    "offset",
+                    "unique_prefixes"
+                  ]
+                },
+                "example": {
+                  "limit": 50,
+                  "offset": 0,
+                  "routes": [
+                    {
+                      "as_id": "11111111-1111-4111-8111-111111111111",
+                      "routing_domain_id": "11111111-1111-4111-8111-111111111111",
+                      "prefix": "203.0.113.0/24",
+                      "device_id": "11111111-1111-4111-8111-111111111111",
+                      "next_hop": "192.0.2.2",
+                      "as_path": "64512",
+                      "med": 0,
+                      "source": "inferred",
+                      "ecmp_count": 1,
+                      "path_count": 1,
+                      "updated_at": "2026-01-02T12:00:00Z"
+                    }
+                  ],
+                  "total": 2,
+                  "unique_prefixes": 2
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Operation not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Endpoint or resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "description": "Comma-separated methods supported by this endpoint.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "GET"
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; honor Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "RATE_LIMITED",
+                    "message": "too many requests, please try again later"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before another request.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "example": 60
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-osprey-read-only": false
+      }
+    },
+    "/bgp/summary": {
+      "get": {
+        "operationId": "getBGPSummary",
+        "summary": "Summarize current BGP observations",
+        "description": "Live aggregate counts for one autonomous system. No at parameter or pagination. Empty counts are not proof of recording coverage or network health. Available to authenticated operator, engineer and admin roles with ordinary credentials. Restricted read-only API keys receive 403; OpenAPI inclusion does not grant access.",
+        "tags": [
+          "Observation"
+        ],
+        "parameters": [
+          {
+            "name": "as_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Autonomous-system UUID; required."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BGPSummary"
+                },
+                "example": {
+                  "peer_count": 2,
+                  "peers_up": 1,
+                  "peers_down": 1,
+                  "prefixes_ipv4": 2,
+                  "prefixes_ipv6": 0
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Operation not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Endpoint or resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "description": "Comma-separated methods supported by this endpoint.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "GET"
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; honor Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "RATE_LIMITED",
+                    "message": "too many requests, please try again later"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before another request.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "example": 60
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-osprey-read-only": false
+      }
+    },
+    "/devices/{deviceID}/neighbors": {
+      "get": {
+        "operationId": "getDeviceNeighbors",
+        "summary": "Inspect reconstructed device neighbors",
+        "description": "Reconstructed from stored topology links, not a live router neighbor-table read or a protocol-state-machine dump. One row per neighbor device and area; parallel links collapse. area_id in each row is the protocol label, falling back to the UUID. neighbor_id is the router ID; device_id is the UUID. Sorted by area label then router ID. Unresolved endpoints are omitted. Summary down counts every state other than up. Missing interfaces produce empty address/name strings. Empty membership or unmatched area yields an empty neighbors array. Available to authenticated operator, engineer and admin roles with ordinary credentials. Restricted read-only API keys receive 403; OpenAPI inclusion does not grant access.",
+        "tags": [
+          "Observation"
+        ],
+        "parameters": [
+          {
+            "name": "deviceID",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            }
+          },
+          {
+            "name": "area_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Optional area UUID or protocol label, such as 0.0.0.0. Filters the device membership areas."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful query",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NeighborTableResponse"
+                },
+                "example": {
+                  "device_id": "11111111-1111-4111-8111-111111111111",
+                  "router_id": "192.0.2.1",
+                  "hostname": "router1",
+                  "neighbors": [
+                    {
+                      "neighbor_id": "192.0.2.2",
+                      "device_id": "neighbor",
+                      "hostname": "router2",
+                      "state": "down",
+                      "address": "",
+                      "local_address": "",
+                      "interface": "",
+                      "cost": 10,
+                      "reverse_cost": 20,
+                      "link_type": "",
+                      "area_id": "0.0.0.0",
+                      "is_abr": false,
+                      "is_asbr": false,
+                      "first_seen": "2026-01-02T12:00:00Z",
+                      "last_seen": "2026-01-02T12:00:00Z"
+                    }
+                  ],
+                  "summary": {
+                    "total": 1,
+                    "up": 0,
+                    "down": 1
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Operation not permitted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Endpoint or resource not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "405": {
+            "description": "Method not allowed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            },
+            "headers": {
+              "Allow": {
+                "description": "Comma-separated methods supported by this endpoint.",
+                "schema": {
+                  "type": "string"
+                },
+                "example": "GET"
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded; honor Retry-After",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": "RATE_LIMITED",
+                    "message": "too many requests, please try again later"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Seconds to wait before another request.",
+                "schema": {
+                  "type": "integer",
+                  "minimum": 0
+                },
+                "example": 60
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "x-osprey-read-only": false
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "APIKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-API-Key"
+      }
+    },
+    "schemas": {
+      "Network": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "poller_paused": {
+            "type": "boolean"
+          },
+          "snmp_credential_profile_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "snmp_fallback_credential_profile_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "snmp_timeout_seconds": {
+            "type": "integer"
+          },
+          "snmp_retries": {
+            "type": "integer"
+          },
+          "snmp_auto_disable_threshold": {
+            "type": "integer"
+          },
+          "discovery_enabled": {
+            "type": "boolean"
+          },
+          "discovery_interval_hours": {
+            "type": "integer"
+          },
+          "counters_enabled": {
+            "type": "boolean"
+          },
+          "counters_interval_minutes": {
+            "type": "integer"
+          },
+          "counters_poll_interval_seconds": {
+            "type": "integer"
+          },
+          "l2_enrichment_enabled": {
+            "type": "boolean"
+          },
+          "l2_enrichment_interval_hours": {
+            "type": "integer"
+          },
+          "l2_crawl_enabled": {
+            "type": "boolean"
+          },
+          "l2_crawl_interval_hours": {
+            "type": "integer"
+          },
+          "l2_crawl_max_depth": {
+            "type": "integer"
+          },
+          "l2_crawl_include_routers": {
+            "type": "boolean"
+          },
+          "l2_stale_hours": {
+            "type": "integer"
+          },
+          "l2_credential_profile_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "l2_fallback_credential_profile_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "mpls_discovery": {
+            "type": "string"
+          },
+          "mpls_tunnel_count": {
+            "type": "integer"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "poller_paused",
+          "snmp_timeout_seconds",
+          "snmp_retries",
+          "snmp_auto_disable_threshold",
+          "discovery_enabled",
+          "discovery_interval_hours",
+          "counters_enabled",
+          "counters_interval_minutes",
+          "counters_poll_interval_seconds",
+          "l2_enrichment_enabled",
+          "l2_enrichment_interval_hours",
+          "l2_crawl_enabled",
+          "l2_crawl_interval_hours",
+          "l2_crawl_max_depth",
+          "l2_crawl_include_routers",
+          "l2_stale_hours",
+          "mpls_discovery",
+          "mpls_tunnel_count",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "Device": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "router_id": {
+            "type": "string"
+          },
+          "system_id": {
+            "type": "string"
+          },
+          "hostname": {
+            "type": "string"
+          },
+          "dns_name": {
+            "type": "string"
+          },
+          "vendor": {
+            "type": "string",
+            "examples": [
+              "Cisco"
+            ]
+          },
+          "device_type": {
+            "type": "string"
+          },
+          "model": {
+            "type": "string"
+          },
+          "platform": {
+            "type": "string"
+          },
+          "software_version": {
+            "type": "string"
+          },
+          "sys_object_id": {
+            "type": "string"
+          },
+          "is_ospf_abr": {
+            "type": "boolean"
+          },
+          "is_isis_l1l2": {
+            "type": "boolean"
+          },
+          "is_abr": {
+            "type": "boolean"
+          },
+          "is_asbr": {
+            "type": "boolean"
+          },
+          "is_collector": {
+            "type": "boolean"
+          },
+          "protocols_supported": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "type": "integer"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "crawl_depth": {
+            "type": "integer"
+          },
+          "first_seen": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_seen": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "management_ip": {
+            "type": "string"
+          },
+          "management_ip_source": {
+            "type": "string"
+          },
+          "evidence_source": {
+            "type": "string",
+            "enum": [
+              "lsdb_read",
+              "mib_reported",
+              "router_exported"
+            ],
+            "examples": [
+              "mib_reported"
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "router_id",
+          "vendor",
+          "device_type",
+          "is_ospf_abr",
+          "is_isis_l1l2",
+          "is_abr",
+          "is_asbr",
+          "is_collector",
+          "crawl_depth",
+          "first_seen",
+          "last_seen",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "Link": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "source_device_id": {
+            "type": "string"
+          },
+          "destination_device_id": {
+            "type": "string"
+          },
+          "source_interface_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "destination_interface_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "cost_forward": {
+            "type": "integer"
+          },
+          "cost_reverse": {
+            "type": "integer"
+          },
+          "link_type": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "area_id": {
+            "type": "string"
+          },
+          "segment_key": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "reported_by_collector_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "evidence_source": {
+            "type": "string",
+            "enum": [
+              "lsdb_read",
+              "mib_reported",
+              "router_exported"
+            ],
+            "examples": [
+              "mib_reported"
+            ]
+          },
+          "first_seen": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_seen": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "source_device_id",
+          "cost_forward",
+          "cost_reverse",
+          "link_type",
+          "state",
+          "area_id",
+          "first_seen",
+          "last_seen",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "TopologyEvent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "event_time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "area_id": {
+            "type": "string"
+          },
+          "collector_id": {
+            "type": "string"
+          },
+          "event_type": {
+            "type": "string",
+            "x-extensible-enum": [
+              "device_added",
+              "device_removed",
+              "device_flags_changed",
+              "link_added",
+              "link_removed",
+              "link_state_changed",
+              "link_cost_changed",
+              "stub_added",
+              "stub_removed",
+              "stub_cost_changed",
+              "adjacency_up",
+              "adjacency_down",
+              "adjacency_change",
+              "lsa_maxage",
+              "lsp_purge",
+              "area_stale",
+              "area_recovered",
+              "area_partition",
+              "snmp_target_disabled",
+              "traffic.high_utilization",
+              "interface.errors",
+              "eigrp_neighbor_down",
+              "evpn_mac_move",
+              "evpn_pe_lost",
+              "l3vpn_vrf_down",
+              "mpls_pw_down",
+              "mpls_tunnel_down",
+              "bgp_moas_observed",
+              "bgp_moas_cleared",
+              "bgp_own_as_offered"
+            ],
+            "examples": [
+              "adjacency_down"
+            ],
+            "description": "Recorded event type. The listed vocabulary is extensible; accept unfamiliar values from newer servers or retained history."
+          },
+          "entity_type": {
+            "type": "string"
+          },
+          "entity_id": {
+            "type": "string"
+          },
+          "router_id": {
+            "type": "string"
+          },
+          "detail": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": {}
+          },
+          "display_names": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            }
+          },
+          "incident_id": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "event_time",
+          "area_id",
+          "event_type",
+          "entity_type",
+          "detail"
+        ]
+      },
+      "AlertInstance": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "rule_id": {
+            "type": "string"
+          },
+          "area_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "router_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "info",
+              "warning",
+              "critical"
+            ],
+            "examples": [
+              "warning"
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "firing",
+              "resolved",
+              "acknowledged"
+            ],
+            "examples": [
+              "firing"
+            ]
+          },
+          "summary": {
+            "type": "string"
+          },
+          "detail": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": {}
+          },
+          "entity_key": {
+            "type": "string"
+          },
+          "correlation_key": {
+            "type": "string"
+          },
+          "fired_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "resolved_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "acknowledged_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "acknowledged_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "triggering_event_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "rule_id",
+          "severity",
+          "status",
+          "summary",
+          "detail",
+          "entity_key",
+          "correlation_key",
+          "fired_at"
+        ]
+      },
+      "PeriodRange": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string"
+          },
+          "to": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "from",
+          "to"
+        ]
+      },
+      "ChangeCounts": {
+        "type": "object",
+        "properties": {
+          "added": {
+            "type": "integer"
+          },
+          "removed": {
+            "type": "integer"
+          },
+          "changed": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "added",
+          "removed",
+          "changed"
+        ]
+      },
+      "LinkChangeCounts": {
+        "type": "object",
+        "properties": {
+          "added": {
+            "type": "integer"
+          },
+          "removed": {
+            "type": "integer"
+          },
+          "state_changes": {
+            "type": "integer"
+          },
+          "cost_changes": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "added",
+          "removed",
+          "state_changes",
+          "cost_changes"
+        ]
+      },
+      "CongestionSummary": {
+        "type": "object",
+        "properties": {
+          "interfaces_checked": {
+            "type": "integer"
+          },
+          "above_threshold": {
+            "type": "integer"
+          },
+          "threshold": {
+            "type": "number"
+          },
+          "period": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "interfaces_checked",
+          "above_threshold",
+          "threshold",
+          "period"
+        ]
+      },
+      "UtilizationBucketResp": {
+        "type": "object",
+        "properties": {
+          "bucket_time": {
+            "type": "string"
+          },
+          "max_util": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "bucket_time",
+          "max_util"
+        ]
+      },
+      "ChangeSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "period": {
+            "$ref": "#/components/schemas/PeriodRange"
+          },
+          "devices": {
+            "$ref": "#/components/schemas/ChangeCounts"
+          },
+          "links": {
+            "$ref": "#/components/schemas/LinkChangeCounts"
+          },
+          "stubs": {
+            "$ref": "#/components/schemas/ChangeCounts"
+          },
+          "total_events": {
+            "type": "integer"
+          },
+          "raw_counts": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": {
+              "type": "integer"
+            }
+          }
+        },
+        "required": [
+          "period",
+          "devices",
+          "links",
+          "stubs",
+          "total_events",
+          "raw_counts"
+        ]
+      },
+      "CongestionHotspotResp": {
+        "type": "object",
+        "properties": {
+          "interface_id": {
+            "type": "string"
+          },
+          "device_id": {
+            "type": "string"
+          },
+          "router_id": {
+            "type": "string"
+          },
+          "hostname": {
+            "type": "string"
+          },
+          "if_name": {
+            "type": "string"
+          },
+          "speed_mbps": {
+            "type": "integer"
+          },
+          "max_utilization": {
+            "type": "number"
+          },
+          "avg_utilization": {
+            "type": "number"
+          },
+          "hours_above_threshold": {
+            "type": "integer"
+          },
+          "total_hours": {
+            "type": "integer"
+          },
+          "trend": {
+            "type": "string"
+          },
+          "history": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/UtilizationBucketResp"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "interface_id",
+          "device_id",
+          "router_id",
+          "if_name",
+          "speed_mbps",
+          "max_utilization",
+          "avg_utilization",
+          "hours_above_threshold",
+          "total_hours",
+          "trend",
+          "history"
+        ]
+      },
+      "CongestionResponse": {
+        "type": "object",
+        "properties": {
+          "hotspots": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CongestionHotspotResp"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "summary": {
+            "$ref": "#/components/schemas/CongestionSummary"
+          }
+        },
+        "required": [
+          "hotspots",
+          "summary"
+        ]
+      },
+      "AutonomousSystem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "network_id": {
+            "type": "string"
+          },
+          "asn": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "network_id",
+          "asn",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "RoutingDomain": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "as_id": {
+            "type": "string"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "rd": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "as_id",
+          "name",
+          "type",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "ProtocolInstance": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "routing_domain_id": {
+            "type": "string"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "process_id": {
+            "type": "string"
+          },
+          "address_family": {
+            "type": "string"
+          },
+          "router_id": {
+            "type": "string"
+          },
+          "reference_bandwidth": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "routing_domain_id",
+          "protocol",
+          "process_id",
+          "address_family",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "Area": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "protocol_instance_id": {
+            "type": "string"
+          },
+          "area_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "area_type": {
+            "type": "string"
+          },
+          "default_cost": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "no_summary": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "protocol_instance_id",
+          "area_id",
+          "area_type",
+          "no_summary",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "Interface": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "device_id": {
+            "type": "string"
+          },
+          "area_id": {
+            "type": "string"
+          },
+          "ip_address": {
+            "type": "string"
+          },
+          "mask": {
+            "type": "string"
+          },
+          "ipv6_address": {
+            "type": "string"
+          },
+          "ipv6_prefix_len": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "peer_id": {
+            "type": "string"
+          },
+          "peer_system_id": {
+            "type": "string"
+          },
+          "cost": {
+            "type": "integer"
+          },
+          "link_type": {
+            "type": "string"
+          },
+          "source": {
+            "type": "string"
+          },
+          "if_index": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "if_name": {
+            "type": "string"
+          },
+          "if_descr": {
+            "type": "string"
+          },
+          "if_alias": {
+            "type": "string"
+          },
+          "speed_mbps": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "if_mtu": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "dns_name": {
+            "type": "string"
+          },
+          "ospf_hello_interval": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ospf_dead_interval": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ospf_auth_type": {
+            "type": "string"
+          },
+          "ospf_network_type": {
+            "type": "string"
+          },
+          "isis_hello_interval": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "isis_hold_time": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "isis_metric": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "isis_circuit_type": {
+            "type": "string"
+          },
+          "isis_level": {
+            "type": "string"
+          },
+          "isis_priority": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "first_seen": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_seen": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "device_id",
+          "ip_address",
+          "cost",
+          "link_type",
+          "first_seen",
+          "last_seen"
+        ]
+      },
+      "CoveringRecorder": {
+        "type": "object",
+        "properties": {
+          "last_observed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "collector_config_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "discovery_mode": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "home_area_label": {
+            "type": "string"
+          },
+          "verification_state": {
+            "type": "string"
+          },
+          "last_verified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "verification_reason_code": {
+            "type": "string"
+          },
+          "lsdb_truncated": {
+            "type": "boolean"
+          },
+          "lsdb_lsa_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lsdb_truncated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "collector_config_id",
+          "name",
+          "discovery_mode",
+          "status",
+          "enabled",
+          "verification_state",
+          "lsdb_truncated"
+        ]
+      },
+      "ISISBootstrapAreaStatus": {
+        "type": "object",
+        "properties": {
+          "area": {
+            "type": "string"
+          },
+          "collector_config_id": {
+            "type": "string"
+          },
+          "target": {
+            "type": "string"
+          },
+          "management_source": {
+            "type": "string"
+          },
+          "acked": {
+            "type": "boolean"
+          },
+          "retry_failures": {
+            "type": "integer"
+          },
+          "next_attempt_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "area",
+          "acked"
+        ]
+      },
+      "linkDetailDeviceInfo": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "router_id": {
+            "type": "string"
+          },
+          "hostname": {
+            "type": "string"
+          },
+          "system_id": {
+            "type": "string"
+          },
+          "dns_name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "router_id"
+        ]
+      },
+      "linkDetailInterfaceInfo": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "if_name": {
+            "type": "string"
+          },
+          "if_alias": {
+            "type": "string"
+          },
+          "ip_address": {
+            "type": "string"
+          },
+          "mask": {
+            "type": "string"
+          },
+          "ipv6_address": {
+            "type": "string"
+          },
+          "ipv6_prefix_len": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "speed_mbps": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "dns_name": {
+            "type": "string"
+          },
+          "if_mtu": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ospf_hello_interval": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ospf_dead_interval": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "ospf_auth_type": {
+            "type": "string"
+          },
+          "ospf_network_type": {
+            "type": "string"
+          },
+          "isis_hello_interval": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "isis_hold_time": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "isis_circuit_type": {
+            "type": "string"
+          },
+          "isis_level": {
+            "type": "string"
+          },
+          "isis_priority": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "first_seen": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "first_seen"
+        ]
+      },
+      "linkDetailLink": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "source_device_id": {
+            "type": "string"
+          },
+          "destination_device_id": {
+            "type": "string"
+          },
+          "cost_forward": {
+            "type": "integer"
+          },
+          "cost_reverse": {
+            "type": "integer"
+          },
+          "link_type": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "area_id": {
+            "type": "string"
+          },
+          "reported_by_collector_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "evidence_source": {
+            "type": "string"
+          },
+          "first_seen": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_seen": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "id",
+          "source_device_id",
+          "cost_forward",
+          "cost_reverse",
+          "link_type",
+          "state",
+          "area_id",
+          "first_seen",
+          "last_seen"
+        ]
+      },
+      "ISISBootstrapStatus": {
+        "type": "object",
+        "properties": {
+          "generation_id": {
+            "type": "string"
+          },
+          "phase": {
+            "type": "string"
+          },
+          "handoff_started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "desired_count": {
+            "type": "integer"
+          },
+          "acked_count": {
+            "type": "integer"
+          },
+          "areas": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/ISISBootstrapAreaStatus"
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "generation_id",
+          "phase",
+          "desired_count",
+          "acked_count",
+          "areas"
+        ]
+      },
+      "CollectorConfig": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "config": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": {},
+            "description": "Role-dependent recorder configuration. Credentials are redacted for operator users and read-only API keys. This field is not needed for area discovery."
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "area_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "type": "string"
+          },
+          "last_seen": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "last_data_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "last_observed_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "last_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "config_version": {
+            "type": "integer"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "verification_state": {
+            "type": "string"
+          },
+          "last_verified_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "verification_reason_code": {
+            "type": "string"
+          },
+          "lsdb_truncated": {
+            "type": "boolean"
+          },
+          "lsdb_lsa_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lsdb_truncated_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "isis_bootstrap": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ISISBootstrapStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bootstrap_provisioned": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "config",
+          "enabled",
+          "status",
+          "config_version",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "NetworkNode": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "poller_paused": {
+            "type": "boolean"
+          },
+          "snmp_credential_profile_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "snmp_fallback_credential_profile_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "snmp_timeout_seconds": {
+            "type": "integer"
+          },
+          "snmp_retries": {
+            "type": "integer"
+          },
+          "snmp_auto_disable_threshold": {
+            "type": "integer"
+          },
+          "discovery_enabled": {
+            "type": "boolean"
+          },
+          "discovery_interval_hours": {
+            "type": "integer"
+          },
+          "counters_enabled": {
+            "type": "boolean"
+          },
+          "counters_interval_minutes": {
+            "type": "integer"
+          },
+          "counters_poll_interval_seconds": {
+            "type": "integer"
+          },
+          "l2_enrichment_enabled": {
+            "type": "boolean"
+          },
+          "l2_enrichment_interval_hours": {
+            "type": "integer"
+          },
+          "l2_crawl_enabled": {
+            "type": "boolean"
+          },
+          "l2_crawl_interval_hours": {
+            "type": "integer"
+          },
+          "l2_crawl_max_depth": {
+            "type": "integer"
+          },
+          "l2_crawl_include_routers": {
+            "type": "boolean"
+          },
+          "l2_stale_hours": {
+            "type": "integer"
+          },
+          "l2_credential_profile_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "l2_fallback_credential_profile_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "mpls_discovery": {
+            "type": "string"
+          },
+          "mpls_tunnel_count": {
+            "type": "integer"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "autonomous_systems": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ASNode"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "poller_paused",
+          "snmp_timeout_seconds",
+          "snmp_retries",
+          "snmp_auto_disable_threshold",
+          "discovery_enabled",
+          "discovery_interval_hours",
+          "counters_enabled",
+          "counters_interval_minutes",
+          "counters_poll_interval_seconds",
+          "l2_enrichment_enabled",
+          "l2_enrichment_interval_hours",
+          "l2_crawl_enabled",
+          "l2_crawl_interval_hours",
+          "l2_crawl_max_depth",
+          "l2_crawl_include_routers",
+          "l2_stale_hours",
+          "mpls_discovery",
+          "mpls_tunnel_count",
+          "created_at",
+          "updated_at",
+          "autonomous_systems"
+        ]
+      },
+      "ASNode": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "network_id": {
+            "type": "string"
+          },
+          "asn": {
+            "type": "integer"
+          },
+          "name": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "routing_domains": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/RoutingDomainNode"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "network_id",
+          "asn",
+          "created_at",
+          "updated_at",
+          "routing_domains"
+        ]
+      },
+      "RoutingDomainNode": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "as_id": {
+            "type": "string"
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "name": {
+            "type": "string"
+          },
+          "type": {
+            "type": "string"
+          },
+          "rd": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "children": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/RoutingDomainNode"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "protocol_instances": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ProtocolInstanceNode"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "as_id",
+          "name",
+          "type",
+          "created_at",
+          "updated_at",
+          "protocol_instances"
+        ]
+      },
+      "ProtocolInstanceNode": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "routing_domain_id": {
+            "type": "string"
+          },
+          "protocol": {
+            "type": "string"
+          },
+          "process_id": {
+            "type": "string"
+          },
+          "address_family": {
+            "type": "string"
+          },
+          "router_id": {
+            "type": "string"
+          },
+          "reference_bandwidth": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "description": {
+            "type": "string"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "areas": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/AreaNode"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "routing_domain_id",
+          "protocol",
+          "process_id",
+          "address_family",
+          "created_at",
+          "updated_at",
+          "areas"
+        ]
+      },
+      "AreaNode": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "protocol_instance_id": {
+            "type": "string"
+          },
+          "area_id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "area_type": {
+            "type": "string"
+          },
+          "default_cost": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "no_summary": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "collectors": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/CollectorConfig"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "covering_recorders": {
+            "anyOf": [
+              {
+                "type": "array",
+                "items": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/CoveringRecorder"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "protocol_instance_id",
+          "area_id",
+          "area_type",
+          "no_summary",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "HierarchyTree": {
+        "type": "object",
+        "properties": {
+          "networks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/NetworkNode"
+            }
+          }
+        },
+        "required": [
+          "networks"
+        ]
+      },
+      "linkDetailResponse": {
+        "type": "object",
+        "properties": {
+          "link": {
+            "$ref": "#/components/schemas/linkDetailLink"
+          },
+          "source": {
+            "$ref": "#/components/schemas/linkDetailDeviceInfo"
+          },
+          "target": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/linkDetailDeviceInfo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source_interface": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/linkDetailInterfaceInfo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "target_interface": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/linkDetailInterfaceInfo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "link",
+          "source",
+          "target",
+          "source_interface",
+          "target_interface"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "message": {
+                "type": "string"
+              },
+              "field": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "code",
+              "message"
+            ]
+          }
+        },
+        "required": [
+          "error"
+        ]
+      },
+      "EventCursorPage": {
+        "type": "object",
+        "properties": {
+          "pagination": {
+            "type": "string",
+            "const": "cursor"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TopologyEvent"
+            }
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "has_more": {
+            "type": "boolean"
+          },
+          "next_cursor": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "description": "Opaque continuation token; null on the last page."
+          },
+          "window_to": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "pagination",
+          "events",
+          "limit",
+          "has_more",
+          "next_cursor",
+          "window_to"
+        ]
+      },
+      "capabilitiesResponse": {
+        "type": "object",
+        "properties": {
+          "api_version": {
+            "type": "string"
+          },
+          "features": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "openapi_url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "api_version",
+          "features",
+          "openapi_url"
+        ]
+      },
+      "BGPPeer": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "device_id": {
+            "type": "string"
+          },
+          "as_id": {
+            "type": "string"
+          },
+          "peer_ip": {
+            "type": "string"
+          },
+          "peer_as": {
+            "type": "integer"
+          },
+          "local_ip": {
+            "type": "string"
+          },
+          "local_as": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "peer_type": {
+            "type": "string"
+          },
+          "address_family": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "prefixes_received": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "peer_router_id": {
+            "type": "string"
+          },
+          "peer_bgp_id": {
+            "type": "string"
+          },
+          "add_paths_negotiated": {
+            "type": "boolean"
+          },
+          "send_community": {
+            "type": "boolean"
+          },
+          "hold_time": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "keepalive_interval": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "last_notification_code": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "last_notification_subcode": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bmp_target_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source": {
+            "type": "string"
+          },
+          "first_seen": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_seen": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "device_hostname": {
+            "type": "string"
+          },
+          "peer_hostname": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "device_id",
+          "as_id",
+          "peer_ip",
+          "peer_as",
+          "peer_type",
+          "address_family",
+          "state",
+          "add_paths_negotiated",
+          "send_community",
+          "first_seen",
+          "last_seen",
+          "created_at",
+          "updated_at"
+        ]
+      },
+      "BGPBestPath": {
+        "type": "object",
+        "properties": {
+          "as_id": {
+            "type": "string"
+          },
+          "routing_domain_id": {
+            "type": "string"
+          },
+          "prefix": {
+            "type": "string"
+          },
+          "device_id": {
+            "type": "string"
+          },
+          "next_hop": {
+            "type": "string"
+          },
+          "next_hop_device_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "origin_as": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "as_path": {
+            "type": "string"
+          },
+          "local_pref": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "med": {
+            "type": "integer"
+          },
+          "communities": {
+            "type": "string"
+          },
+          "source_peer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source_peer_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "igp_metric": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "source": {
+            "type": "string"
+          },
+          "ecmp_count": {
+            "type": "integer"
+          },
+          "deciding_step": {
+            "type": "string"
+          },
+          "path_count": {
+            "type": "integer"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "device_hostname": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "as_id",
+          "routing_domain_id",
+          "prefix",
+          "device_id",
+          "next_hop",
+          "as_path",
+          "med",
+          "source",
+          "ecmp_count",
+          "path_count",
+          "updated_at"
+        ]
+      },
+      "BGPSummary": {
+        "type": "object",
+        "properties": {
+          "peer_count": {
+            "type": "integer"
+          },
+          "peers_up": {
+            "type": "integer"
+          },
+          "peers_down": {
+            "type": "integer"
+          },
+          "prefixes_ipv4": {
+            "type": "integer"
+          },
+          "prefixes_ipv6": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "peer_count",
+          "peers_up",
+          "peers_down",
+          "prefixes_ipv4",
+          "prefixes_ipv6"
+        ]
+      },
+      "OSPFNeighborEntry": {
+        "type": "object",
+        "properties": {
+          "neighbor_id": {
+            "type": "string"
+          },
+          "device_id": {
+            "type": "string"
+          },
+          "hostname": {
+            "type": "string"
+          },
+          "state": {
+            "type": "string"
+          },
+          "address": {
+            "type": "string"
+          },
+          "local_address": {
+            "type": "string"
+          },
+          "interface": {
+            "type": "string"
+          },
+          "cost": {
+            "type": "integer"
+          },
+          "reverse_cost": {
+            "type": "integer"
+          },
+          "link_type": {
+            "type": "string"
+          },
+          "area_id": {
+            "type": "string"
+          },
+          "is_abr": {
+            "type": "boolean"
+          },
+          "is_asbr": {
+            "type": "boolean"
+          },
+          "first_seen": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_seen": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "required": [
+          "neighbor_id",
+          "device_id",
+          "hostname",
+          "state",
+          "address",
+          "local_address",
+          "interface",
+          "cost",
+          "reverse_cost",
+          "link_type",
+          "area_id",
+          "is_abr",
+          "is_asbr",
+          "first_seen",
+          "last_seen"
+        ]
+      },
+      "NeighborSummary": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer"
+          },
+          "up": {
+            "type": "integer"
+          },
+          "down": {
+            "type": "integer"
+          }
+        },
+        "required": [
+          "total",
+          "up",
+          "down"
+        ]
+      },
+      "IncidentEvent": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "event_time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "area_id": {
+            "type": "string"
+          },
+          "collector_id": {
+            "type": "string"
+          },
+          "event_type": {
+            "type": "string"
+          },
+          "entity_type": {
+            "type": "string"
+          },
+          "entity_id": {
+            "type": "string"
+          },
+          "router_id": {
+            "type": "string"
+          },
+          "detail": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": {}
+          }
+        },
+        "required": [
+          "id",
+          "event_time",
+          "area_id",
+          "event_type",
+          "entity_type",
+          "detail"
+        ]
+      },
+      "TopologyIncident": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "area_id": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "acknowledged",
+              "resolved"
+            ]
+          },
+          "severity": {
+            "type": "string",
+            "enum": [
+              "info",
+              "warning",
+              "critical"
+            ]
+          },
+          "root_cause_type": {
+            "type": "string"
+          },
+          "root_cause_id": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          },
+          "event_count": {
+            "type": "integer"
+          },
+          "first_event_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_event_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "resolved_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "acknowledged_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "acknowledged_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "detail": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": {},
+            "description": "Extensible correlation or detector-specific evidence; root cause is an assessment, not proof of physical failure."
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "area_deleted": {
+            "type": "boolean"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/IncidentEvent"
+            },
+            "description": "Optional child events. Omitted when empty; an event-loading failure returns 500. Retention can remove older associated events."
+          },
+          "display_names": {
+            "type": [
+              "object",
+              "null"
+            ],
+            "additionalProperties": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "id",
+          "area_id",
+          "status",
+          "severity",
+          "root_cause_type",
+          "summary",
+          "event_count",
+          "first_event_at",
+          "last_event_at",
+          "detail",
+          "created_at"
+        ]
+      },
+      "NeighborTableResponse": {
+        "type": "object",
+        "properties": {
+          "device_id": {
+            "type": "string"
+          },
+          "router_id": {
+            "type": "string"
+          },
+          "hostname": {
+            "type": "string"
+          },
+          "neighbors": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OSPFNeighborEntry"
+            }
+          },
+          "summary": {
+            "$ref": "#/components/schemas/NeighborSummary"
+          }
+        },
+        "required": [
+          "device_id",
+          "router_id",
+          "hostname",
+          "neighbors",
+          "summary"
+        ]
+      }
+    }
+  }
+}

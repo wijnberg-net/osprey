@@ -1,0 +1,86 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Collectors (Read) — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="collectors-read">Collectors (Read)</h3><h4 id="list-collectors">List Collectors</h4><pre><code>GET /api/v1/collectors?limit=100&amp;offset=0
+GET /api/v1/collectors?enabled=true&amp;limit=100&amp;offset=0
+</code></pre>
+<p>List all collector configurations. Supports <a href="api-pagination.html#pagination">pagination</a>. <strong>Operator role</strong>: credentials in the <code>config</code> JSONB are redacted — SNMP community strings and v3 auth/priv passwords, plus OSPF (<code>ospf.auth.key</code> / <code>ospf.auth.password</code>) and IS-IS (<code>isis.authentication.key</code>) authentication keys, are masked.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li><code>enabled</code> (optional) — If <code>&quot;true&quot;</code>, returns only enabled collectors</li>
+<li><code>limit</code> (optional) — Max items to return (default 100, max 1000)</li>
+<li><code>offset</code> (optional) — Items to skip (default 0)</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code> — Paginated envelope</p>
+<pre><code class="language-json">{
+  &quot;data&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;name&quot;: &quot;collector-1&quot;,
+      &quot;description&quot;: &quot;Primary collector&quot;,
+      &quot;config&quot;: { ... },
+      &quot;area_id&quot;: &quot;uuid&quot;,
+      &quot;enabled&quot;: true,
+      &quot;status&quot;: &quot;running&quot;,
+      &quot;last_seen&quot;: &quot;2024-01-01T12:00:00Z&quot;,
+      &quot;last_data_at&quot;: &quot;2024-01-01T12:00:00Z&quot;,
+      &quot;last_error&quot;: null,
+      &quot;config_version&quot;: 3,
+      &quot;created_at&quot;: &quot;2024-01-01T00:00:00Z&quot;,
+      &quot;updated_at&quot;: &quot;2024-01-01T00:00:00Z&quot;
+    }
+  ],
+  &quot;total&quot;: 1,
+  &quot;limit&quot;: 100,
+  &quot;offset&quot;: 0
+}
+</code></pre>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>The <code>config</code> field is an opaque JSONB blob transformed into the runtime collector config by the collector-manager. There is <strong>no top-level <code>router_id</code> field</strong> — the OSPF adjacency router-id lives inside the blob at <code>config.ospf.router_id</code> and must be a valid IPv4 address (router IDs are 32-bit per RFC 5340, even for OSPFv3). IS-IS collectors carry <code>config.isis.*</code> instead.</li>
+<li><code>config_version</code> is always present; it is bumped on any config change or hierarchy rename to trigger a collector-manager restart. <code>last_data_at</code> (<code>omitempty</code>) is the timestamp of the most recent published snapshot, distinct from the <code>last_seen</code> liveness heartbeat.</li>
+<li><code>status</code> values: <code>pending</code> | <code>starting</code> | <code>discovering</code> | <code>running</code> | <code>degraded</code> | <code>stopped</code> | <code>error</code>. <strong><code>degraded</code></strong> means the collector process runs but its protocol adjacency is down (no data feed) — GRE collectors report it within seconds of adjacency loss (hold-timer expiry) and flip back to <code>running</code> on recovery; the transition is flap-damped on the IS-IS path.</li>
+<li><strong>Managed rows</strong> are read-only through collector CRUD when they have their complete
+Osprey-owned shape. BGP-LS uses <code>managed_by: &quot;bgpls&quot;</code> and name
+<code>bgpls:&lt;source-uuid&gt;</code>; IS-IS bootstrap children use <code>managed_by: &quot;isis-bootstrap&quot;</code>,
+<code>managed_parent_id</code>, strict <code>crawl_abrs: false</code>, and name
+<code>isis-snmp-managed:v1:&lt;protocol-instance-uuid&gt;:&lt;canonical-area&gt;</code>. <code>PUT</code>, toggle, and
+<code>DELETE</code> return <strong>409</strong> with the owning surface. <code>POST</code> and merged <code>PUT</code> reject the two
+reserved <code>managed_by</code> values and name prefixes with <strong>400</strong>. Partial marker sets remain
+operator-owned and can be repaired or deleted.</li>
+<li>At successful IS-IS handoff, generation-managed children lose <code>managed_by</code> and
+<code>managed_parent_id</code> and gain complete <code>provisioned_*</code> audit metadata. Their response has
+<code>bootstrap_provisioned: true</code>; target, credentials, poll interval, description, toggle,
+and delete are operator-controlled. Name, <code>area_id</code>, the complete hierarchy identity,
+<code>discovery_mode</code>, <code>snmp.crawl_abrs</code>, and provenance are immutable (<code>400</code>). Create and
+update cannot forge either the reserved name or any <code>provisioned_*</code> field.</li>
+<li>An IS-IS SNMP parent may carry boolean <code>config.snmp.bootstrap_recorders</code>. Automatic
+lifecycle work requires this persistent opt-in and the startup-latched server setting
+<code>snmp.isis_bootstrap_enabled: true</code>; both default to false. With both enabled on an
+enabled <code>level-2</code>, <code>crawl_abrs: true</code> parent, a complete crawl reconciles one strict
+IS-IS SNMP recorder per canonical L1 area. Existing enabled strict operator recorders
+can satisfy a scope; otherwise Osprey creates temporarily read-only managed children.
+The parent
+remains multi-area until every exact child config version has produced an engine-persisted
+snapshot after the database acknowledgement boundary. The final parent scope change,
+cross-area coverage cleanup, completion record, state invalidation, and audit entry are
+one transaction, including transfer of generated children to operator ownership without
+a child version bump. Removing either gate before that transaction prevents handoff;
+managed children already created remain enabled for operator inspection or rollback.</li>
+</ul>
+<h4 id="get-collector">Get Collector</h4><pre><code>GET /api/v1/collectors/{collectorID}
+</code></pre>
+<p>Get a single collector configuration by ID. <strong>Operator role</strong>: credentials in the <code>config</code> JSONB are redacted (SNMP community / v3 passwords and OSPF / IS-IS auth keys masked).</p>
+<p><strong>Response:</strong> <code>200 OK</code> (single collector object)</p>
+<p><strong>Error:</strong> <code>404 Not Found</code></p>
+<h4 id="get-collector-status">Get Collector Status</h4><pre><code>GET /api/v1/collectors/{collectorID}/status
+</code></pre>
+<p>Get the runtime status of a collector (subset of full config).</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;running&quot;,
+  &quot;last_seen&quot;: &quot;2024-01-01T12:00:00Z&quot;,
+  &quot;last_error&quot;: null,
+  &quot;enabled&quot;: true
+}
+</code></pre>
+<p><strong>Error:</strong> <code>404 Not Found</code></p>
+<hr>
+</main></html>
