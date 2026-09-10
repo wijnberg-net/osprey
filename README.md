@@ -72,7 +72,8 @@ link-state database and exchange protocol traffic; they are not invisible to
 the network. OSPF collectors advertise high link costs, and IS-IS collectors set
 the overload bit to discourage transit use. Osprey is an observer, not a packet
 forwarder. Collection still requires appropriate router configuration and uses
-management or control-plane resources.
+management or control-plane resources. In OSPF areas using flood reduction,
+adding a GRE recorder can restore periodic LSA refresh traffic.
 
 Source availability matters. A populated map does not guarantee that every route,
 address family, or historical interval is covered. Path details identify inferred
@@ -116,12 +117,10 @@ All features, up to 32 devices, no time limit, no license key required. Upgrade 
 uploading a license key through the web UI. For Professional or Enterprise
 licensing, contact **[sales@wijnberg.net](mailto:sales@wijnberg.net)**.
 
-Exceeding the device limit or reaching paid-license expiry starts a 30-day grace
-period with unrestricted operation. Afterward, existing devices remain monitored:
-topology, paths, alerts, reports, and live updates stay available. New devices are
-refused only when they exceed the applicable limit. Removing a device frees a slot;
-an address or identifier change does not consume another slot when Osprey can
-match it to the existing device.
+The evaluation includes 32 devices; adding more requires a paid license.
+Existing devices remain monitored when the limit is reached. Paid licenses
+include a 30-day grace period for exceeding the device limit or reaching expiry.
+Removing a device frees a slot.
 
 ---
 
@@ -130,7 +129,7 @@ match it to the existing device.
 | Protocol   | Discovery method   | Capabilities |
 |------------|--------------------|--------------|
 | **OSPFv2** | GRE adjacency, SNMP, BGP-LS | LSDB inspection for direct collection, SPF, inter-area and external routes; interface traffic through SNMP |
-| **OSPFv3** | GRE adjacency, SNMP, BGP-LS | LSDB inspection for direct collection, dual-stack topology, RFC 5838 address families |
+| **OSPFv3** | GRE adjacency, SNMP, BGP-LS | LSDB inspection for direct collection and IPv6 topology; IPv4 address-family support is not available |
 | **IS-IS**  | GRE adjacency, SNMP, BGP-LS | LSDB inspection for direct collection, CLNS/IPv4/IPv6 path analysis, SR-MPLS, advertised SRv6 capabilities/locators/SIDs, multi-area discovery from a single seed, scoped area recorders, Cisco IOS GRE support |
 | **EIGRP**  | SNMP (CISCO-EIGRP-MIB) | IPv4/IPv6 neighbor, interface and topology-table discovery; classic and named mode, VRF/AS scoping, observed route metrics and next hops, L2 integration, administrative-distance selection and adjacency-loss alerts. Cisco only; no EIGRP adjacency required |
 | **BGP**    | BMP (RFC 7854)      | Received routing tables and candidate paths, ADD-PATH, peer state, historical replay and AS-flow animation |
@@ -142,7 +141,8 @@ match it to the existing device.
 Capabilities depend on the source, device software, and enabled router features.
 BGP-LS exports are not equivalent to a complete raw LSDB, and BMP exposes the
 routes its exporters provide. A supported protocol does not imply that every
-device exposes every table or address family.
+device exposes every table or address family. IS-IS IPv6 path analysis
+requires a shared topology; separate MT-IS-IS topologies are not supported.
 
 IS-IS multi-area discovery is enabled per recorder. Automatic handoff to
 per-area SNMP recorders is a separate, default-off option: it requires both
@@ -163,7 +163,7 @@ restart) and the parent recorder's **Bootstrap strict per-area recorders** optio
 - L2 overlay: LLDP/CDP switch adjacencies rendered alongside IGP topology
 - Device and link details show whether information came from a link-state database, SNMP, or a router export
 - Export to Visio (.vsdx), PNG and SVG, with support for curved links, labels and area boundaries; import vendor stencil packs for device icons
-- Multiple visual themes, including dark, high contrast, and retro
+- Multiple visual themes, including dark, high contrast, and Gruvbox
 - Responsive layout for phones and tablets; the desktop layout is unchanged
 
 ### Traffic monitoring
@@ -287,10 +287,15 @@ installed forwarding path or active protection.
 - Maintenance windows for scheduled alert suppression
 - SNMP credential profiles with per-network overrides and fallback credentials
 - Backup/restore, audit logging, encrypted credential storage, license management
-- Update notification: checks for a newer release on startup and prompts when one is available
+- Update notification with a built-in check for newer releases
 
-Identity-provider integration acceptance testing is still pending. Validate
-sign-in, group-to-role mapping and provisioning with your provider before rollout.
+Validate sign-in, role mapping and provisioning with your identity provider
+before rollout.
+
+The update check also reports device/link counts, protocols and evaluation status
+to wijnberg.net once per browser page load; clicking the website logo shares the
+same summary. Blocking browser connections to wijnberg.net disables the automatic
+check and reporting. See our [privacy policy](https://www.wijnberg.net/privacy/).
 
 ---
 
@@ -376,7 +381,7 @@ respective licenses; see [THIRD-PARTY-LICENSES.txt](THIRD-PARTY-LICENSES.txt).
 <details>
 <summary>Protocol references</summary>
 
-**OSPF**: RFC 2328 (v2), RFC 5340 (v3), RFC 5838 (AF extensions), RFC 5709 (HMAC-SHA authentication), RFC 7474 (manual-key security extension).
+**OSPF**: RFC 2328 (v2), RFC 5340 (v3), RFC 5709 (HMAC-SHA authentication), RFC 7474 (manual-key security extension).
 **IS-IS**: ISO 10589, RFC 1195, RFC 5301 (hostname), RFC 5303 (3-way), RFC 5305 (TE), RFC 8667 (SR-MPLS).
 **BGP/BMP**: RFC 4271 (BGP-4), RFC 4760 (MP-BGP), RFC 6793 (4-byte ASN), RFC 7854 (BMP), RFC 7911 (Add-Path), RFC 8654 (Extended Messages), RFC 9552 (BGP-LS).
 **EVPN**: RFC 7432 (BGP MPLS-Based Ethernet VPN), RFC 8214 (EVPN-VPWS), RFC 8365 (network virtualization overlays / VXLAN).
