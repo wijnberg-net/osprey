@@ -131,10 +131,10 @@ match it to the existing device.
 |------------|--------------------|--------------|
 | **OSPFv2** | GRE adjacency, SNMP, BGP-LS | LSDB inspection for direct collection, SPF, inter-area and external routes; interface traffic through SNMP |
 | **OSPFv3** | GRE adjacency, SNMP, BGP-LS | LSDB inspection for direct collection, dual-stack topology, RFC 5838 address families |
-| **IS-IS**  | GRE adjacency, SNMP, BGP-LS | LSDB inspection for direct collection, CLNS/IPv4/IPv6 path analysis, SR-MPLS, multi-area discovery from a single seed, scoped area recorders, Cisco IOS GRE support |
+| **IS-IS**  | GRE adjacency, SNMP, BGP-LS | LSDB inspection for direct collection, CLNS/IPv4/IPv6 path analysis, SR-MPLS, advertised SRv6 capabilities/locators/SIDs, multi-area discovery from a single seed, scoped area recorders, Cisco IOS GRE support |
 | **EIGRP**  | SNMP (CISCO-EIGRP-MIB) | IPv4/IPv6 neighbor, interface and topology-table discovery; classic and named mode, VRF/AS scoping, observed route metrics and next hops, L2 integration, administrative-distance selection and adjacency-loss alerts. Cisco only; no EIGRP adjacency required |
 | **BGP**    | BMP (RFC 7854)      | Received routing tables and candidate paths, ADD-PATH, peer state, historical replay and AS-flow animation |
-| **BGP-LS** | BMP or direct BGP session (RFC 9552) | Router-exported topology with source attribution; direct area collection takes precedence. Incomplete collection is reported, and topology is withheld when source-completeness checks fail |
+| **BGP-LS** | BMP or direct BGP session (RFC 9552) | Router-exported topology with source attribution; direct area collection takes precedence. Inspect exported SRv6 SIDs and SR-policy candidate paths where available. Incomplete collection is reported, and topology is withheld when source-completeness checks fail |
 | **EVPN**   | BMP (RFC 7854)      | EVPN routes (RFC 7432), E-LAN & EVPN-VPWS instances (VXLAN or MPLS), member PEs with MAC/IP counts, Ethernet segments, MAC-mobility & PE-loss detection |
 | **MPLS**   | SNMP (MPLS-TE / L3VPN / PW MIBs) | TE tunnels (RFC 3812), L3VPNs grouped by VRF and route-target data (RFC 4364 / 4382), VPWS connections and VPLS instances from pseudowire data (RFC 5601) |
 | **L2**     | SNMP (LLDP/CDP)     | Switch adjacencies, neighbor-based discovery, overlay on IGP topology |
@@ -186,6 +186,11 @@ restart) and the parent recorder's **Bootstrap strict per-area recorders** optio
 - Shortest-path computation with the full equal-cost path set and asymmetric-routing detection
 - IS-IS address-family selector with separate path views; CLNS displays System IDs and NETs
 - SR-MPLS label-stack computation (RFC 8667)
+- **SRv6 observations and local repair analysis.** Inspect advertised capabilities,
+  locators and End/End.X SIDs. For live IS-IS areas, calculate local failure
+  alternatives and attempt to bind logical repair instructions to advertised
+  SIDs. Missing or ambiguous evidence is explained; the calculation does not
+  establish installed TI-LFA protection or packet delivery.
 - Per-router routing table with step-by-step cost explanation
 - BGP prefix search (exact, longest-match, covered) with CSV export
 - SPF tree visualization from any device with cost annotations
@@ -211,6 +216,15 @@ restart) and the parent recorder's **Bootstrap strict per-area recorders** optio
   use the recorded authorization state for that time. No validation badge is
   shown when no ROAs have been loaded; Osprey does not run an RTR service.
 - Peer session monitoring via BMP with up/down history and per-target prefix counts
+
+### SR-policy observations
+
+Inspect router-exported SR-policy candidate paths through BGP-LS over BMP or a
+direct BGP-LS session. Compare headend, endpoint, color, preference and ordered
+SID lists, and highlight nodes matched to exact advertisements in the source's
+routing domain. Sources remain separate; unknown and ambiguous SID owners are
+identified. Advertised policies and node associations do not establish an
+installed forwarding path or active protection.
 
 ### MPLS & EVPN service visibility
 
@@ -256,6 +270,11 @@ restart) and the parent recorder's **Bootstrap strict per-area recorders** optio
 - Incident-correlation engine: related events grouped with inferred root causes
 - LSDB browser with LSA headers, age indicators, and Options-flag decoding
 - Diagnostic reports: timer consistency, MTU mismatch, congestion trends, routing stability, single points of failure
+- **External OSPF defaults.** Filter stored external advertisements to `0.0.0.0/0`
+  and `::/0`, grouped by process and Type 5/7 metric type, with advertiser counts
+  and observation timestamps. Unknown originators are not stored; SNMP changes
+  may appear only at the hourly refresh, and stopped areas can retain old rows.
+  This report does not establish complete or current default-route coverage.
 
 ### Administration
 
