@@ -84,9 +84,9 @@ or unresolved sections where the available observations do not support an answer
 ## Download & install
 
 Building an integration? Start with [API & Integrations](https://github.com/wijnberg-net/osprey/wiki/API-and-Integrations).
-The [API reference for 1.4.4](https://www.wijnberg.net/api/v1.4.4/) covers the current release; [older editions](https://www.wijnberg.net/api/) remain available. Releases
+The [API reference for 1.4.5](https://www.wijnberg.net/api/v1.4.5/) covers the current release; [older editions](https://www.wijnberg.net/api/) remain available. Releases
 from 1.4.3 also provide `openapi.json` as a download. The specification covers
-20 observation operations in 1.4.4, not the complete API.
+20 observation operations in 1.4.5, not the complete API.
 
 Grab the latest `.deb` from the
 [Releases page](https://github.com/wijnberg-net/osprey/releases/latest), verify it,
