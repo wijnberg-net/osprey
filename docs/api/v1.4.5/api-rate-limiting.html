@@ -1,0 +1,27 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Rate Limiting — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="rate-limiting">Rate Limiting</h3><p>Rate limits are applied per client IP address:</p>
+<table>
+<thead>
+<tr>
+<th>Scope</th>
+<th>Limit</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>All authenticated endpoints</td>
+<td>3000 requests per minute (burst 200)</td>
+</tr>
+<tr>
+<td><code>POST /auth/login</code></td>
+<td>5 requests per minute</td>
+</tr>
+<tr>
+<td><code>PUT /auth/password</code></td>
+<td>3 requests per minute</td>
+</tr>
+<tr>
+<td><code>POST /auth/refresh</code></td>
+<td>30 requests per minute (burst 15)</td>
+</tr>
+</tbody></table>
+<p>When rate-limited, the server responds with <code>429 Too Many Requests</code> and includes a <code>Retry-After: 60</code> header.</p>
+</main></html>

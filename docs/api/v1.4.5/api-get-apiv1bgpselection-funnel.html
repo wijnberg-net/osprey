@@ -1,0 +1,18 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BGP selection funnel — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="get-apiv1bgpselection-funnel">BGP selection funnel <!-- topic: get-apiv1bgpselection-funnel --></h3><p><code>GET /api/v1/bgp/selection-funnel</code></p>
+<pre><code>GET /api/v1/bgp/selection-funnel?as_id=&lt;uuid&gt;&amp;from_asn=64801&amp;to_asn=65100
+</code></pre>
+<p><strong>Selection funnel</strong>: for the prefixes whose <strong>live winning path traverses the observed adjacency <code>from_asn</code>→<code>to_asn</code></strong> (path-adjacency scope — an AS_PATH neighbour pair, never a verified session), the RFC 4271 §9.1 step at which the best-path decision resolved: winner vs <strong>strongest runner-up</strong>, computed with the same comparator the engine&#39;s selection uses. Numeric steps carry the <strong>median winning margin</strong>. Self-checking: a prefix whose computed winner contradicts the stored <code>is_best</code> lands in <code>undetermined</code> — never a guess (a MED-non-transitivity pairwise loss also refuses this way). <strong>Live only</strong> — it reads <code>bgp_rib_entry</code>; there is no <code>at=</code> parameter, and the UI shows a refusal line on a historical cursor instead.</p>
+<p><strong>Auth:</strong> any authenticated user. <strong>Query:</strong> the as-graph scope selector (<code>as_id</code>, or <code>network_id</code>+<code>asn</code>; optional <code>af</code>, default ipv4), <code>from_asn</code> + <code>to_asn</code> (both required numeric; <code>to_asn=0</code> — the fold column — is refused with <code>400</code>: an aggregate carries no per-adjacency claim), <code>limit</code> (prefix cap, clamped ≤10000; <code>truncated: true</code> marks a lower bound).</p>
+<p><strong>Response</strong> <code>200 OK</code>:</p>
+<pre><code class="language-json">{
+  &quot;from_asn&quot;: 64801, &quot;to_asn&quot;: 65100, &quot;prefixes&quot;: 42,
+  &quot;steps&quot;: [
+    { &quot;step&quot;: &quot;local_pref&quot;, &quot;count&quot;: 30, &quot;median_margin&quot;: 100 },
+    { &quot;step&quot;: &quot;as_path_len&quot;, &quot;count&quot;: 8, &quot;median_margin&quot;: 1 },
+    { &quot;step&quot;: &quot;only_path&quot;, &quot;count&quot;: 3 }
+  ],
+  &quot;undetermined&quot;: 1, &quot;truncated&quot;: false
+}
+</code></pre>
+<p><code>step</code> ∈ <code>eligibility</code> (§9.1.2 loop/next-hop ineligibility left it the only survivor), <code>only_path</code> (nothing to compare), <code>local_pref</code>, <code>as_path_len</code>, <code>origin</code>, <code>med</code>, <code>ebgp_over_ibgp</code>, <code>igp_cost</code>, <code>router_id</code>, <code>tie</code> (indistinguishable through the whole ladder). Steps with zero prefixes are omitted; the UI renders the block inside every adjacency card of the AS-flow lenses.</p>
+</main></html>

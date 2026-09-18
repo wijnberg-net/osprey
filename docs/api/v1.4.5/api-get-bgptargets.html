@@ -1,0 +1,36 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>List BMP targets — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="get-bgptargets">List BMP targets <!-- topic: get-bgptargets --></h3><p><code>GET /bgp/targets</code></p>
+<p>List all BMP monitoring targets. Typically &lt; 20 targets, no pagination. Accepts optional <code>pi_id</code> query parameter to filter by protocol instance (for sidebar lazy-load).</p>
+<p><strong>Auth</strong>: all authenticated roles</p>
+<p><strong>Response</strong>: <code>200 OK</code></p>
+<pre><code class="language-json">[
+  {
+    &quot;id&quot;: &quot;uuid&quot;,
+    &quot;device_id&quot;: &quot;uuid&quot;,
+    &quot;name&quot;: &quot;rr1&quot;,
+    &quot;description&quot;: &quot;Route Reflector 1&quot;,
+    &quot;sys_name&quot;: &quot;rr1.example.com&quot;,
+    &quot;router_ip&quot;: &quot;198.51.100.1&quot;,
+    &quot;as_id&quot;: &quot;uuid&quot;,
+    &quot;routing_domain_id&quot;: &quot;uuid&quot;,
+    &quot;protocol_instance_id&quot;: &quot;uuid&quot;,
+    &quot;state&quot;: &quot;connected&quot;,
+    &quot;rib_mode&quot;: &quot;loc_rib&quot;,
+    &quot;enabled&quot;: true,
+    &quot;last_connected&quot;: &quot;2026-03-18T12:00:00Z&quot;,
+    &quot;consecutive_failures&quot;: 0,
+    &quot;max_prefixes&quot;: 2000000,
+    &quot;max_initial_dump_seconds&quot;: 300,
+    &quot;history_mode&quot;: &quot;best_path_peer&quot;,
+    &quot;history_prefix_filter&quot;: [&quot;10.0.0.0/8&quot;],
+    &quot;stats_prefixes_ipv4&quot;: 850000,
+    &quot;stats_prefixes_ipv6&quot;: 200000,
+    &quot;created_at&quot;: &quot;2026-03-01T00:00:00Z&quot;,
+    &quot;updated_at&quot;: &quot;2026-03-18T12:00:00Z&quot;,
+    &quot;device_hostname&quot;: &quot;rr1&quot;,
+    &quot;as_name&quot;: &quot;AS65001&quot;,
+    &quot;rd_name&quot;: &quot;global&quot;
+  }
+]
+</code></pre>
+<p><code>max_initial_dump_seconds</code> (initial RIB-dump quiet/hard timeout, seconds) is always present. <code>bgpls_enabled</code>, <code>max_bgpls_nlri</code>, <code>bgpls_exceeded</code>, <code>bgpls_refusal_reason</code> and <code>bgpls_dump_session</code> are always present. The refusal reason names only object loss: <code>budget</code>, <code>objects dropped in transit</code>, <code>malformed objects skipped</code>, or <code>unparsable update</code>; inferred completion is not a refusal. Also returned: <code>bgpls_strict_eor</code>, <code>bgpls_completion_inferred</code>, <code>bgpls_completion_af</code>, optional <code>bgpls_completion_at</code>, and <code>bgpls_completion_session</code>. An inferred quiet boundary advances <code>bgpls_dump_session</code> by default but never sweeps; strict EoR records and acknowledges the inference while holding the previous epoch. <code>bgpls_completion_session</code> is the monotonic publisher acknowledgement and may therefore advance when strict mode leaves <code>bgpls_dump_session</code> unchanged. <code>bgpls_completion_af</code> is currently always <code>link-state</code> once a marker has been applied: Osprey implements AFI 16388 / SAFI 71 today, while the explicit field leaves future SAFI 72 completion provenance unambiguous. <code>history_mode</code> is always present; <code>history_prefix_filter</code> is <code>omitempty</code>. <code>protocol_instance_id</code> and <code>last_error</code> are <code>omitempty</code>. This same shape is returned by <code>GET /bgp/targets/{id}</code>, <code>POST /bgp/targets</code>, and <code>PUT /bgp/targets/{id}</code>. Create and update accept <code>bgpls_strict_eor</code> (default false; update uses presence semantics so omission preserves it and explicit false clears it).</p>
+</main></html>

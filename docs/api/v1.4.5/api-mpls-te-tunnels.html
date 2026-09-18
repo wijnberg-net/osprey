@@ -1,0 +1,58 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MPLS-TE Tunnels — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="mpls-te-tunnels">MPLS-TE Tunnels</h3><p>Discovered MPLS-TE tunnels (RFC 3812), walked from the MPLS-TE-STD-MIB <code>mplsTunnelTable</code> by the SNMP poller and written directly to the store. Read-only — there is no create/update/delete surface. Scoped per network.</p>
+<p><strong>Auth:</strong> All roles (admin, engineer, operator). Read-only observed topology state; license state never gates reads.</p>
+<h4 id="list-mpls-te-tunnels">List MPLS-TE Tunnels</h4><pre><code>GET /api/v1/networks/{networkID}/mpls-tunnels
+</code></pre>
+<p>Returns discovered tunnels for a network. The default view collapses instance and observer rows to one row per logical tunnel, preferring the headend observation.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li><code>device_id</code> -- Tunnels touching this device: headend, tailend, <strong>or</strong> observer (a transit router is the observer, not an endpoint) -- a three-way OR</li>
+<li><code>status</code> -- <code>up</code> (oper=1) | <code>down</code> (oper&lt;&gt;1)</li>
+<li><code>role</code> -- <code>head</code> | <code>transit</code> | <code>tail</code>. <code>transit</code>/<code>tail</code> implicitly force <code>include=transit</code>, since the default one-row-per-logical-tunnel collapse prefers the head observation and would otherwise hide the very rows the filter asks for.</li>
+<li><code>include=transit</code> -- Return the raw per-observer observation rows instead of the default one-row-per-logical-tunnel collapse</li>
+<li><code>limit</code> / <code>offset</code> -- Pagination</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code> (paginated envelope)</p>
+<pre><code class="language-json">{
+  &quot;data&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;network_id&quot;: &quot;uuid&quot;,
+      &quot;area_id&quot;: &quot;uuid&quot;,
+      &quot;tunnel_index&quot;: 65437,
+      &quot;active_instance&quot;: 34,
+      &quot;ingress_lsr_id&quot;: &quot;192.0.2.1&quot;,
+      &quot;egress_lsr_id&quot;: &quot;192.0.2.11&quot;,
+      &quot;headend_device_id&quot;: &quot;uuid&quot;,
+      &quot;tailend_device_id&quot;: &quot;uuid&quot;,
+      &quot;observed_by_device_id&quot;: &quot;uuid&quot;,
+      &quot;tunnel_role&quot;: 1,
+      &quot;name&quot;: &quot;Tunnel65437&quot;,
+      &quot;admin_status&quot;: 1,
+      &quot;oper_status&quot;: 1,
+      &quot;signalling_proto&quot;: 2,
+      &quot;bandwidth_bps&quot;: 0,
+      &quot;first_seen&quot;: &quot;2026-07-04T12:00:00Z&quot;,
+      &quot;last_seen&quot;: &quot;2026-07-04T12:05:00Z&quot;,
+      &quot;updated_at&quot;: &quot;2026-07-04T12:05:00Z&quot;
+    }
+  ],
+  &quot;total&quot;: 1,
+  &quot;limit&quot;: 50,
+  &quot;offset&quot;: 0
+}
+</code></pre>
+<p><code>tunnel_role</code> = mplsTunnelRole {head=1, transit=2, tail=3, headTail=4}; <code>admin_status</code> / <code>oper_status</code> per RFC 3812; <code>signalling_proto</code> {none=1, rsvp=2, crldp=3, other=4} (<code>0</code> = not yet enriched). <code>area_id</code>, <code>headend_device_id</code>, <code>tailend_device_id</code> are omitted when unresolved. Data is <code>[]</code> (not <code>null</code>) when empty.</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- <code>status</code> not <code>up</code>/<code>down</code>, or <code>role</code> not <code>head</code>/<code>transit</code>/<code>tail</code></li>
+</ul>
+<hr>
+<h4 id="get-mpls-te-tunnel">Get MPLS-TE Tunnel</h4><pre><code>GET /api/v1/mpls-tunnels/{id}
+</code></pre>
+<p>Returns a single tunnel row by ID (same schema as a List <code>data</code> entry).</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>404 Not Found</code> -- Tunnel does not exist</li>
+</ul>
+<hr>
+</main></html>

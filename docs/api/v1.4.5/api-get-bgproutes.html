@@ -1,0 +1,115 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>List BGP routes — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="get-bgproutes">List BGP routes <!-- topic: get-bgproutes --></h3><p>These existing reads are included in the 1.4.4 OpenAPI reference. Ordinary authenticated operator, engineer and admin credentials are supported. Restricted read-only API keys receive <code>403</code>; documentation inclusion does not change access.</p>
+<p><code>GET /api/v1/bgp/routes</code></p>
+<p>Search BGP best paths (engine-computed) with prefix filtering and pagination.</p>
+<p><strong>Auth</strong>: all authenticated roles</p>
+<p><strong>Query params</strong>:</p>
+<table>
+<thead>
+<tr>
+<th>Param</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>as_id</code></td>
+<td>UUID</td>
+<td>Filter by autonomous system</td>
+</tr>
+<tr>
+<td><code>prefix</code></td>
+<td>CIDR</td>
+<td>Exact prefix or search base (e.g. <code>10.0.0.0/8</code>)</td>
+</tr>
+<tr>
+<td><code>match</code></td>
+<td>string</td>
+<td>Match mode: empty (exact), <code>&quot;longest&quot;</code>, <code>&quot;covered&quot;</code></td>
+</tr>
+<tr>
+<td><code>device_id</code></td>
+<td>UUID</td>
+<td>Filter by next-hop device (<code>next_hop_device_id</code>)</td>
+</tr>
+<tr>
+<td><code>selecting_device_id</code></td>
+<td>UUID</td>
+<td>Filter by selecting device perspective (<code>device_id</code> -- which BMP target produced this best-path)</td>
+</tr>
+<tr>
+<td><code>origin_as</code></td>
+<td>int</td>
+<td>Filter by origin AS number</td>
+</tr>
+<tr>
+<td><code>next_hop</code></td>
+<td>IP</td>
+<td>Filter by next-hop address</td>
+</tr>
+<tr>
+<td><code>community</code></td>
+<td>string</td>
+<td>Filter by community string (substring match)</td>
+</tr>
+<tr>
+<td><code>af</code></td>
+<td>string</td>
+<td>Filter by address family: <code>ipv4</code> or <code>ipv6</code> (filters by <code>family(prefix)</code>)</td>
+</tr>
+<tr>
+<td><code>limit</code></td>
+<td>int</td>
+<td>Max results (default 50, max 10000)</td>
+</tr>
+<tr>
+<td><code>offset</code></td>
+<td>int</td>
+<td>Pagination offset (default 0, capped at 100,000)</td>
+</tr>
+<tr>
+<td><code>at</code></td>
+<td>RFC 3339</td>
+<td>As-of-T: return best-paths from <code>bgp_best_path_history</code> at this time instead of the live table. Malformed → <code>400</code>.</td>
+</tr>
+</tbody></table>
+<p><strong>Note</strong>: Offset is capped at 100,000 to prevent full-table scans on large RIBs. Clients needing deeper pagination should narrow results with prefix/origin_as/next_hop filters.</p>
+<p><strong>Response</strong>: <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;routes&quot;: [
+    {
+      &quot;as_id&quot;: &quot;uuid&quot;,
+      &quot;routing_domain_id&quot;: &quot;uuid&quot;,
+      &quot;prefix&quot;: &quot;203.0.113.0/24&quot;,
+      &quot;device_id&quot;: &quot;uuid&quot;,
+      &quot;device_hostname&quot;: &quot;rr1&quot;,
+      &quot;next_hop&quot;: &quot;198.51.100.2&quot;,
+      &quot;next_hop_device_id&quot;: &quot;uuid&quot;,
+      &quot;origin_as&quot;: 65099,
+      &quot;as_path&quot;: &quot;65002 65099&quot;,
+      &quot;local_pref&quot;: 100,
+      &quot;med&quot;: 0,
+      &quot;communities&quot;: &quot;65001:100 65001:200&quot;,
+      &quot;source_peer_id&quot;: &quot;uuid&quot;,
+      &quot;igp_metric&quot;: 20,
+      &quot;source&quot;: &quot;loc_rib&quot;,
+      &quot;ecmp_count&quot;: 1,
+      &quot;updated_at&quot;: &quot;2026-03-18T12:00:00Z&quot;,
+      &quot;path_count&quot;: 3
+    }
+  ],
+  &quot;total&quot;: 850000,
+  &quot;unique_prefixes&quot;: 335,
+  &quot;limit&quot;: 50,
+  &quot;offset&quot;: 0
+}
+</code></pre>
+<p><strong>Note</strong>: <code>path_count</code> is the number of distinct received paths for this prefix across all peers (via LEFT JOIN LATERAL on <code>bgp_rib_entry</code>). Value is 0 when no RIB entries exist (e.g., <code>rib_mode = &#39;loc_rib&#39;</code>). Used by the frontend to show an expand chevron on rows with multiple paths.</p>
+<p><strong>Note</strong>: <code>source</code> and <code>ecmp_count</code> are always present. <code>source</code> is <code>&quot;loc_rib&quot;</code> when the best path was reported directly from the router&#39;s Loc-RIB, or <code>&quot;inferred&quot;</code> when the engine ran its own RFC 4271 decision process over received paths; <code>ecmp_count</code> is the number of equal-cost paths the winner tied with. <code>igp_metric</code> (the IGP cost to the next hop) is <code>omitempty</code> — omitted when unknown. <code>deciding_step</code> (omitempty) names the RFC 4271 §9.1 step the selection resolved at against the strongest runner-up (<code>only_path</code>, <code>eligibility</code>, <code>local_pref</code>, <code>as_path_len</code>, <code>origin</code>, <code>med</code>, <code>ebgp_over_ibgp</code>, <code>igp_cost</code>, <code>router_id</code>, <code>tie</code>, <code>undetermined</code> — the selection-funnel vocabulary): a <code>router_id</code>/<code>tie</code> row is one where a router applying RFC 5004 prefer-oldest (IOS&#39;s default; ~12 % of a real DN42 table, measured) may install a different next hop — the UI badges these rows &quot;tie-break&quot;. Absent on rows written before the column existed.</p>
+<p><code>total</code> counts <strong>best-path rows</strong> — one per selecting device × prefix (each BMP
+target independently runs its own RFC 4271 decision process), so a prefix known
+to six route reflectors contributes six rows (<code>device_hostname</code> identifies the
+selecting router). <code>unique_prefixes</code> counts distinct prefixes over the whole
+filtered set.</p>
+<p>When <code>at</code> is supplied, rows come from the best-path history as-of-T; a <code>notice</code>
+string is added (and <code>total</code> is <code>0</code>) when the window has no recorded routes.</p>
+</main></html>

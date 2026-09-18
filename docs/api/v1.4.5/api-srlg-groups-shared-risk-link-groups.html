@@ -1,0 +1,170 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SRLG Groups (Shared Risk Link Groups) — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="srlg-groups-shared-risk-link-groups">SRLG Groups (Shared Risk Link Groups)</h3><p>Named sets of links that share physical fate (e.g., same fiber duct). Used by Engineering Mode to model correlated link failures. Scoped per network.</p>
+<p><strong>Auth:</strong> Engineer, Admin (all endpoints).</p>
+<h4 id="list-srlgs">List SRLGs</h4><pre><code>GET /api/v1/srlgs?network_id=&lt;uuid&gt;
+</code></pre>
+<p>Returns all SRLGs for a network, ordered by name. Each entry includes a computed <code>member_count</code>.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li><code>network_id</code> (required) -- Network UUID</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">[
+  {
+    &quot;id&quot;: &quot;uuid&quot;,
+    &quot;network_id&quot;: &quot;uuid&quot;,
+    &quot;name&quot;: &quot;Fiber Duct A-B&quot;,
+    &quot;description&quot;: &quot;Links sharing the conduit between sites A and B&quot;,
+    &quot;member_count&quot;: 3,
+    &quot;created_at&quot;: &quot;2026-03-26T12:00:00Z&quot;,
+    &quot;updated_at&quot;: &quot;2026-03-26T12:00:00Z&quot;
+  }
+]
+</code></pre>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Missing <code>network_id</code></li>
+</ul>
+<hr>
+<h4 id="list-srlgs-for-simulation">List SRLGs for Simulation</h4><pre><code>GET /api/v1/srlgs/for-simulation?network_id=&lt;uuid&gt;
+</code></pre>
+<p>Lightweight list (id, name, member_count) for the &quot;Load Saved SRLG&quot; dropdown in Engineering Mode. Same response format as List SRLGs.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li><code>network_id</code> (required) -- Network UUID</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code> -- Array of SRLG objects (same schema as List SRLGs)</p>
+<hr>
+<h4 id="get-srlg">Get SRLG</h4><pre><code>GET /api/v1/srlgs/{id}
+</code></pre>
+<p>Returns a single SRLG with its member link IDs.</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;id&quot;: &quot;uuid&quot;,
+  &quot;network_id&quot;: &quot;uuid&quot;,
+  &quot;name&quot;: &quot;Fiber Duct A-B&quot;,
+  &quot;description&quot;: &quot;Links sharing the conduit between sites A and B&quot;,
+  &quot;member_count&quot;: 3,
+  &quot;member_link_ids&quot;: [&quot;uuid-link-1&quot;, &quot;uuid-link-2&quot;, &quot;uuid-link-3&quot;],
+  &quot;created_at&quot;: &quot;2026-03-26T12:00:00Z&quot;,
+  &quot;updated_at&quot;: &quot;2026-03-26T12:00:00Z&quot;
+}
+</code></pre>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>404 Not Found</code> -- SRLG does not exist</li>
+</ul>
+<hr>
+<h4 id="create-srlg">Create SRLG</h4><pre><code>POST /api/v1/srlgs
+</code></pre>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;network_id&quot;: &quot;uuid&quot;,
+  &quot;name&quot;: &quot;Fiber Duct A-B&quot;,
+  &quot;description&quot;: &quot;Links sharing the conduit between sites A and B&quot;,
+  &quot;member_link_ids&quot;: [&quot;uuid-link-1&quot;, &quot;uuid-link-2&quot;]
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>network_id</code></td>
+<td>UUID</td>
+<td>Yes</td>
+<td>Network scope</td>
+</tr>
+<tr>
+<td><code>name</code></td>
+<td>string</td>
+<td>Yes</td>
+<td>1-100 characters, unique per network</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>string</td>
+<td>No</td>
+<td>Optional description</td>
+</tr>
+<tr>
+<td><code>member_link_ids</code></td>
+<td>string[]</td>
+<td>No</td>
+<td>Initial member links</td>
+</tr>
+</tbody></table>
+<p><strong>Response:</strong> <code>201 Created</code> -- SRLGWithMembers object</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Missing network_id, invalid name</li>
+</ul>
+<hr>
+<h4 id="update-srlg">Update SRLG</h4><pre><code>PUT /api/v1/srlgs/{id}
+</code></pre>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;Fiber Duct A-B (updated)&quot;,
+  &quot;description&quot;: &quot;Updated description&quot;,
+  &quot;member_link_ids&quot;: [&quot;uuid-link-1&quot;, &quot;uuid-link-3&quot;]
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>name</code></td>
+<td>string</td>
+<td>No</td>
+<td>New name (1-100 characters)</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>string</td>
+<td>No</td>
+<td>New description (always applied, even if empty)</td>
+</tr>
+<tr>
+<td><code>member_link_ids</code></td>
+<td>string[]</td>
+<td>No</td>
+<td>If present, replaces all members. Null = no change. Empty array = clear all members.</td>
+</tr>
+</tbody></table>
+<p><strong>Response:</strong> <code>200 OK</code> -- SRLGWithMembers object</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Invalid name</li>
+<li><code>404 Not Found</code> -- SRLG does not exist</li>
+</ul>
+<hr>
+<h4 id="delete-srlg">Delete SRLG</h4><pre><code>DELETE /api/v1/srlgs/{id}
+</code></pre>
+<p>Deletes the SRLG. CASCADE removes all member entries.</p>
+<p><strong>Response:</strong> <code>204 No Content</code></p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>404 Not Found</code> -- SRLG does not exist</li>
+</ul>
+<hr>
+<h4 id="list-srlg-members">List SRLG Members</h4><pre><code>GET /api/v1/srlgs/{id}/members
+</code></pre>
+<p>Returns all member entries for an SRLG, ordered by link_id.</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">[
+  { &quot;id&quot;: &quot;uuid&quot;, &quot;srlg_id&quot;: &quot;uuid&quot;, &quot;link_id&quot;: &quot;uuid-link-1&quot; },
+  { &quot;id&quot;: &quot;uuid&quot;, &quot;srlg_id&quot;: &quot;uuid&quot;, &quot;link_id&quot;: &quot;uuid-link-2&quot; }
+]
+</code></pre>
+<hr>
+</main></html>

@@ -1,0 +1,10 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Error Responses — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h2 id="error-responses">Error Responses</h2><p>Ordinary REST handlers, UUID validation and router-generated 404/405 responses use the same structured JSON envelope with a machine-parseable error code. Older releases can return a string in <code>error</code> on some paths. SCIM uses its own error format; reverse-proxy and transport failures can be non-JSON. Check the HTTP status and content type before parsing:</p>
+<pre><code class="language-json">{
+  &quot;error&quot;: {
+    &quot;code&quot;: &quot;NOT_FOUND&quot;,
+    &quot;message&quot;: &quot;device not found&quot;
+  }
+}
+</code></pre>
+<p>The <code>field</code> property is only present for validation errors and identifies the specific input field that failed validation.</p>
+</main></html>
