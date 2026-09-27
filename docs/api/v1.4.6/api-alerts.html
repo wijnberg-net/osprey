@@ -1,0 +1,195 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Alerts — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="alerts">Alerts</h3><p>Alert instances represent fired alerts from alert rules. All authenticated users can list, view, acknowledge, and resolve alerts.</p>
+<h4 id="list-alert-rules-read">List Alert Rules (Read)</h4><pre><code>GET /api/v1/alerts/rules?limit=100&amp;offset=0
+</code></pre>
+<p>List all alert rules. Available to all authenticated users. Returns all rules regardless of enabled state. Supports <a href="api-pagination.html#pagination">pagination</a>.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li><code>limit</code> (optional) — Max items to return (default 100, max 1000)</li>
+<li><code>offset</code> (optional) — Items to skip (default 0)</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code> — Paginated envelope</p>
+<pre><code class="language-json">{
+  &quot;data&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;name&quot;: &quot;Link Down&quot;,
+      &quot;description&quot;: &quot;Alert when a link goes down&quot;,
+      &quot;severity&quot;: &quot;critical&quot;,
+      &quot;event_type&quot;: &quot;link_state_changed&quot;,
+      &quot;condition&quot;: {&quot;state&quot;: &quot;down&quot;},
+      &quot;scope_type&quot;: &quot;area&quot;,
+      &quot;scope_id&quot;: &quot;uuid&quot;,
+      &quot;enabled&quot;: true,
+      &quot;cooldown_secs&quot;: 300,
+      &quot;created_by&quot;: &quot;uuid&quot;,
+      &quot;created_at&quot;: &quot;2026-02-17T12:00:00Z&quot;,
+      &quot;updated_at&quot;: &quot;2026-02-17T12:00:00Z&quot;
+    }
+  ],
+  &quot;total&quot;: 1,
+  &quot;limit&quot;: 100,
+  &quot;offset&quot;: 0
+}
+</code></pre>
+<h4 id="list-alert-instances">List Alert Instances</h4><pre><code>GET /api/v1/alerts
+GET /api/v1/alerts?status=firing&amp;severity=critical&amp;area_id={areaID}&amp;router_id={routerID}&amp;rule_id={ruleID}&amp;from={from}&amp;to={to}&amp;limit=100&amp;offset=0
+</code></pre>
+<p>List alert instances with optional filters. Returns newest first.</p>
+<p><strong>Query parameters (all optional):</strong></p>
+<ul>
+<li><code>status</code> -- Filter by alert status (<code>&quot;firing&quot;</code>, <code>&quot;acknowledged&quot;</code>, <code>&quot;resolved&quot;</code>)</li>
+<li><code>severity</code> -- Filter by severity (<code>&quot;critical&quot;</code>, <code>&quot;warning&quot;</code>, <code>&quot;info&quot;</code>)</li>
+<li><code>area_id</code> -- Filter by area UUID</li>
+<li><code>router_id</code> -- Filter by OSPF router ID (e.g., <code>&quot;10.0.0.1&quot;</code>)</li>
+<li><code>rule_id</code> -- Filter by alert rule UUID</li>
+<li><code>from</code> -- Start time filter, RFC3339 (e.g., <code>&quot;2026-02-16T00:00:00Z&quot;</code>)</li>
+<li><code>to</code> -- End time filter, RFC3339 (e.g., <code>&quot;2026-02-17T00:00:00Z&quot;</code>)</li>
+<li><code>limit</code> -- Maximum number of alerts to return (default determined by server)</li>
+<li><code>offset</code> -- Number of alerts to skip for pagination (default: 0)</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;alerts&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;rule_id&quot;: &quot;uuid&quot;,
+      &quot;area_id&quot;: &quot;uuid&quot;,
+      &quot;router_id&quot;: &quot;10.0.0.2&quot;,
+      &quot;severity&quot;: &quot;critical&quot;,
+      &quot;status&quot;: &quot;firing&quot;,
+      &quot;summary&quot;: &quot;Link between 10.0.0.2 and 10.0.0.3 is down&quot;,
+      &quot;detail&quot;: {
+        &quot;router_a&quot;: &quot;10.0.0.2&quot;,
+        &quot;router_b&quot;: &quot;10.0.0.3&quot;,
+        &quot;link_id&quot;: &quot;uuid&quot;
+      },
+      &quot;entity_key&quot;: &quot;link:uuid&quot;,
+      &quot;correlation_key&quot;: &quot;link:10.0.0.2|10.0.0.3&quot;,
+      &quot;fired_at&quot;: &quot;2026-02-17T14:30:00Z&quot;,
+      &quot;resolved_at&quot;: null,
+      &quot;acknowledged_at&quot;: null,
+      &quot;acknowledged_by&quot;: null,
+      &quot;triggering_event_id&quot;: &quot;uuid&quot;
+    }
+  ],
+  &quot;total&quot;: 5,
+  &quot;display_names&quot;: {
+    &quot;10.0.0.2&quot;: &quot;core-rtr-01.ams&quot;,
+    &quot;10.0.0.3&quot;: &quot;edge-rtr-02.ams&quot;
+  },
+  &quot;scope_labels&quot;: {
+    &quot;area-uuid&quot;: &quot;OSPFv2 · pid 1 · 0.0.0.0&quot;
+  }
+}
+</code></pre>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>The <code>total</code> field contains the total count of alerts matching the filter (before <code>limit</code>/<code>offset</code>), for pagination.</li>
+<li><code>area_id</code>, <code>router_id</code>, <code>resolved_at</code>, <code>acknowledged_at</code>, <code>acknowledged_by</code>, and <code>triggering_event_id</code> may be <code>null</code>.</li>
+<li>The <code>display_names</code> field maps router IDs found across all alerts to human-readable device names resolved per the <code>display.device_name_mode</code> system setting. Omitted when no device names are available.</li>
+<li><code>correlation_key</code> groups instances describing the same physical entity across address families and areas: link alerts use the order-independent router pair (<code>link:&lt;lo&gt;|&lt;hi&gt;</code>), all others use their <code>entity_key</code>. Clients collapse a group into one row (see the group cascade endpoints below).</li>
+<li>The <code>scope_labels</code> field maps each alert&#39;s <code>area_id</code> to a protocol-instance label (protocol family, address family for OSPFv3 only per RFC 5838, process id, and area — e.g. <code>OSPFv2 · pid 1 · 0.0.0.0</code> or <code>OSPFv3 (IPv6) · pid 1 · 19.9.14.0</code>), to distinguish the per-instance members of a correlated group.</li>
+</ul>
+<h4 id="get-alert-instance">Get Alert Instance</h4><pre><code>GET /api/v1/alerts/{alertID}
+</code></pre>
+<p>Get a single alert instance by ID.</p>
+<p><strong>Response:</strong> <code>200 OK</code> (single alert instance object)</p>
+<p><strong>Error:</strong> <code>404 Not Found</code> -- Alert does not exist</p>
+<h4 id="acknowledge-alert">Acknowledge Alert</h4><pre><code>PUT /api/v1/alerts/{alertID}/acknowledge
+</code></pre>
+<p>Acknowledge a firing alert. Sets <code>acknowledged_at</code> to the current time and records the acknowledging user&#39;s ID in <code>acknowledged_by</code>. No request body required.</p>
+<p><strong>Response:</strong> <code>200 OK</code> (updated alert instance object with <code>acknowledged_at</code> and <code>acknowledged_by</code> set)</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>401 Unauthorized</code> -- Missing or invalid access token</li>
+<li><code>500 Internal Server Error</code> -- Alert does not exist or database error</li>
+</ul>
+<h4 id="resolve-alert">Resolve Alert</h4><pre><code>PUT /api/v1/alerts/{alertID}/resolve
+</code></pre>
+<p>Manually resolve an alert. Sets <code>status</code> to <code>&quot;resolved&quot;</code> and <code>resolved_at</code> to the current time. No request body required.</p>
+<p><strong>Response:</strong> <code>200 OK</code> (updated alert instance object with <code>status: &quot;resolved&quot;</code> and <code>resolved_at</code> set)</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>500 Internal Server Error</code> -- Alert does not exist or database error</li>
+</ul>
+<h4 id="ignore-alert-suppress">Ignore Alert (Suppress)</h4><pre><code>PUT /api/v1/alerts/{alertID}/ignore
+</code></pre>
+<p>Suppress future alerts for this alert&#39;s rule+entity combination and resolve the current alert. Creates an <code>alert_suppression</code> row from the alert&#39;s <code>rule_id</code> and <code>entity_key</code>, then resolves the alert. No request body required.</p>
+<p><strong>Response:</strong> <code>200 OK</code> (updated alert instance object with <code>status: &quot;resolved&quot;</code>)</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>401 Unauthorized</code> -- Missing or invalid access token</li>
+<li><code>500 Internal Server Error</code> -- Alert does not exist or database error</li>
+</ul>
+<h4 id="resolve-alert-group">Resolve Alert Group</h4><pre><code>POST /api/v1/alerts/group/resolve
+</code></pre>
+<p>Resolve every firing/acknowledged alert sharing a <code>correlation_key</code> (one physical link&#39;s per-address-family / per-area alerts). Publishes one <code>alert.resolved</code> event per resolved member.</p>
+<p><strong>Request body:</strong> <code>{ &quot;correlation_key&quot;: &quot;link:10.0.0.2|10.0.0.3&quot; }</code></p>
+<p><strong>Response:</strong> <code>200 OK</code> — <code>{ &quot;resolved&quot;: &lt;count&gt; }</code></p>
+<p><strong>Errors:</strong> <code>400 Bad Request</code> (missing <code>correlation_key</code>), <code>500 Internal Server Error</code></p>
+<h4 id="acknowledge-alert-group">Acknowledge Alert Group</h4><pre><code>POST /api/v1/alerts/group/acknowledge
+</code></pre>
+<p>Acknowledge every firing alert in the correlation group. Request body as above.</p>
+<p><strong>Response:</strong> <code>200 OK</code> — <code>{ &quot;acknowledged&quot;: &lt;count&gt; }</code></p>
+<p><strong>Errors:</strong> <code>400 Bad Request</code>, <code>401 Unauthorized</code>, <code>500 Internal Server Error</code></p>
+<h4 id="ignore-alert-group-suppress">Ignore Alert Group (Suppress)</h4><pre><code>POST /api/v1/alerts/group/ignore
+</code></pre>
+<p>Suppress each distinct <code>(rule_id, entity_key)</code> in the correlation group (creating <code>alert_suppression</code> rows), then resolve the whole group. Optional <code>reason</code>.</p>
+<p><strong>Request body:</strong> <code>{ &quot;correlation_key&quot;: &quot;link:10.0.0.2|10.0.0.3&quot;, &quot;reason&quot;: &quot;planned maintenance&quot; }</code></p>
+<p><strong>Response:</strong> <code>200 OK</code> — <code>{ &quot;ignored&quot;: &lt;count&gt; }</code></p>
+<p><strong>Errors:</strong> <code>400 Bad Request</code>, <code>401 Unauthorized</code>, <code>500 Internal Server Error</code></p>
+<h4 id="delete-alert-engineeradmin">Delete Alert (Engineer/Admin)</h4><pre><code>DELETE /api/v1/alerts/{alertID}
+</code></pre>
+<p>Permanently delete a single alert instance. Engineer or admin role required. Idempotent: returns <code>204</code> even if the alert does not exist.</p>
+<p><strong>Response:</strong> <code>204 No Content</code></p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>401 Unauthorized</code> -- Missing or invalid access token</li>
+<li><code>403 Forbidden</code> -- Role below engineer</li>
+<li><code>500 Internal Server Error</code> -- Database error</li>
+</ul>
+<h4 id="delete-all-alerts-engineeradmin">Delete All Alerts (Engineer/Admin)</h4><pre><code>DELETE /api/v1/alerts
+</code></pre>
+<p>Permanently delete every alert instance in the system. Useful for wiping a dev/test environment. Engineer or admin role required. Does not delete alert rules, suppressions, or notification channels.</p>
+<p><strong>Response:</strong> <code>204 No Content</code></p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>401 Unauthorized</code> -- Missing or invalid access token</li>
+<li><code>403 Forbidden</code> -- Role below engineer</li>
+<li><code>500 Internal Server Error</code> -- Database error</li>
+</ul>
+<h4 id="list-alert-suppressions">List Alert Suppressions</h4><pre><code>GET /api/v1/alerts/suppressions
+</code></pre>
+<p>List all alert suppressions with the associated rule name. Returns all suppressions (no pagination).</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;suppressions&quot;: [
+    {
+      &quot;rule_id&quot;: &quot;uuid&quot;,
+      &quot;rule_name&quot;: &quot;Device Down&quot;,
+      &quot;entity_key&quot;: &quot;10.0.0.1&quot;,
+      &quot;reason&quot;: &quot;Known maintenance&quot;,
+      &quot;created_by&quot;: &quot;uuid&quot;,
+      &quot;created_at&quot;: &quot;2026-03-09T12:00:00Z&quot;
+    }
+  ]
+}
+</code></pre>
+<h4 id="delete-alert-suppression-admin">Delete Alert Suppression (Admin)</h4><pre><code>DELETE /api/v1/alerts/suppressions?rule_id={ruleID}&amp;entity_key={entityKey}
+</code></pre>
+<p>Remove a suppression, re-enabling alerting for that rule+entity combination. <strong>Engineer or admin.</strong></p>
+<p><strong>Query parameters (required):</strong></p>
+<ul>
+<li><code>rule_id</code> -- Alert rule UUID</li>
+<li><code>entity_key</code> -- Entity key string</li>
+</ul>
+<p><strong>Response:</strong> <code>204 No Content</code></p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>401 Unauthorized</code> -- Missing or invalid access token</li>
+<li><code>403 Forbidden</code> -- Non-admin user</li>
+<li><code>404 Not Found</code> -- Suppression does not exist</li>
+<li><code>500 Internal Server Error</code> -- Database error</li>
+</ul>
+<hr>
+</main></html>

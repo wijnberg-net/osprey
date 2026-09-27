@@ -1,0 +1,46 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Identity Providers (SSO) — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="identity-providers-sso">Identity Providers (SSO)</h3><p>Admin-only CRUD for external identity providers (OIDC, LDAP and SAML 2.0). Secrets are write-only: responses carry <code>secret_set</code> (boolean) and never the value; an empty <code>secret</code> on update keeps the stored one.</p>
+<p><strong>SAML config keys</strong> (<code>type: &quot;saml&quot;</code>): <code>idp_metadata_url</code> or <code>idp_metadata_xml</code> (one required), <code>group_attr</code> (assertion attribute carrying groups; default <code>groups</code>), <code>allow_private_network</code> (for metadata fetch from an RFC1918 IdP). The SP signing keypair is generated on first use and stored (<code>secret</code> = private key PEM, <code>config.sp_certificate</code> = cert PEM). Responses include <code>metadata_uri</code> (the SP metadata endpoint) alongside <code>redirect_uri</code> (the ACS). SAML providers appear as login-page buttons. The test endpoint runs <code>external_url</code>/<code>sp_keypair</code>/<code>idp_metadata</code>/<code>sso_endpoint</code> checks.</p>
+<p><strong>LDAP config keys</strong> (<code>type: &quot;ldap&quot;</code>; <code>secret</code> holds the bind password): <code>url</code> (<code>ldap://</code>/<code>ldaps://</code>, required), <code>base_dn</code> (required), <code>start_tls</code>, <code>insecure_skip_verify</code>, <code>bind_dn</code> (empty = anonymous search), <code>user_filter</code> (<code>%s</code> = username; default <code>(|(uid=%s)(sAMAccountName=%s))</code>), <code>group_attr</code> (default <code>memberOf</code>), <code>group_filter</code> (<code>%s</code> = user DN, for directories without a memberOf overlay), <code>nested_groups</code> (AD matching-rule-in-chain), <code>id_attr</code> (identity attribute; default auto: <code>objectGUID</code> → <code>entryUUID</code> — never the DN), <code>allow_private_network</code>. LDAP providers never appear as login-page buttons — directory accounts sign in through the username/password form. The test endpoint runs <code>connect</code>/<code>tls</code>/<code>bind</code>/<code>base</code> checks (plain <code>ldap://</code> without StartTLS fails the <code>tls</code> check).</p>
+<h4 id="list-get-providers">List / Get Providers</h4><pre><code>GET /api/v1/admin/auth-providers
+GET /api/v1/admin/auth-providers/{providerID}
+</code></pre>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;id&quot;: &quot;uuid&quot;,
+  &quot;type&quot;: &quot;oidc&quot;,
+  &quot;name&quot;: &quot;Corporate SSO&quot;,
+  &quot;enabled&quot;: true,
+  &quot;config&quot;: { &quot;issuer&quot;: &quot;https://idp.example.com&quot;, &quot;client_id&quot;: &quot;osprey&quot;, &quot;scopes&quot;: &quot;openid profile email groups&quot;, &quot;groups_claim&quot;: &quot;groups&quot;, &quot;groups_via_userinfo&quot;: false, &quot;allow_private_network&quot;: false },
+  &quot;role_mapping&quot;: [ { &quot;group&quot;: &quot;netops-admins&quot;, &quot;role&quot;: &quot;admin&quot; } ],
+  &quot;default_role&quot;: &quot;&quot;,
+  &quot;secret_set&quot;: true,
+  &quot;redirect_uri&quot;: &quot;https://osprey.example.com/api/v1/auth/oidc/&lt;id&gt;/callback&quot;,
+  &quot;created_at&quot;: &quot;2026-07-18T00:00:00Z&quot;,
+  &quot;updated_at&quot;: &quot;2026-07-18T00:00:00Z&quot;
+}
+</code></pre>
+<p><code>redirect_uri</code> is derived from <code>auth.external_url</code> (absent while that setting is empty) — register it at the IdP. <code>default_role: &quot;&quot;</code> means <em>deny</em> when no mapping matches. <code>allow_private_network</code> disables the SSRF dial-guard for this provider only (required for on-premises IdPs on RFC1918 space).</p>
+<h4 id="create-update-provider">Create / Update Provider</h4><pre><code>POST /api/v1/admin/auth-providers
+PUT  /api/v1/admin/auth-providers/{providerID}
+</code></pre>
+<p>Body: <code>{type, name, enabled, config, role_mapping, default_role, secret}</code>. <code>type</code> is immutable after create. Validation: <code>type</code> ∈ oidc/saml/ldap; <code>name</code> required (≤100, unique); OIDC requires <code>config.issuer</code> + <code>config.client_id</code>; every <code>role_mapping</code> entry needs a group and a valid role. <code>enabled</code> is <strong>merge-only on update</strong>: an omitted field keeps the stored state; disabling a provider revokes the sessions and refresh tokens of every user who signed in through it. On create, an omitted <code>enabled</code> means disabled.</p>
+<p><strong>Error responses:</strong> <code>400</code> validation, <code>409</code> duplicate name, <code>404</code> unknown provider.</p>
+<h4 id="toggle-delete-provider">Toggle / Delete Provider</h4><pre><code>POST    /api/v1/admin/auth-providers/{providerID}/toggle
+DELETE /api/v1/admin/auth-providers/{providerID}
+</code></pre>
+<p>Toggle flips <code>enabled</code>; disabling revokes the provider&#39;s users&#39; sessions. Delete additionally deactivates accounts whose <strong>only</strong> identity was this provider (orphan policy — no login-impossible ghost accounts stay active) and cascades the identity links. Both run in one transaction. Toggle returns <code>200 {&quot;enabled&quot;: bool}</code>; delete returns <code>204</code>.</p>
+<h4 id="test-provider">Test Provider</h4><pre><code>POST /api/v1/admin/auth-providers/{providerID}/test
+</code></pre>
+<p>Runs per-layer connectivity checks and returns them individually (never a bare OK/FAIL):</p>
+<pre><code class="language-json">{
+  &quot;overall&quot;: &quot;fail&quot;,
+  &quot;checks&quot;: [
+    { &quot;id&quot;: &quot;tls&quot;, &quot;label&quot;: &quot;Issuer uses HTTPS&quot;, &quot;status&quot;: &quot;fail&quot;, &quot;detail&quot;: &quot;issuer is not an https:// URL&quot; },
+    { &quot;id&quot;: &quot;discovery&quot;, &quot;label&quot;: &quot;OIDC discovery document&quot;, &quot;status&quot;: &quot;ok&quot;, &quot;detail&quot;: &quot;issuer https://...&quot; },
+    { &quot;id&quot;: &quot;jwks&quot;, &quot;label&quot;: &quot;JWKS reachable&quot;, &quot;status&quot;: &quot;ok&quot;, &quot;detail&quot;: &quot;2 key(s) at https://...&quot; }
+  ]
+}
+</code></pre>
+<p><code>status</code> is <code>ok</code>, <code>fail</code> or <code>skip</code>; <code>overall</code> is <code>fail</code> when any check fails.</p>
+<hr>
+</main></html>

@@ -1,0 +1,25 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Input Validation — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="input-validation">Input Validation</h3><p><strong>Path parameters</strong>: All URL path parameters named <code>id</code> or ending in <code>ID</code> (e.g., <code>networkID</code>, <code>deviceID</code>) are validated as UUID format. Invalid — including <em>empty</em> — values return <code>400 Bad Request</code> (an empty segment like <code>/networks//evpn/instances</code> never reaches a handler).</p>
+<p><strong>String length limits</strong>: Text inputs are validated on creation/update endpoints:</p>
+<table>
+<thead>
+<tr>
+<th>Field type</th>
+<th>Max length</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Names (name, username)</td>
+<td>255 characters</td>
+</tr>
+<tr>
+<td>Display names</td>
+<td>255 characters</td>
+</tr>
+<tr>
+<td>Descriptions</td>
+<td>2,000 characters</td>
+</tr>
+</tbody></table>
+<p><strong>WebSocket</strong>: Client subscribe messages limited to 4 KB.</p>
+<hr>
+</main></html>

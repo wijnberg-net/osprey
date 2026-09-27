@@ -1,0 +1,39 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Traffic History — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="traffic-history">Traffic History</h3><h4 id="get-interface-traffic-history-report-reference">Get Interface Traffic History (Report Reference)</h4><pre><code>GET /api/v1/interfaces/{id}/traffic-history?period=daily
+GET /api/v1/interfaces/{id}/traffic-history?period=weekly
+GET /api/v1/interfaces/{id}/traffic-history?period=monthly
+GET /api/v1/interfaces/{id}/traffic-history?period=yearly
+</code></pre>
+<p>Returns MRTG-style traffic history data from the <code>utilization_history</code> table for a specific interface. Data points are hourly buckets with max/avg in/out bps and utilization percentage.</p>
+<p><strong>Auth:</strong> Any authenticated user.</p>
+<p><strong>Path parameters:</strong></p>
+<ul>
+<li><code>id</code> (required) -- Interface UUID</li>
+</ul>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li><code>period</code> -- Time window: <code>daily</code> (default, 24h), <code>weekly</code> (7d), <code>monthly</code> (30d), <code>yearly</code> (365d)</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;interface_id&quot;: &quot;uuid&quot;,
+  &quot;period&quot;: &quot;daily&quot;,
+  &quot;points&quot;: [
+    {
+      &quot;bucket_time&quot;: &quot;2026-03-10T12:00:00Z&quot;,
+      &quot;max_in_bps&quot;: 450000000,
+      &quot;avg_in_bps&quot;: 280000000,
+      &quot;max_out_bps&quot;: 320000000,
+      &quot;avg_out_bps&quot;: 190000000,
+      &quot;utilization_pct&quot;: 45.2,
+      &quot;in_errors_total&quot;: 0,
+      &quot;out_errors_total&quot;: 0
+    }
+  ]
+}
+</code></pre>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Missing interface ID</li>
+</ul>
+<hr>
+</main></html>

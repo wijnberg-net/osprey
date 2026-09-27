@@ -1,0 +1,319 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>L2 Discovery (LLDP/CDP) — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="l2-discovery-lldpcdp">L2 Discovery (LLDP/CDP)</h3><h4 id="list-l2-neighbors-by-device">List L2 Neighbors by Device</h4><pre><code>GET /api/v1/l2-neighbors?device_id=&lt;uuid&gt;
+</code></pre>
+<p>Returns LLDP/CDP neighbor adjacencies discovered from a specific device&#39;s SNMP walks.</p>
+<p><strong>Auth:</strong> Any authenticated user.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li><code>device_id</code> (required) -- Device UUID</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">[
+  {
+    &quot;id&quot;: &quot;uuid&quot;,
+    &quot;local_device_id&quot;: &quot;uuid&quot;,
+    &quot;local_port_name&quot;: &quot;Ethernet1&quot;,
+    &quot;remote_chassis_id&quot;: &quot;00:11:22:33:44:55&quot;,
+    &quot;remote_port_id&quot;: &quot;Gi0/1&quot;,
+    &quot;remote_sys_name&quot;: &quot;switch-1&quot;,
+    &quot;remote_mgmt_ip&quot;: &quot;10.1.1.1&quot;,
+    &quot;remote_capabilities&quot;: 4,
+    &quot;remote_platform&quot;: &quot;Arista EOS&quot;,
+    &quot;protocol&quot;: &quot;lldp&quot;,
+    &quot;first_seen&quot;: &quot;2026-03-10T12:00:00Z&quot;,
+    &quot;last_seen&quot;: &quot;2026-03-11T08:00:00Z&quot;
+  }
+]
+</code></pre>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Missing <code>device_id</code> parameter</li>
+</ul>
+<h4 id="list-l2-neighbors-by-network-paginated">List L2 Neighbors by Network (Paginated)</h4><pre><code>GET /api/v1/l2-neighbors/network/{networkID}?search=...&amp;sort=...&amp;sort_dir=...&amp;show_hidden=true&amp;limit=...&amp;offset=...
+</code></pre>
+<p>Returns paginated, sorted, searchable L2 neighbor adjacencies within a network scope. JOINs with the device table for local device hostname resolution.</p>
+<p><strong>Auth:</strong> Any authenticated user.</p>
+<p><strong>Path parameters:</strong></p>
+<ul>
+<li><code>networkID</code> (required) -- Network UUID</li>
+</ul>
+<p><strong>Optional query parameters:</strong></p>
+<ul>
+<li><code>search</code> -- Substring filter (matches local hostname, local port name, remote sys name, remote chassis ID, remote port ID, remote mgmt IP)</li>
+<li><code>sort</code> -- Sort column (whitelisted: <code>network</code>, <code>localDevice</code>, <code>localPort</code>, <code>remoteDevice</code>, <code>remotePort</code>, <code>remoteMgmtIP</code>, <code>protocol</code>, <code>remotePlatform</code>, <code>remoteChassisID</code>, <code>firstSeen</code>, <code>lastSeen</code>). Default: local device name. Ties break on row ID for stable pagination.</li>
+<li><code>sort_dir</code> -- <code>asc</code> or <code>desc</code> (default <code>asc</code>)</li>
+<li><code>show_hidden</code> -- <code>true</code> to include hidden entries (default: hidden entries excluded)</li>
+<li><code>limit</code> -- Page size (default 100, max 10000)</li>
+<li><code>offset</code> -- Pagination offset (default 0)</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;data&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;local_device_id&quot;: &quot;uuid&quot;,
+      &quot;local_hostname&quot;: &quot;rtr-core-01&quot;,
+      &quot;local_router_id&quot;: &quot;10.0.0.1&quot;,
+      &quot;local_port_name&quot;: &quot;Ethernet1&quot;,
+      &quot;remote_chassis_id&quot;: &quot;00:11:22:33:44:55&quot;,
+      &quot;remote_port_id&quot;: &quot;Gi0/1&quot;,
+      &quot;remote_sys_name&quot;: &quot;switch-1&quot;,
+      &quot;remote_mgmt_ip&quot;: &quot;10.1.1.1&quot;,
+      &quot;remote_capabilities&quot;: 4,
+      &quot;remote_platform&quot;: &quot;Arista EOS&quot;,
+      &quot;protocol&quot;: &quot;lldp&quot;,
+      &quot;first_seen&quot;: &quot;2026-03-10T12:00:00Z&quot;,
+      &quot;last_seen&quot;: &quot;2026-03-11T08:00:00Z&quot;
+    }
+  ],
+  &quot;total&quot;: 248,
+  &quot;limit&quot;: 100,
+  &quot;offset&quot;: 0,
+  &quot;summary&quot;: {
+    &quot;total&quot;: 248,
+    &quot;unique_remotes&quot;: 42,
+    &quot;lldp_count&quot;: 180,
+    &quot;cdp_count&quot;: 68,
+    &quot;hidden_count&quot;: 3,
+    &quot;networks&quot;: 1
+  }
+}
+</code></pre>
+<p><strong>Notes:</strong></p>
+<ul>
+<li><code>local_hostname</code> and <code>local_router_id</code> are populated from the device table JOIN, not stored on the L2 neighbor record; <code>network_name</code> comes from the network table JOIN.</li>
+<li><code>local_hostname</code> is resolved via the <code>display.device_name_mode</code> system setting (hostname/router_id/dns).</li>
+<li>Summary stats reflect the search filter (except <code>hidden_count</code>, which is always the total hidden count for the scoped networks). <code>summary.networks</code> counts the distinct networks in the filtered result set.</li>
+</ul>
+<h4 id="list-l2-neighbors-by-scope-paginated-multi-network">List L2 Neighbors by Scope (Paginated, multi-network)</h4><pre><code>GET /api/v1/l2-neighbors/scoped?area_ids=...&amp;search=...&amp;sort=...&amp;sort_dir=...&amp;show_hidden=true&amp;limit=...&amp;offset=...
+</code></pre>
+<p>The scope-parameterized variant of the per-network list: accepts any standard
+topology scope and resolves <strong>every</strong> network it touches, so a selection
+spanning several networks returns all of their L2 adjacencies in one sorted,
+paginated set (the CDP/LLDP Neighbors report uses this).</p>
+<p><strong>Auth:</strong> Any authenticated user.</p>
+<p><strong>Scope parameters</strong> (exactly one required, same family as <code>/routes</code>):</p>
+<ul>
+<li><code>area_ids</code> -- Comma-separated area UUIDs</li>
+<li><code>area_id</code> -- Single area UUID</li>
+<li><code>pi_id</code> -- Protocol instance UUID (expands to its areas)</li>
+<li><code>rd_id</code> -- Routing domain UUID (expands recursively)</li>
+<li><code>network_id</code> -- Network UUID (short-circuits area resolution; must be a valid UUID or <code>400</code>)</li>
+</ul>
+<p><strong>Optional query parameters:</strong> identical to the per-network endpoint above, plus
+sort column <code>network</code> (network name).</p>
+<p><strong>Response:</strong> <code>200 OK</code> — same envelope as the per-network endpoint. Every row
+carries <code>network_id</code> and <code>network_name</code> so multi-network result sets stay
+attributable; <code>summary.networks</code> &gt; 1 signals the scope crosses network
+boundaries. A scope that resolves to zero networks answers an empty page
+(<code>total: 0</code>), never an error.</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- No scope parameter, or malformed <code>network_id</code></li>
+</ul>
+<h4 id="list-l2-discovered-neighbors">List L2 Discovered Neighbors</h4><pre><code>GET /api/v1/l2-discovered?network_id=&lt;uuid&gt;
+</code></pre>
+<p>Returns the L2 discovery crawl queue -- unmanaged switches/devices discovered via LLDP/CDP that are not yet monitored.</p>
+<p><strong>Auth:</strong> Any authenticated user.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li><code>network_id</code> (required) -- Network UUID</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">[
+  {
+    &quot;id&quot;: &quot;uuid&quot;,
+    &quot;chassis_id&quot;: &quot;00:11:22:33:44:55&quot;,
+    &quot;sys_name&quot;: &quot;unmanaged-switch-1&quot;,
+    &quot;mgmt_ip&quot;: &quot;10.1.1.50&quot;,
+    &quot;platform&quot;: &quot;Cisco IOS&quot;,
+    &quot;protocol&quot;: &quot;cdp&quot;,
+    &quot;reachable&quot;: false,
+    &quot;crawl_depth&quot;: 1,
+    &quot;first_seen&quot;: &quot;2026-03-10T12:00:00Z&quot;,
+    &quot;last_seen&quot;: &quot;2026-03-11T08:00:00Z&quot;
+  }
+]
+</code></pre>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Missing <code>network_id</code> parameter</li>
+</ul>
+<h4 id="get-l2-topology-global">Get L2 Topology (Global)</h4><pre><code>GET /api/v1/l2/topology
+</code></pre>
+<p>Returns L2 topology across <strong>all</strong> networks: every hierarchy device plus every L2-only device with at least one visible neighbor, and all non-hidden neighbor links regardless of network (rows with a NULL network scope included). Serves the global-view canvas overlay, where no single network is selected — the per-network endpoint cannot show cross-network uplinks (e.g. a DC gateway&#39;s LLDP links into the carrier network) in that view. No area scoping (that is a per-network concept).</p>
+<p><strong>Auth:</strong> Any authenticated user.</p>
+<p><strong>Response:</strong> Same shape as the per-network variant below.</p>
+<h4 id="get-l2-topology">Get L2 Topology</h4><pre><code>GET /api/v1/l2/topology/{networkID}
+</code></pre>
+<p>Returns L2 topology for a network: devices (switches + routers with L2 data) and neighbor links. Without <code>area_ids</code>, returns the full network L2 topology. With <code>area_ids</code>, scopes to devices in those areas and stops at ABR boundaries (devices with area memberships outside the selected set have their L2 neighbors excluded).</p>
+<p><strong>Auth:</strong> Any authenticated user.</p>
+<p><strong>Path parameters:</strong></p>
+<ul>
+<li><code>networkID</code> (required) -- Network UUID</li>
+</ul>
+<p><strong>Optional query parameters:</strong></p>
+<ul>
+<li><code>area_ids</code> -- Comma-separated area UUIDs (e.g. <code>area_ids=uuid1,uuid2</code>). Scopes L2 topology to devices in the specified areas, stopping at ABR boundaries. Phantom node IDs (<code>l2-phantom-*</code>) are silently ignored.</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;devices&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;hostname&quot;: &quot;switch-1&quot;,
+      &quot;device_type&quot;: &quot;switch&quot;,
+      &quot;network_id&quot;: &quot;uuid&quot;
+    }
+  ],
+  &quot;neighbors&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;local_device_id&quot;: &quot;uuid&quot;,
+      &quot;local_port_name&quot;: &quot;Gi0/1&quot;,
+      &quot;remote_device_id&quot;: &quot;uuid&quot;,
+      &quot;remote_port_id&quot;: &quot;Gi0/2&quot;,
+      &quot;remote_sys_name&quot;: &quot;switch-2&quot;,
+      &quot;protocol&quot;: &quot;lldp&quot;,
+      &quot;last_seen&quot;: &quot;2026-03-13T10:00:00Z&quot;
+    }
+  ]
+}
+</code></pre>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Invalid network UUID</li>
+<li><code>404 Not Found</code> -- Network does not exist</li>
+</ul>
+<h4 id="set-l2-neighbor-hidden">Set L2 Neighbor Hidden</h4><pre><code>PUT /api/v1/l2-neighbors/{id}/hidden?network_id=...
+</code></pre>
+<p>Sets the hidden flag on an L2 neighbor entry, scoped to a specific network. Network scoping prevents cross-tenant modification of hidden flags. Hidden entries are excluded from the L2 canvas overlay but remain visible in the CDP/LLDP Neighbors report (with &quot;Show hidden&quot; toggle). The flag survives discovery cycles — re-polls preserve the hidden state.</p>
+<p><strong>Auth:</strong> Admin or engineer role required.</p>
+<p><strong>Path parameters:</strong></p>
+<ul>
+<li><code>id</code> (required) -- L2 neighbor UUID</li>
+</ul>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li><code>network_id</code> (required) -- Network UUID scope. The neighbor must belong to this network.</li>
+</ul>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{ &quot;hidden&quot;: true }
+</code></pre>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{ &quot;hidden&quot;: true }
+</code></pre>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Missing <code>network_id</code> parameter or invalid request body</li>
+</ul>
+<hr>
+<h4 id="set-hidden-by-chassis-id">Set Hidden by Chassis ID</h4><pre><code>PUT /api/v1/l2-neighbors/chassis/hidden?chassis_id=...&amp;network_id=...
+</code></pre>
+<p>Bulk hide/unhide all L2 neighbor entries matching a chassis ID within a network. Useful for hiding all adjacencies from a specific device (e.g., an unmanaged AP) across all local ports that see it.</p>
+<p><strong>Auth:</strong> Admin or engineer role required.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li><code>chassis_id</code> (required) -- Remote chassis ID to match</li>
+<li><code>network_id</code> (required) -- Network UUID scope</li>
+</ul>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{ &quot;hidden&quot;: true }
+</code></pre>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{ &quot;updated&quot;: 3 }
+</code></pre>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Missing <code>chassis_id</code> or <code>network_id</code> parameter</li>
+</ul>
+<hr>
+<h4 id="reset-l2-network-data">Reset L2 Network Data</h4><pre><code>DELETE /api/v1/l2/network/{networkID}
+</code></pre>
+<p>Deletes all L2 neighbor and discovered neighbor data for a network. Audited action.</p>
+<p><strong>Auth:</strong> Admin or engineer role required.</p>
+<p><strong>Path parameters:</strong></p>
+<ul>
+<li><code>networkID</code> (required) -- Network UUID</li>
+</ul>
+<p><strong>Response:</strong> <code>204 No Content</code></p>
+<hr>
+<h4 id="reset-crawler-queue">Reset Crawler Queue</h4><pre><code>DELETE /api/v1/l2/discovered?network_id=...
+</code></pre>
+<p>Clears the L2 discovery crawler queue for a specific network. Audited action.</p>
+<p><strong>Auth:</strong> Admin or engineer role required.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li><code>network_id</code> (required) -- Network UUID scope.</li>
+</ul>
+<p><strong>Response:</strong> <code>204 No Content</code></p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Missing <code>network_id</code> parameter</li>
+</ul>
+<hr>
+<pre><code>POST /api/v1/l2/crawl
+</code></pre>
+<p>Triggers an immediate L2 crawl cycle. The crawl runs asynchronously; this endpoint returns immediately. With <code>network_id</code>, the trigger is scoped to the same configured network and candidate policy as preflight. Omitting it retains the legacy full enabled-network pass.</p>
+<p><strong>Auth:</strong> Admin or engineer role required.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li><code>network_id</code> -- Required with <code>preflight=true</code>; the network UUID whose actual crawler filters supply <code>candidate_cap</code>.</li>
+<li><code>preflight=true</code> -- Return a read-only capacity estimate with <code>200 OK</code>; it takes no license advisory lock, updates no durable state, and publishes no crawl trigger.</li>
+</ul>
+<p><strong>Response:</strong> <code>202 Accepted</code></p>
+<pre><code class="language-json">{
+  &quot;message&quot;: &quot;L2 crawl triggered&quot;
+}
+</code></pre>
+<p><strong>Preflight response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;message&quot;: &quot;L2 crawl preflight&quot;,
+  &quot;current_nodes&quot;: 31,
+  &quot;node_limit&quot;: 32,
+  &quot;available_new_nodes&quot;: null,
+  &quot;candidate_cap&quot;: 8,
+  &quot;may_start_overage&quot;: true,
+  &quot;would_reject_batch&quot;: false,
+  &quot;would_partially_admit&quot;: false,
+  &quot;prospective_overage_ends_at&quot;: &quot;2026-09-30T12:00:00Z&quot;
+}
+</code></pre>
+<p><code>candidate_cap</code> is the unique-chassis count after the crawler&#39;s resolved,
+hidden, capability, depth and 24-hour failure-backoff filters, capped at the
+same 500-candidate pass limit. It remains advisory because SNMP probing can
+fail and topology can change before execution. Successful probes still enter a
+single admission transaction. The UI requests confirmation whenever any of the
+three outcome flags below is set — an overage that would start, a batch that
+would be refused as a unit, or one that would only be partly admitted.</p>
+<p>At most one of the three outcome flags is set, and which one follows the
+entitlement. <code>may_start_overage</code> requires a grace-eligible entitlement — a
+signed license that can absorb the crossing by opening a 30-day window, with the
+prospective deadline returned alongside. Under a hard cap the crossing cannot be
+absorbed, and what happens then differs: a licensed installation past its grace
+refuses the batch as a unit (<code>would_reject_batch</code>), while an evaluation fills up
+to the remaining allowance in canonical router-id order and refuses only the
+excess (<code>would_partially_admit</code>, with <code>admissible_candidates</code> giving how many of
+<code>candidate_cap</code> will actually be added). Reporting the licensed outcome for both
+would tell an evaluation operator the opposite of what the crawl does.</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- <code>network_id</code> is not a UUID</li>
+<li><code>403 Forbidden</code> -- Insufficient role (requires admin or engineer)</li>
+<li><code>500 Internal Server Error</code> -- License reconciliation, queue lookup or NATS publication failed</li>
+</ul>
+<hr>
+<pre><code>POST /api/v1/snmp/discover-now
+</code></pre>
+<p>Triggers an immediate interface-discovery sweep of <strong>every</strong> SNMP polling target (the same per-target pass the poller runs on its multi-hour discovery interval: IF-MIB walk, interface rows, OSPFv3 interface creation and link binding — the inputs of the v2/v3 dual-stack link merge). Runs asynchronously via NATS (<code>osprey.snmp.discover_now</code> with <code>all: true</code>); the endpoint returns immediately. The poller also schedules this sweep itself, debounced ~5 min after a topology-discovery trigger burst settles; this endpoint is the manual override (surfaced as <strong>Run discovery now</strong> on the Interface Discovery card in the network Enrichment panel).</p>
+<p><strong>Auth:</strong> Admin or engineer role required.</p>
+<p><strong>Response:</strong> <code>202 Accepted</code></p>
+<pre><code class="language-json">{
+  &quot;message&quot;: &quot;interface discovery sweep triggered&quot;
+}
+</code></pre>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>403 Forbidden</code> -- Insufficient role (requires admin or engineer)</li>
+</ul>
+<hr>
+</main></html>
