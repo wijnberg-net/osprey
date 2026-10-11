@@ -1,0 +1,65 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Health Check — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="health-check">Health Check</h3><pre><code>GET /api/v1/health
+</code></pre>
+<p>Performs deep health checks against PostgreSQL, NATS, and backend service heartbeats. Returns component-level status.</p>
+<p><strong>Components:</strong></p>
+<ul>
+<li><code>database</code> — PostgreSQL ping (includes <code>latency_ms</code>)</li>
+<li><code>nats</code> — NATS connection status</li>
+<li><code>engine</code> — Engine process heartbeat (includes <code>last_heartbeat_seconds_ago</code>)</li>
+<li><code>collector-manager</code> — Collector-Manager process heartbeat (includes <code>last_heartbeat_seconds_ago</code>)</li>
+<li><code>snmp-poller</code> — SNMP Poller process heartbeat (includes <code>last_heartbeat_seconds_ago</code>)</li>
+</ul>
+<p>Heartbeat statuses: <code>ok</code> (last seen &lt;45s), <code>degraded</code> (45–120s), <code>unhealthy</code> (&gt;120s or never seen). Engine is critical — unhealthy engine degrades overall status.</p>
+<p><strong>Response (all healthy):</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;ok&quot;,
+  &quot;components&quot;: {
+    &quot;database&quot;: {
+      &quot;status&quot;: &quot;ok&quot;,
+      &quot;latency_ms&quot;: 2
+    },
+    &quot;nats&quot;: {
+      &quot;status&quot;: &quot;ok&quot;
+    },
+    &quot;engine&quot;: {
+      &quot;status&quot;: &quot;ok&quot;,
+      &quot;last_heartbeat_seconds_ago&quot;: 12
+    },
+    &quot;collector-manager&quot;: {
+      &quot;status&quot;: &quot;ok&quot;,
+      &quot;last_heartbeat_seconds_ago&quot;: 8
+    },
+    &quot;snmp-poller&quot;: {
+      &quot;status&quot;: &quot;ok&quot;,
+      &quot;last_heartbeat_seconds_ago&quot;: 3
+    }
+  }
+}
+</code></pre>
+<p><strong>Response (degraded):</strong> <code>503 Service Unavailable</code></p>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;degraded&quot;,
+  &quot;components&quot;: {
+    &quot;database&quot;: {
+      &quot;status&quot;: &quot;ok&quot;,
+      &quot;latency_ms&quot;: 1
+    },
+    &quot;nats&quot;: {
+      &quot;status&quot;: &quot;ok&quot;
+    },
+    &quot;engine&quot;: {
+      &quot;status&quot;: &quot;unhealthy&quot;
+    },
+    &quot;collector-manager&quot;: {
+      &quot;status&quot;: &quot;ok&quot;,
+      &quot;last_heartbeat_seconds_ago&quot;: 5
+    },
+    &quot;snmp-poller&quot;: {
+      &quot;status&quot;: &quot;ok&quot;,
+      &quot;last_heartbeat_seconds_ago&quot;: 10
+    }
+  }
+}
+</code></pre>
+<p>Returns <code>200</code> when all components are healthy, <code>503</code> when any component is unhealthy or engine is unhealthy. The <code>latency_ms</code> field is included for database checks. The <code>last_heartbeat_seconds_ago</code> field is included for heartbeat-based services when at least one heartbeat has been received.</p>
+</main></html>

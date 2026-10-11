@@ -1,0 +1,65 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>API Capabilities — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h2 id="api-capabilities">API Capabilities</h2><pre><code class="language-text">GET /api/v1/capabilities
+</code></pre>
+<p>Available from 1.4.4. Requires authentication; operator,
+engineer and admin sessions and read-only API keys can read it. No request
+parameters are needed. <code>/version</code> remains the public, single-field product
+version response.</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;api_version&quot;: &quot;v1&quot;,
+  &quot;features&quot;: [
+    &quot;api_keys.read_only&quot;,
+    &quot;observations.multi_area_scope&quot;,
+    &quot;events.history_cursor&quot;,
+    &quot;observations.list_etag&quot;,
+    &quot;api_keys.read_only_incidents&quot;
+  ],
+  &quot;openapi_url&quot;: &quot;/api-reference/openapi.json&quot;
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field or feature</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>api_version</code></td>
+<td>API namespace supported by this endpoint, not the product release or reference edition</td>
+</tr>
+<tr>
+<td><code>api_keys.read_only</code></td>
+<td>Server-side read-only API-key restriction is implemented; this does not say that the current key is restricted</td>
+</tr>
+<tr>
+<td><code>observations.multi_area_scope</code></td>
+<td>Device/link lists accept <code>area_ids</code>, <code>area_id</code>, <code>pi_id</code>, <code>rd_id</code> and <code>network_id</code> with their documented precedence</td>
+</tr>
+<tr>
+<td><code>events.history_cursor</code></td>
+<td>Event history supports explicit <code>pagination=cursor</code>; this is historical traversal, not lossless event delivery</td>
+</tr>
+<tr>
+<td><code>observations.list_etag</code></td>
+<td>Device/link lists support optional <code>If-None-Match</code> validation and bodyless 304 responses</td>
+</tr>
+<tr>
+<td><code>api_keys.read_only_incidents</code></td>
+<td>Restricted keys can read incident lists/details; actions remain denied</td>
+</tr>
+<tr>
+<td><code>openapi_url</code></td>
+<td>Path to the bundled OpenAPI; resolve it against the Osprey installation origin, not against <code>/api/v1/</code> or a documentation host</td>
+</tr>
+</tbody></table>
+<p>Feature identifiers are extensible: ignore unfamiliar identifiers. The response
+reports software support only. It does not report configured protocols, network
+observations, tenant state, or permissions granted to the requesting account.
+Normal authorization still applies to each subsequent request.</p>
+<p>Responses use <code>Cache-Control: private, no-store</code>. Missing or invalid credentials
+return <code>401</code>. Existing account restrictions still apply. Older installations,
+including release 1.4.3, may return <code>404</code>; treat capabilities as unknown and use
+the matching release reference. A missing feature response says nothing about
+network health or recording coverage.</p>
+</main></html>

@@ -1,0 +1,407 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Simulation (Engineering Mode) — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="simulation-engineering-mode">Simulation (Engineering Mode)</h3><h4 id="get-simulation-bundle">Get Simulation Bundle</h4><pre><code>GET /api/v1/simulation/bundle?pi_id=&lt;uuid&gt;
+</code></pre>
+<p>Returns all topology and route data needed for client-side SPF simulation as a single JSON response. Contains Cytoscape elements (devices + links), inter-area routes, external routes, and ASBR entries for the specified protocol instance. The frontend uses this bundle to perform Dijkstra SPF without additional API calls.</p>
+<p><strong>Auth:</strong> Any authenticated user.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li><code>pi_id</code> (required) -- Protocol instance UUID</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;elements&quot;: [
+    { &quot;group&quot;: &quot;nodes&quot;, &quot;data&quot;: { &quot;id&quot;: &quot;...&quot;, &quot;router_id&quot;: &quot;10.0.0.1&quot;, ... } },
+    { &quot;group&quot;: &quot;edges&quot;, &quot;data&quot;: { &quot;id&quot;: &quot;...&quot;, &quot;source&quot;: &quot;...&quot;, &quot;target&quot;: &quot;...&quot;, &quot;cost_a_to_b&quot;: 10, ... } }
+  ],
+  &quot;inter_area_routes&quot;: [ ... ],
+  &quot;external_routes&quot;: [ ... ],
+  &quot;asbr_entries&quot;: [ ... ]
+}
+</code></pre>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Missing <code>pi_id</code> parameter</li>
+</ul>
+<hr>
+<h4 id="evaluate-simulation">Evaluate Simulation</h4><pre><code>POST /api/v1/simulation/evaluate
+</code></pre>
+<p>Applies a set of topology mutations (link failures, node failures, cost changes, hypothetical links) to the live topology, runs multi-area SPF on both baseline and mutated graphs, and returns structural analysis: isolated devices, path changes, single points of failure (Tarjan articulation points), affected links, and optional traffic redistribution estimates. Server-side computation ensures correct multi-area OSPF routing per RFC 2328. Cached Dijkstra results (<code>pathContext</code> with <code>sync.Map</code>) and pre-built per-area adjacency maps enable sub-second evaluation. Cross-PI link resolution via <code>resolveLinkDevicePairs</code> handles mixed OSPFv2/v3 edges from the frontend.</p>
+<p><strong>Auth:</strong> Any authenticated user.</p>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;pi_id&quot;: &quot;uuid-protocol-instance&quot;,
+  &quot;mutations&quot;: [
+    { &quot;type&quot;: &quot;node_failure&quot;, &quot;device_id&quot;: &quot;uuid-device&quot; },
+    { &quot;type&quot;: &quot;link_failure&quot;, &quot;link_id&quot;: &quot;uuid-link&quot; },
+    { &quot;type&quot;: &quot;cost_change&quot;, &quot;link_id&quot;: &quot;uuid-link&quot;, &quot;direction&quot;: &quot;both&quot;, &quot;new_cost_forward&quot;: 100, &quot;new_cost_reverse&quot;: 100 },
+    { &quot;type&quot;: &quot;hypothetical_link&quot;, &quot;source_device_id&quot;: &quot;uuid-a&quot;, &quot;target_device_id&quot;: &quot;uuid-b&quot;, &quot;cost_forward&quot;: 50, &quot;cost_reverse&quot;: 50, &quot;area_id&quot;: &quot;uuid-area&quot; },
+    { &quot;type&quot;: &quot;hypothetical_node&quot;, &quot;device_id&quot;: &quot;hypnode-abc12345&quot;, &quot;display_name&quot;: &quot;NewRouter&quot; },
+    { &quot;type&quot;: &quot;srlg&quot;, &quot;srlg_id&quot;: &quot;uuid-srlg-group&quot; },
+    { &quot;type&quot;: &quot;peer_failure&quot;, &quot;peer_id&quot;: &quot;uuid-bgp-peer&quot;, &quot;as_id&quot;: &quot;uuid-as&quot; }
+  ],
+  &quot;compute&quot;: [&quot;traffic_estimate&quot;],
+  &quot;at&quot;: &quot;2026-03-10T14:30:00Z&quot;
+}
+</code></pre>
+<p><strong>Mutation types:</strong></p>
+<ul>
+<li><code>node_failure</code> — Remove device and all its links. Requires <code>device_id</code>.</li>
+<li><code>link_failure</code> — Remove a specific link. Requires <code>link_id</code>.</li>
+<li><code>cost_change</code> — Change link cost. Requires <code>link_id</code>. Optional <code>direction</code> (<code>both</code>, <code>forward</code>, <code>reverse</code>), <code>new_cost_forward</code>, <code>new_cost_reverse</code>.</li>
+<li><code>hypothetical_link</code> — Add a synthetic link between two existing devices. Requires <code>source_device_id</code>, <code>target_device_id</code>, <code>cost_forward</code>, <code>cost_reverse</code>, <code>area_id</code>.</li>
+<li><code>hypothetical_node</code> — Register a synthetic device in the topology. Requires <code>device_id</code>. Optional <code>display_name</code>. The node has no area membership until connected with <code>hypothetical_link</code> mutations. Processed before other mutations (two-pass ordering).</li>
+<li><code>srlg</code> — Expand a saved SRLG (Shared Risk Link Group) into individual <code>link_failure</code> mutations for all member links. Requires <code>srlg_id</code>. Server-side expansion. Unresolvable or empty SRLGs are silently dropped.</li>
+<li><code>peer_failure</code> — Simulate BGP peer failure. Requires <code>peer_id</code> (bgp_peer UUID) and <code>as_id</code> (autonomous system UUID). Finds all prefixes where the failed peer is the current best-path source, removes that peer&#39;s candidates, re-runs RFC 4271 best-path selection, and returns per-prefix shift details. iBGP peer failures set <code>is_approximation: true</code> (real iBGP reconvergence depends on route reflector topology). Response includes <code>bgp_shifts</code> object with <code>transitions</code> (count of prefixes that shifted), <code>unreachable_count</code>, <code>is_approximation</code>, and <code>shifts</code> array with per-prefix detail including <code>decision_step</code> explaining why the new best was selected. <code>failed_peers[]</code> entries carry <code>source</code> (&quot;bmp&quot;/&quot;snmp&quot;); <strong>SNMP-discovered sessions (BGP4-MIB) are excluded from the RIB math</strong> — they have no RIB visibility, so instead of a misleading &quot;0 affected prefixes&quot; the summary carries a <code>notes[]</code> entry (&quot;RIB impact cannot be computed&quot;) and <code>is_approximation: true</code>.</li>
+</ul>
+<p><strong>Optional fields:</strong></p>
+<ul>
+<li><code>at</code> (string, RFC 3339) — Evaluate against historical topology at the given timestamp instead of live topology. Enables combined time-travel + engineering mode. <strong>BGP effects at <code>T</code> require full-RIB history</strong>: when a BMP target recorded <code>history_mode=&quot;full&quot;</code> covering the scope at <code>T</code>, <code>peer_failure</code> and hot-potato are evaluated as-of-<code>T</code> against <code>bgp_rib_entry_history</code>; otherwise they are suppressed exactly as before — <code>peer_failure</code> mutations go to <code>skipped_mutations</code> and a <code>notices</code> advisory explains that no full-RIB history exists at <code>T</code>. BGP-traffic projection is always omitted in time-travel mode (it layers on live traffic). EIGRP failure filtering uses only primary/installed-ECMP evidence from the per-device snapshots covering <code>T</code>; a gap makes the direction opaque and never falls back to live state.</li>
+</ul>
+<p><strong>Compute options</strong> (optional array, controls expensive analyses):</p>
+<ul>
+<li><code>traffic_estimate</code> — Include traffic redistribution estimation using the Tomogravity model (Zhang/Roughan 2003). Per-pair demand estimated as <code>V(i)·V(j)/V_total</code> (device volumes from SNMP interface utilization), calibrated against observed per-link loads. Differential path analysis: only links that change between baseline and mutated paths receive deltas. Results area-scoped to areas containing failures (with 0.5% utilization delta noise floor).</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;isolated_devices&quot;: [
+    { &quot;device_id&quot;: &quot;uuid&quot;, &quot;router_id&quot;: &quot;10.0.0.5&quot;, &quot;hostname&quot;: &quot;edge-03&quot;, &quot;dns_name&quot;: &quot;edge-03.ams.example.com&quot;, &quot;label&quot;: &quot;edge-03&quot; }
+  ],
+  &quot;path_changes&quot;: [
+    {
+      &quot;source_device_id&quot;: &quot;uuid-src&quot;, &quot;dest_device_id&quot;: &quot;uuid-dst&quot;,
+      &quot;source_label&quot;: &quot;core-01&quot;, &quot;dest_label&quot;: &quot;edge-05&quot;,
+      &quot;before_cost&quot;: 20, &quot;after_cost&quot;: 30,
+      &quot;before_route_type&quot;: &quot;O&quot;, &quot;after_route_type&quot;: &quot;O IA&quot;,
+      &quot;before_hops&quot;: [&quot;10.0.0.1&quot;, &quot;10.0.0.2&quot;, &quot;10.0.0.3&quot;],
+      &quot;after_hops&quot;: [&quot;10.0.0.1&quot;, &quot;10.0.0.4&quot;, &quot;10.0.0.3&quot;],
+      &quot;before_link_ids&quot;: [&quot;uuid-l1&quot;, &quot;uuid-l2&quot;],
+      &quot;after_link_ids&quot;: [&quot;uuid-l3&quot;, &quot;uuid-l4&quot;]
+    }
+  ],
+  &quot;spofs&quot;: [
+    { &quot;device_id&quot;: &quot;uuid&quot;, &quot;router_id&quot;: &quot;10.0.0.2&quot;, &quot;hostname&quot;: &quot;abr-01&quot;, &quot;dns_name&quot;: &quot;abr-01.ams.example.com&quot;, &quot;label&quot;: &quot;abr-01&quot;, &quot;isolated_count&quot;: 3 }
+  ],
+  &quot;affected_links&quot;: [&quot;uuid-link-1&quot;, &quot;uuid-link-2&quot;],
+  &quot;traffic_shifts&quot;: [
+    {
+      &quot;link_id&quot;: &quot;uuid-link-3&quot;,
+      &quot;source_device_id&quot;: &quot;uuid-a&quot;, &quot;dest_device_id&quot;: &quot;uuid-b&quot;,
+      &quot;source_label&quot;: &quot;core-01&quot;, &quot;dest_label&quot;: &quot;core-02&quot;,
+      &quot;before_utilization_pct&quot;: 45.2, &quot;after_utilization_pct&quot;: 79.0,
+      &quot;delta_pct&quot;: 33.8,
+      &quot;before_bps&quot;: 4520000000, &quot;after_bps&quot;: 7900000000,
+      &quot;capacity_mbps&quot;: 10000,
+      &quot;congestion_risk&quot;: &quot;warning&quot;,
+      &quot;is_failed&quot;: false
+    },
+    {
+      &quot;link_id&quot;: &quot;uuid-link-1&quot;,
+      &quot;source_device_id&quot;: &quot;uuid-c&quot;, &quot;dest_device_id&quot;: &quot;uuid-d&quot;,
+      &quot;source_label&quot;: &quot;core-03&quot;, &quot;dest_label&quot;: &quot;core-04&quot;,
+      &quot;before_utilization_pct&quot;: 12.5, &quot;after_utilization_pct&quot;: 0,
+      &quot;delta_pct&quot;: -12.5,
+      &quot;before_bps&quot;: 1250000000, &quot;after_bps&quot;: 0,
+      &quot;capacity_mbps&quot;: 10000,
+      &quot;congestion_risk&quot;: &quot;ok&quot;,
+      &quot;is_failed&quot;: true
+    }
+  ],
+  &quot;compute_time_ms&quot;: 12.5
+}
+</code></pre>
+<p><strong>Response fields:</strong></p>
+<ul>
+<li><code>isolated_devices[].label</code>, <code>spofs[].label</code> — Device display name resolved per the <code>display.device_name_mode</code> system setting. <code>dns_name</code> and <code>hostname</code> are also included as raw values.</li>
+<li><code>source_label</code>, <code>dest_label</code> — In <code>path_changes</code> and <code>traffic_shifts</code>, device display names resolved per the system setting.</li>
+<li>No convergence estimate is returned: Osprey cannot establish the actual failure-detection and convergence timing from the available observations, including whether BFD is running.</li>
+<li><code>skipped_mutations</code> (array, optional) — Mutations that were not applied, each <code>{ index, type, reason }</code>. Emitted for <code>peer_failure</code> mutations in time-travel mode when no full-RIB history covers the scope at <code>T</code> (see <code>at</code>), or when a peer had no recorded session at <code>T</code>.</li>
+<li><code>notices</code> (array of strings, optional) — Non-fatal advisories about the evaluation, e.g. that BGP effects were not evaluated because no full-RIB history exists at the requested time.</li>
+</ul>
+<p><strong>Traffic shift fields:</strong></p>
+<ul>
+<li><code>before_bps</code>, <code>after_bps</code> (float64) — Absolute traffic in bits per second before/after mutation.</li>
+<li><code>is_failed</code> (bool) — True for links that failed due to mutations. Failed links always have <code>after_bps: 0</code>.</li>
+<li><code>congestion_risk</code> — <code>ok</code> (&lt; 80%), <code>warning</code> (80-95%), <code>critical</code> (&gt;= 95%). Based on post-mutation utilization.</li>
+<li>Results are area-scoped: only links in areas containing failures are included. Shifts below 0.5% utilization delta are filtered.</li>
+</ul>
+<p><strong>BGP transition fields</strong> (in <code>bgp_shifts.summary.transitions[]</code>):</p>
+<ul>
+<li><code>new_peer_id</code> (string) — UUID of the surviving peer receiving redistributed prefixes.</li>
+<li><code>new_peer_ip</code> (string) — IP address of the surviving peer.</li>
+<li><code>new_peer_as</code> (int) — AS number of the surviving peer.</li>
+<li><code>prefix_count</code> (int) — Number of prefixes redistributed to this peer.</li>
+<li><code>mapping_method</code> (string) — Traffic data source for this peer: <code>&quot;exact&quot;</code> (SNMP interface match by IP), <code>&quot;subnet&quot;</code> (SNMP match by subnet containment), or <code>&quot;prefix_count_fallback&quot;</code> (estimated from prefix count ratios). Present when traffic projection is computed.</li>
+</ul>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Missing <code>pi_id</code>, empty mutations, invalid mutation type, missing required mutation fields</li>
+<li><code>404 Not Found</code> -- Protocol instance has no areas</li>
+</ul>
+<hr>
+<h4 id="failure-assessment">Failure Assessment</h4><pre><code>POST /api/v1/simulation/failure-assessment
+</code></pre>
+<p>Batch failure assessment: for every link or every node in the protocol instance, compute the impact of its individual failure. Returns a sorted table suitable for CSV export.</p>
+<p><strong>Osprey&#39;s own recorders are excluded, in both directions</strong> — the same recorder-exclusion rule <code>GET /diagnostics/spof</code> applies, so the two redundancy surfaces cannot answer the same question differently. A GRE recorder attaches by a single max-metric tunnel, so bridge detection correctly finds that tunnel <em>is</em> a bridge; reporting it would tell an architect that the monitoring is a critical link. Recorders are therefore dropped from the assessed entity set <strong>and</strong> from the stranded-device counts — without the second half, every router hosting a recorder is reported as a single point of failure. A genuinely single-homed router is still reported.</p>
+<p><strong>Auth:</strong> Admin, Engineer.</p>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;pi_id&quot;: &quot;uuid-protocol-instance&quot;,
+  &quot;target&quot;: &quot;all_links&quot;,
+  &quot;include_traffic&quot;: false,
+  &quot;at&quot;: &quot;2026-03-10T14:30:00Z&quot;
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>pi_id</code></td>
+<td>UUID</td>
+<td>Yes</td>
+<td>Protocol instance scope</td>
+</tr>
+<tr>
+<td><code>target</code></td>
+<td>string</td>
+<td>Yes</td>
+<td><code>&quot;all_links&quot;</code>, <code>&quot;all_nodes&quot;</code>, or <code>&quot;all_bgp_peers&quot;</code></td>
+</tr>
+<tr>
+<td><code>include_traffic</code></td>
+<td>bool</td>
+<td>No</td>
+<td>Include traffic estimation (slower). Default false</td>
+</tr>
+<tr>
+<td><code>mutations</code></td>
+<td>array</td>
+<td>No</td>
+<td>Effective-baseline mutations to apply before the batch assessment (same shape as <code>/simulation/evaluate</code>)</td>
+</tr>
+<tr>
+<td><code>at</code></td>
+<td>string (RFC 3339)</td>
+<td>No</td>
+<td>Assess the historical snapshot at this timestamp instead of live topology (combined time-travel + engineering mode). <strong><code>target=&quot;all_bgp_peers&quot;</code> is live-only</strong> — with <code>at</code> set it is not evaluated as-of-T; the response returns an empty <code>results</code> and a <code>notice</code> instead (use <code>GET /bgp/peers/{id}/impact-summary?at=</code> for per-peer as-of-T analysis)</td>
+</tr>
+</tbody></table>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;target&quot;: &quot;all_links&quot;,
+  &quot;total_entities&quot;: 3,
+  &quot;results&quot;: [
+    {
+      &quot;entity_type&quot;: &quot;link&quot;,
+      &quot;entity_id&quot;: &quot;uuid&quot;,
+      &quot;entity_label&quot;: &quot;rtr-core-01 &lt;-&gt; rtr-core-02&quot;,
+      &quot;unreachable_devices&quot;: 2,
+      &quot;unreachable_device_labels&quot;: [&quot;rtr-edge-01&quot;, &quot;rtr-edge-02&quot;]
+    }
+  ],
+  &quot;computation_time_ms&quot;: 312
+}
+</code></pre>
+<p><code>notice</code> (optional) is set when a target could not be evaluated as requested — currently <code>target=&quot;all_bgp_peers&quot;</code> with <code>at</code> set (batch BGP peer-failure is live-only in time-travel); <code>results</code> is then empty.</p>
+<p>Only failures that cause actual device isolation are included in results. Redundant links/nodes whose failure causes no isolation are filtered out. Results sorted by <code>unreachable_devices</code> descending.</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Missing <code>pi_id</code>, invalid <code>target</code> value</li>
+<li><code>404 Not Found</code> -- Protocol instance has no areas</li>
+</ul>
+<hr>
+<h4 id="compute-simulation-path">Compute Simulation Path</h4><pre><code>POST /api/v1/simulation/path
+</code></pre>
+<p>Computes a device-to-device path on a mutated topology. Applies mutations to the live topology, then runs the same area-aware path computation as <code>GET /api/v1/topology/path</code> on the mutated graph. Returns both forward and reverse paths. Cross-domain pairs retain the normal BGP-stitched <code>path_kind: &quot;multi-domain&quot;</code> result even when the selected protocol excludes the far endpoint: the protocol filter scopes a same-domain SPF question, not the other ASes in a multi-domain chain.</p>
+<p>Mutations use the same vocabulary and per-type required fields as <code>/simulation/evaluate</code> (<code>node_failure</code>, <code>link_failure</code>, <code>cost_change</code>, <code>hypothetical_link</code>, <code>hypothetical_node</code>, <code>srlg</code>, <code>peer_failure</code>) and are validated the same way — an unknown type is a <code>400</code>. <code>peer_failure</code> is accepted but is a no-op here: it is not an IGP mutation and does not alter the path graph.</p>
+<p><strong>Auth:</strong> Any authenticated user.</p>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;pi_id&quot;: &quot;uuid-protocol-instance&quot;,
+  &quot;source_id&quot;: &quot;uuid-source-device&quot;,
+  &quot;dest_id&quot;: &quot;uuid-dest-device&quot;,
+  &quot;mutations&quot;: [
+    { &quot;type&quot;: &quot;node_failure&quot;, &quot;device_id&quot;: &quot;uuid-device&quot; }
+  ],
+  &quot;at&quot;: &quot;2026-03-10T14:30:00Z&quot;,
+  &quot;area_ids&quot;: [&quot;uuid-ospf-area&quot;, &quot;uuid-eigrp-area&quot;],
+  &quot;protocol&quot;: &quot;ospfv2&quot;,
+  &quot;address_family&quot;: &quot;ipv4&quot;
+}
+</code></pre>
+<p><strong>Optional fields:</strong></p>
+<ul>
+<li><code>at</code> (string, RFC 3339) — Compute path on historical topology at the given timestamp instead of live topology.</li>
+<li><code>area_ids</code> (UUID array) — Explicit canvas area scope; preferred over <code>pi_id</code> for a multi-protocol selection.</li>
+<li><code>protocol</code> (string) — Protocol toggle for the source/same-domain SPF view. A positively identified cross-domain path automatically restores the other domains from <code>area_ids</code>.</li>
+<li><code>source_addr</code>, <code>dest_addr</code> (string) — Selected endpoint addresses; used to keep cross-domain stitching in the requested address family.</li>
+<li><code>address_family</code> (<code>ipv4</code>, <code>ipv6</code>, or <code>clns</code>) — Explicit path address family.</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code> — Same <code>PathResult</code> structure as <code>GET /api/v1/topology/path</code> (forward_path + reverse_path with hops, total_cost, route_type, area_segments).</p>
+<p><strong>SPF projection, not the forwarding chain:</strong> simulated paths — including each link-state segment of a stitched multi-domain result — are the source-rooted least-cost tree on the mutated graph, and the response says so in <code>warning</code>. A post-mutation hop-by-hop chain is not computable — the Type-3 summaries the surviving ABRs would re-originate are exactly what cannot be synthesised — and rendering only the baseline as a chain would make a before/after diff report the model change instead of the mutation. Both sides therefore stay on the projection, consistently. The same note appears in the evaluate endpoint&#39;s <code>notices</code> whenever it returns <code>path_changes</code>.</p>
+<p><strong>EIGRP scopes and segments:</strong> arbitrary what-if EIGRP re-convergence cannot be computed — the observed chain is the routers&#39; own DUAL result and re-convergence depends on composite metrics that are not readable over SNMP. The endpoint is precise about what it <em>does</em> know. For pure failures (<code>node_failure</code>/<code>link_failure</code>) it filters the observed primary plus the router&#39;s RIB-installed ECMP chains: an untouched primary stays in place, while a surviving already-installed equal-cost brother may be promoted without predicting DUAL. This also applies to an EIGRP leg inside a stitched multi-domain path. If no installed chain survives — or for any <code>cost_change</code>/<code>hypothetical_link</code>, which can attract a distance-vector path from anywhere — the endpoint returns no EIGRP path (or an <code>opaque</code> EIGRP domain in a partial multi-domain stitch) plus a <code>warning</code> explaining the remaining DUAL limitation, never a fabricated SPF answer.</p>
+<p>When <code>at</code> is present, primary, installed ECMP variants, source-border choice and
+both border-ranking rails share one request-scoped historical EIGRP resolver.
+Each device is read/decoded and deep-copied into the cache at most once; cache
+hits borrow that immutable value read-only. The resolver is only a
+concurrency-safe cache; independent accumulators keep forward, reverse, each
+segment and each border comparison separate, while direction parents absorb
+their child evidence without double-counting devices. A coverage miss makes
+only the affected direction/domain/comparison opaque; an operational history
+error returns <code>500</code> for the whole response.
+No selection rail may promote another candidate merely because the preferred
+candidate&#39;s historical EIGRP evidence is unavailable.
+When that refusal occurs during the initial source-border selection, the plain
+cross-domain direction remains the response shape and carries
+<code>eigrp_history.reason=history_unavailable</code>, <code>unavailable_device_id</code>, and an
+explanation step saying that border selection was refused.</p>
+<p>Successful rendered ECMP variants contribute their device samples and time
+bounds, deduplicated with the primary. Simulation aggregates evidence <strong>after</strong>
+filtering and promotion: a promoted branch carries its own temporal status and
+coverage horizon, and discarded branches contribute neither temporal nor
+route-level RIB evidence. Unknown optional tails still weaken only ECMP while
+an otherwise covered primary survives. Historical caveats say <code>sampled historical EIGRP chain</code>; promotion states that the branch was <code>recorded as installed by the selected historical sample</code>, never that it is observed live.</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Missing required fields, source == destination</li>
+<li><code>404 Not Found</code> -- Protocol instance has no areas, source/destination not found in mutated topology</li>
+</ul>
+<hr>
+<h4 id="simulation-scenarios">Simulation Scenarios</h4><h5 id="list-scenarios">List Scenarios</h5><pre><code>GET /api/v1/simulation-scenarios?scope_type=protocol_instance&amp;scope_id=&lt;uuid&gt;
+</code></pre>
+<p>Returns scenarios owned by the current user plus shared scenarios for the specified scope, ordered by <code>updated_at DESC</code>.</p>
+<p><strong>Auth:</strong> Any authenticated user.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li><code>scope_type</code> (required) -- <code>protocol_instance</code> or <code>network</code></li>
+<li><code>scope_id</code> (required) -- UUID of the scoping entity</li>
+<li><code>limit</code> / <code>offset</code> -- Pagination (default: 50 / 0)</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code> -- Paginated array</p>
+<pre><code class="language-json">{
+  &quot;data&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;user_id&quot;: &quot;uuid&quot;,
+      &quot;username&quot;: &quot;admin&quot;,
+      &quot;scope_type&quot;: &quot;protocol_instance&quot;,
+      &quot;scope_id&quot;: &quot;uuid&quot;,
+      &quot;name&quot;: &quot;Core link failure&quot;,
+      &quot;description&quot;: &quot;Simulates backbone link failure between core-01 and core-02&quot;,
+      &quot;mutations&quot;: [ ... ],
+      &quot;mutation_count&quot;: 3,
+      &quot;shared&quot;: true,
+      &quot;created_at&quot;: &quot;2026-03-10T10:00:00Z&quot;,
+      &quot;updated_at&quot;: &quot;2026-03-12T14:30:00Z&quot;
+    }
+  ],
+  &quot;total&quot;: 5,
+  &quot;limit&quot;: 50,
+  &quot;offset&quot;: 0
+}
+</code></pre>
+<hr>
+<h5 id="create-scenario">Create Scenario</h5><pre><code>POST /api/v1/simulation-scenarios
+</code></pre>
+<p><strong>Auth:</strong> Admin, Engineer.</p>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;scope_type&quot;: &quot;protocol_instance&quot;,
+  &quot;scope_id&quot;: &quot;uuid&quot;,
+  &quot;name&quot;: &quot;Core link failure&quot;,
+  &quot;description&quot;: &quot;Optional description&quot;,
+  &quot;mutations&quot;: [ { &quot;type&quot;: &quot;link_failure&quot;, &quot;link_id&quot;: &quot;uuid&quot; } ]
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>scope_type</code></td>
+<td>string</td>
+<td>Yes</td>
+<td><code>&quot;protocol_instance&quot;</code> or <code>&quot;network&quot;</code></td>
+</tr>
+<tr>
+<td><code>scope_id</code></td>
+<td>UUID</td>
+<td>Yes</td>
+<td>Scoping entity ID</td>
+</tr>
+<tr>
+<td><code>name</code></td>
+<td>string</td>
+<td>Yes</td>
+<td>1-100 characters, unique per user per scope</td>
+</tr>
+<tr>
+<td><code>description</code></td>
+<td>string</td>
+<td>No</td>
+<td>Up to 1000 characters</td>
+</tr>
+<tr>
+<td><code>mutations</code></td>
+<td>JSON array</td>
+<td>Yes</td>
+<td>Opaque mutation array (stored as-is)</td>
+</tr>
+</tbody></table>
+<p><strong>Response:</strong> <code>201 Created</code> -- Full scenario object with generated <code>id</code>, <code>created_at</code>, <code>updated_at</code>.</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Validation errors (missing name, invalid scope_type, etc.)</li>
+<li><code>403 Forbidden</code> -- Role not admin or engineer</li>
+<li><code>409 Conflict</code> -- Duplicate name for user+scope</li>
+</ul>
+<hr>
+<h5 id="get-scenario">Get Scenario</h5><pre><code>GET /api/v1/simulation-scenarios/{id}
+</code></pre>
+<p><strong>Auth:</strong> Any authenticated user (must be owner or scenario must be shared).</p>
+<p><strong>Response:</strong> <code>200 OK</code> -- Full scenario object.</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>404 Not Found</code> -- Scenario not found</li>
+</ul>
+<hr>
+<h5 id="update-scenario">Update Scenario</h5><pre><code>PUT /api/v1/simulation-scenarios/{id}
+</code></pre>
+<p><strong>Auth:</strong> Admin, Engineer (must be owner).</p>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;Updated name&quot;,
+  &quot;description&quot;: &quot;Updated description&quot;,
+  &quot;mutations&quot;: [ ... ],
+  &quot;shared&quot;: true
+}
+</code></pre>
+<p><strong>Response:</strong> <code>200 OK</code> -- Updated scenario object.</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Validation errors</li>
+<li><code>403 Forbidden</code> -- Not the scenario owner</li>
+<li><code>404 Not Found</code> -- Scenario not found</li>
+<li><code>409 Conflict</code> -- Duplicate name</li>
+</ul>
+<hr>
+<h5 id="delete-scenario">Delete Scenario</h5><pre><code>DELETE /api/v1/simulation-scenarios/{id}
+</code></pre>
+<p><strong>Auth:</strong> Admin, Engineer (must be owner).</p>
+<p><strong>Response:</strong> <code>204 No Content</code></p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>403 Forbidden</code> -- Not the scenario owner</li>
+<li><code>404 Not Found</code> -- Scenario not found</li>
+</ul>
+<hr>
+</main></html>

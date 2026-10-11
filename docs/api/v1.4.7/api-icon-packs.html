@@ -1,0 +1,168 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Icon Packs — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="icon-packs">Icon Packs</h3><p>Icon packs are collections of SVG device icons, typically imported from Visio stencil (.vssx) files. Listing and viewing icons is available to all authenticated users. Import, update, and delete require admin role.</p>
+<h4 id="list-icon-packs">List Icon Packs</h4><pre><code>GET /api/v1/icon-packs
+</code></pre>
+<p>List all icon packs with icon counts. Auth: any authenticated user.</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">[
+  {
+    &quot;id&quot;: &quot;uuid&quot;,
+    &quot;name&quot;: &quot;Cisco Network&quot;,
+    &quot;builtin&quot;: false,
+    &quot;brand_color&quot;: &quot;#049FD9&quot;,
+    &quot;created_by&quot;: &quot;user-uuid&quot;,
+    &quot;created_at&quot;: &quot;2026-03-03T12:00:00Z&quot;,
+    &quot;icon_count&quot;: 42
+  }
+]
+</code></pre>
+<hr>
+<h4 id="list-icons-in-pack">List Icons in Pack</h4><pre><code>GET /api/v1/icon-packs/{packID}/icons
+</code></pre>
+<p>List all icons in a pack. Returns metadata only (no svg_data) for performance. Auth: any authenticated user.</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">[
+  {
+    &quot;id&quot;: &quot;uuid&quot;,
+    &quot;pack_id&quot;: &quot;pack-uuid&quot;,
+    &quot;name&quot;: &quot;Router&quot;,
+    &quot;device_type&quot;: &quot;router&quot;,
+    &quot;width&quot;: 200,
+    &quot;height&quot;: 200
+  }
+]
+</code></pre>
+<hr>
+<h4 id="get-icon-svg">Get Icon SVG</h4><pre><code>GET /api/v1/icon-packs/{packID}/icons/{iconID}/svg
+</code></pre>
+<p>Returns the raw SVG markup for a single icon. Auth: any authenticated user.</p>
+<p><strong>Response:</strong> <code>200 OK</code> — <code>Content-Type: image/svg+xml</code>, <code>Cache-Control: public, max-age=86400, immutable</code></p>
+<p>The response body is raw SVG XML, not JSON. Suitable for direct use in <code>&lt;img src&gt;</code> or <code>fetch()</code>.</p>
+<hr>
+<h4 id="get-icon-png">Get Icon PNG</h4><pre><code>GET /api/v1/icon-packs/{packID}/icons/{iconID}/png
+</code></pre>
+<p>Returns the icon rendered to a PNG (server-side via rsvg-convert), used as the canvas <code>background-image</code> for imported packs — cytoscape clips SVG background-images at non-1 zoom (<a href="https://github.com/cytoscape/cytoscape.js/issues/2750">#2750</a>). Rendered once and cached in-memory; auth: any authenticated user.</p>
+<p><strong>Response:</strong> <code>200 OK</code> — <code>Content-Type: image/png</code>, <code>Cache-Control: public, max-age=86400, immutable</code></p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>404 Not Found</code> -- Icon not found</li>
+</ul>
+<hr>
+<h4 id="get-builtin-icon-png">Get Builtin Icon PNG</h4><pre><code>GET /api/v1/icon-packs/builtin/{pack}/icons/{deviceType}/png[?color=%23RRGGBB]
+</code></pre>
+<p>Builtin packs (<code>default</code>, <code>industrial</code>, <code>osprey3d</code>) live in the binary, not the database, so they have no icon id — this is their equivalent of the endpoint above. The path parameter is <code>pack</code>, not <code>packID</code>: params ending in <code>ID</code> are validated as UUIDs, and a builtin pack id is a name. Used as the canvas <code>background-image</code> for packs whose artwork is too complex to hand the browser as a vector: cytoscape re-rasterizes an SVG background-image at every zoom level, which on the Osprey 3D pucks (130-170 paths per icon) drops the canvas to single-digit fps. A 256px PNG is decoded once and reused at every zoom.</p>
+<p><code>color</code> applies the pack&#39;s area recoloring server-side (brand-color substitution or face tint, depending on the pack), so the canvas and the Visio export share one implementation. A device type the pack does not ship falls back to its router icon. Rendered once and cached in-memory (bounded); auth: any authenticated user.</p>
+<p><strong>Response:</strong> <code>200 OK</code> — <code>Content-Type: image/png</code>, <code>Cache-Control: public, max-age=86400, immutable</code></p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- <code>color</code> is not <code>#RRGGBB</code> (a free-form value would widen the render cache key space)</li>
+<li><code>404 Not Found</code> -- Not a builtin pack id</li>
+</ul>
+<hr>
+<h4 id="import-icon-pack-admin">Import Icon Pack (Admin)</h4><pre><code>POST /api/v1/icon-packs/import
+</code></pre>
+<p>Import a Visio stencil (.vssx) as an icon pack. Admin-only.</p>
+<p><strong>Body size limit:</strong> 20 MB</p>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;Cisco Network&quot;,
+  &quot;data&quot;: &quot;&lt;base64-encoded .vssx file&gt;&quot;
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>name</code></td>
+<td>string</td>
+<td>Yes</td>
+<td>Display name for the icon pack (max 255 chars)</td>
+</tr>
+<tr>
+<td><code>data</code></td>
+<td>string</td>
+<td>Yes</td>
+<td>Base64-encoded .vssx stencil file</td>
+</tr>
+</tbody></table>
+<p><strong>Response:</strong> <code>201 Created</code></p>
+<pre><code class="language-json">{
+  &quot;id&quot;: &quot;uuid&quot;,
+  &quot;name&quot;: &quot;Cisco Network&quot;,
+  &quot;builtin&quot;: false,
+  &quot;brand_color&quot;: &quot;#049FD9&quot;,
+  &quot;created_by&quot;: &quot;user-uuid&quot;,
+  &quot;created_at&quot;: &quot;2026-03-03T12:00:00Z&quot;,
+  &quot;icon_count&quot;: 42,
+  &quot;icons&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;pack_id&quot;: &quot;pack-uuid&quot;,
+      &quot;name&quot;: &quot;Router&quot;,
+      &quot;device_type&quot;: &quot;router&quot;,
+      &quot;width&quot;: 200,
+      &quot;height&quot;: 200
+    }
+  ]
+}
+</code></pre>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>The file must be a valid Visio stencil (.vssx) with master shapes. Regular .vsdx files are rejected.</li>
+<li>Each master shape is converted to SVG at 200x200px using <code>vsdx.MasterToSVG()</code>.</li>
+<li>Brand color is auto-detected from the first successful SVG conversion.</li>
+<li>Device types are auto-mapped by name heuristic (contains &quot;router&quot; → <code>router</code>, &quot;switch&quot; → <code>switch</code>, etc.).</li>
+<li>EMF-based stencils (Cisco-style) require <code>emf2svg-conv</code> on the server. If missing, those masters are skipped with a warning.</li>
+<li>Masters that fail SVG conversion are skipped (logged as warnings).</li>
+<li>Created via transaction: pack + all icons are inserted atomically.</li>
+<li>Audit log entry created with name and icon count.</li>
+</ul>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Invalid JSON, missing name/data, invalid base64, not a stencil, no icons converted</li>
+<li><code>401 Unauthorized</code> -- Missing or invalid access token</li>
+<li><code>403 Forbidden</code> -- Non-admin user</li>
+<li><code>409 Conflict</code> -- Duplicate pack name</li>
+<li><code>413 Payload Too Large</code> -- Request body exceeds 20 MB limit</li>
+</ul>
+<hr>
+<h4 id="update-icon-admin">Update Icon (Admin)</h4><pre><code>PUT /api/v1/icon-packs/{packID}/icons/{iconID}
+</code></pre>
+<p>Update an icon&#39;s device_type mapping. Admin-only.</p>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;device_type&quot;: &quot;switch&quot;
+}
+</code></pre>
+<p><strong>Response:</strong> <code>200 OK</code> — Updated icon (without svg_data)</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Invalid JSON</li>
+<li><code>404 Not Found</code> -- Icon not found</li>
+</ul>
+<hr>
+<h4 id="duplicate-icon-admin">Duplicate Icon (Admin)</h4><pre><code>POST /api/v1/icon-packs/{packID}/icons/{iconID}/duplicate
+</code></pre>
+<p>Copy an icon (same SVG and dimensions) into a new, unassigned icon in the same pack, so one artwork can be assigned to multiple roles (e.g. ABR and ASBR). The copy is named <code>&quot;&lt;name&gt; (copy)&quot;</code> (or <code>&quot;&lt;name&gt; (copy 2)&quot;</code>, … if that name is taken) and starts with no <code>device_type</code>. Admin-only. No request body.</p>
+<p><strong>Response:</strong> <code>201 Created</code> — New icon (without svg_data)</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>404 Not Found</code> -- Source icon not found</li>
+</ul>
+<hr>
+<h4 id="delete-icon-pack-admin">Delete Icon Pack (Admin)</h4><pre><code>DELETE /api/v1/icon-packs/{packID}
+</code></pre>
+<p>Delete an icon pack and all its icons. Built-in packs cannot be deleted. Admin-only.</p>
+<p><strong>Response:</strong> <code>204 No Content</code></p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>403 Forbidden</code> -- Cannot delete builtin icon pack</li>
+<li><code>404 Not Found</code> -- Pack not found</li>
+</ul>
+<hr>
+</main></html>
