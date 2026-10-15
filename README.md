@@ -33,30 +33,28 @@ shown alongside the result.
 
 - **Assess a change before applying it.** Simulate link or device failures,
   adjust metrics, or fail a shared-risk link group (SRLG). Review predicted
-  path changes, isolation, and congestion risk without changing the live network.
-- **Investigate past events.** Use Time Travel to replay retained observations,
-  compare before and after states, and inspect related incidents. Historical
-  answers depend on the data recorded for the selected time, not retention alone.
+  path changes, isolation, and congestion risk without touching the live network.
+- **Investigate past events.** Use Time Travel to replay what was recorded,
+  compare before and after, and inspect related incidents.
 - **Follow paths across protocols.** Combine OSPFv2, OSPFv3, IS-IS, EIGRP,
-  BGP and L2 information on one canvas. IS-IS calculations are separate for
-  IPv4, IPv6, and CLNS. Search the BGP paths received from all configured BMP
-  sources in one view, rather than checking each router separately.
+  BGP and L2 information on one canvas, and trace a path to a device, address
+  or prefix. Search the BGP paths received from all your BMP sources in one
+  view instead of checking each router separately.
 - **Use router-exported topology.** Where direct IGP collection is unavailable,
-  BGP-LS can provide exported topology through BMP or a direct BGP session.
-  Device and link details identify the source, so an exported view is not
-  presented as a directly recorded link-state database.
+  BGP-LS provides exported topology through BMP or a direct BGP session.
+  Device and link details show how each was learned: from a link-state
+  database, an SNMP MIB or a router export.
 - **Connect routing changes with services.** Replay BGP path changes, compare
-  two points on the AS-flow timeline, and inspect individual autonomous systems.
-  MPLS tunnels, L3VPNs, VPWS/VPLS services, and EVPN membership can be overlaid
-  on the topology. Service overlays show their recorded relationships and state;
-  they do not by themselves prove where packets travel or what caused an outage.
+  two points on the AS Flow timeline, and inspect individual autonomous systems.
+  Overlay MPLS tunnels, L3VPNs, VPWS/VPLS services and EVPN membership on the
+  topology to see their recorded relationships and state.
 
 ### Follow a path across routing domains
 
 The path panel presents forward and reverse paths as separate chains. Each
-segment identifies its routing domain, protocol instance, cost, and evidence
-status. The same hops are highlighted on the canvas, so the route explanation
-remains connected to the topology being investigated.
+segment shows its routing domain, protocol instance and cost, and whether it is
+resolved, inferred or unresolved. The same hops are highlighted on the canvas, so
+the route explanation stays connected to the topology being investigated.
 
 ![Osprey route analysis showing forward and reverse paths across OSPFv2, BGP, and IS-IS routing domains](assets/route-path.png)
 
@@ -83,11 +81,6 @@ or unresolved sections where the available observations do not support an answer
 
 ## Download & install
 
-Building an integration? Start with [API & Integrations](https://github.com/wijnberg-net/osprey/wiki/API-and-Integrations).
-The [API reference for 1.4.8](https://www.wijnberg.net/api/v1.4.8/) covers the current release; [older editions](https://www.wijnberg.net/api/) remain available. Releases
-from 1.4.3 also provide `openapi.json` as a download. The specification covers
-20 observation operations in 1.4.8, not the complete API.
-
 Grab the latest `.deb` from the
 [Releases page](https://github.com/wijnberg-net/osprey/releases/latest), verify it,
 and install:
@@ -113,14 +106,19 @@ in with the admin account created during setup.
 
 ### Free evaluation
 
-All features, up to 32 devices, no time limit, no license key required. Upgrade by
-uploading a license key through the web UI. For Professional or Enterprise
-licensing, contact **[sales@wijnberg.net](mailto:sales@wijnberg.net)**.
+All features, up to 32 devices, no time limit, no license key required.
+Monitoring more devices requires a paid license; devices already monitored stay
+monitored when the limit is reached, and removing a device frees a slot. Paid
+licenses include a 30-day grace period for exceeding the device limit or
+reaching expiry. To upgrade, upload a license key in the web UI. For
+Professional or Enterprise licensing, contact **[sales@wijnberg.net](mailto:sales@wijnberg.net)**.
 
-The evaluation includes 32 devices; adding more requires a paid license.
-Existing devices remain monitored when the limit is reached. Paid licenses
-include a 30-day grace period for exceeding the device limit or reaching expiry.
-Removing a device frees a slot.
+## API & integrations
+
+Building an integration? Start with [API & Integrations](https://github.com/wijnberg-net/osprey/wiki/API-and-Integrations).
+The [API reference for 1.4.8](https://www.wijnberg.net/api/v1.4.8/) covers the current release; [older editions](https://www.wijnberg.net/api/) remain available. Releases
+from 1.4.3 also provide `openapi.json` as a download. The specification covers
+20 observation operations in 1.4.8, not the complete API.
 
 ---
 
@@ -128,26 +126,21 @@ Removing a device frees a slot.
 
 | Protocol   | Discovery method   | Capabilities |
 |------------|--------------------|--------------|
-| **OSPFv2** | GRE adjacency, SNMP, BGP-LS | LSDB inspection for direct collection, SPF, inter-area and external routes; interface traffic through SNMP |
-| **OSPFv3** | GRE adjacency, SNMP, BGP-LS | LSDB inspection for direct collection and IPv6 topology; IPv4 address-family support is not available |
-| **IS-IS**  | GRE adjacency, SNMP, BGP-LS | LSDB inspection for direct collection, CLNS/IPv4/IPv6 path analysis, SR-MPLS, advertised SRv6 capabilities/locators/SIDs, multi-area discovery from a single seed, scoped area recorders, Cisco IOS GRE support |
-| **EIGRP**  | SNMP (CISCO-EIGRP-MIB) | IPv4/IPv6 neighbor, interface and topology-table discovery; classic and named mode, VRF/AS scoping, observed route metrics and next hops, L2 integration, administrative-distance selection and adjacency-loss alerts. Cisco only; no EIGRP adjacency required |
-| **BGP**    | BMP (RFC 7854)      | Received routing tables and candidate paths, ADD-PATH, peer state, historical replay and AS-flow animation |
-| **BGP-LS** | BMP or direct BGP session (RFC 9552) | Router-exported topology with source attribution; direct area collection takes precedence. Inspect exported SRv6 SIDs and SR-policy candidate paths where available. Incomplete collection is reported, and topology is withheld when source-completeness checks fail |
+| **OSPFv2** | GRE adjacency, SNMP, BGP-LS | LSDB inspection (GRE), SPF, inter-area and external routes; interface traffic through SNMP |
+| **OSPFv3** | GRE adjacency, SNMP, BGP-LS | LSDB inspection (GRE) and IPv6 topology; IPv4 address-family support is not available |
+| **IS-IS**  | GRE adjacency, SNMP, BGP-LS | LSDB inspection (GRE, including Cisco IOS), CLNS/IPv4/IPv6 path analysis, SR-MPLS and SRv6 advertisements, multi-area discovery from a single seed with per-area recorders |
+| **EIGRP**  | SNMP (CISCO-EIGRP-MIB) | IPv4/IPv6 neighbors, interfaces and topology tables (classic and named mode, per VRF and AS), observed metrics and next hops, adjacency-loss alerts. Cisco only; no EIGRP adjacency required |
+| **BGP**    | BMP (RFC 7854)      | Router-selected routes (Loc-RIB) or received routes before or after policy, candidate paths, ADD-PATH, advertised-prefix counts, peer state, historical replay and AS Flow animation |
+| **BGP-LS** | BMP or direct BGP session (RFC 9552) | Router-exported topology with source attribution, SRv6 SIDs and SR-policy candidate paths; direct collection takes precedence, and incomplete exports are reported instead of shown as topology |
 | **EVPN**   | BMP (RFC 7854)      | EVPN routes (RFC 7432), E-LAN & EVPN-VPWS instances (VXLAN or MPLS), member PEs with MAC/IP counts, Ethernet segments, MAC-mobility & PE-loss detection |
 | **MPLS**   | SNMP (MPLS-TE / L3VPN / PW MIBs) | TE tunnels (RFC 3812), L3VPNs grouped by VRF and route-target data (RFC 4364 / 4382), VPWS connections and VPLS instances from pseudowire data (RFC 5601) |
 | **L2**     | SNMP (LLDP/CDP)     | Switch adjacencies, neighbor-based discovery, overlay on IGP topology |
 
-Capabilities depend on the source, device software, and enabled router features.
-BGP-LS exports are not equivalent to a complete raw LSDB, and BMP exposes the
-routes its exporters provide. A supported protocol does not imply that every
-device exposes every table or address family. IS-IS IPv6 path analysis
-requires a shared topology; separate MT-IS-IS topologies are not supported.
-
-IS-IS multi-area discovery is enabled per recorder. Automatic handoff to
-per-area SNMP recorders is a separate, default-off option: it requires both
-the server's `snmp.isis_bootstrap_enabled` setting (with a collector-manager
-restart) and the parent recorder's **Bootstrap strict per-area recorders** option.
+What Osprey can show depends on the source, device software and enabled router
+features: a BGP-LS export is not a complete raw LSDB, BMP shows the routes its
+exporters send, and not every device exposes every table or address family.
+IS-IS IPv6 path analysis requires a shared topology; separate MT-IS-IS
+topologies are not supported.
 
 ---
 
@@ -176,21 +169,23 @@ restart) and the parent recorder's **Bootstrap strict per-area recorders** optio
 ### Route analysis
 
 - **Hop-by-hop route analysis.** Follow each router's own route decision where
-  per-router evidence is available. Where supported, a shortest-path calculation
-  provides a labelled fallback, including for some OSPFv3, IS-IS and partial-scope
-  queries. Hop details show metrics, route types and installed equal-cost next
+  per-router data is available, with a labeled shortest-path fallback where
+  supported. Hop details show metrics, route types and installed equal-cost next
   hops where known. This is routing analysis, not a packet-delivery test.
+- **Trace to an address or prefix.** Ask for the path to an IPv4 or IPv6 address
+  or prefix. Without an exact route, Osprey answers with the most specific route
+  that contains the address and labels it as a longest match.
 - **Cross-domain paths.** Connect IGP segments across autonomous systems and
-  tenants using BGP evidence. Each segment shows its cost and whether the
-  transition is resolved, inferred or unresolved.
+  tenants using BGP. Each segment shows its cost and whether the transition is
+  resolved, inferred or unresolved; partial paths are marked as such.
 - Shortest-path computation with the full equal-cost path set and asymmetric-routing detection
 - IS-IS address-family selector with separate path views; CLNS displays System IDs and NETs
 - SR-MPLS label-stack computation (RFC 8667)
 - **SRv6 observations and local repair analysis.** Inspect advertised capabilities,
   locators and End/End.X SIDs. For live IS-IS areas, calculate local failure
-  alternatives and attempt to bind logical repair instructions to advertised
-  SIDs. Missing or ambiguous evidence is explained; the calculation does not
-  establish installed TI-LFA protection or packet delivery.
+  alternatives and bind repair instructions to advertised SIDs where possible.
+  Missing or ambiguous evidence is explained, and results describe advertised
+  repair options rather than installed TI-LFA state.
 - Per-router routing table with step-by-step cost explanation
 - BGP prefix search (exact, longest-match, covered) with CSV export
 - SPF tree visualization from any device with cost annotations
@@ -198,39 +193,38 @@ restart) and the parent recorder's **Bootstrap strict per-area recorders** optio
 ### BGP analysis
 
 - Search received routes across all BMP sources, including candidate paths,
-  ADD-PATH and best-path selection. The view is limited to what those sources export.
-- Explore the AS-Flow graph, replay changes and compare two times. Per-AS details
-  include route share, churn, primary and backup dependencies, exit routers and
-  session health. The view aggregates full-table data rather than drawing a node
-  for every prefix.
+  ADD-PATH and best-path selection. Per source, record the router's own selection
+  (Loc-RIB) or its received routes before or after import policy; when Osprey
+  infers the selection, it says so.
+- Explore the AS Flow graph, replay changes and compare two points in time.
+  Per-AS details include route share, churn, primary and backup dependencies,
+  exit routers and session health.
 - Replay a prefix's best-path history to follow exit changes and session events.
-- Use historical route and session data to assess hot-potato exit changes and
-  peer-failure impact at the selected time, subject to recorded coverage.
+- Assess hot-potato exit changes and peer-failure impact at any recorded time.
 - **BGP security findings.** Check received paths for multiple origins, a
   more-specific prefix under another origin's covering prefix, and paths already
-  containing your own AS. Findings identify the sessions that supplied them.
-  They are observations, not automatic hijack diagnoses; an empty report with
-  incomplete coverage is not an all-clear.
+  containing your own AS. Each finding names the sessions that supplied it, and
+  the report says when its coverage is incomplete. Findings are observations to
+  investigate, not automatic hijack verdicts.
 - **Route-origin validation.** Import an RPKI/ROA authorization set to label
-  received paths valid, invalid or unknown under RFC 6811. Historical candidates
-  use the recorded authorization state for that time. No validation badge is
-  shown when no ROAs have been loaded; Osprey does not run an RTR service.
-- Peer session monitoring via BMP with up/down history and per-target prefix counts
+  received paths valid, invalid or unknown under RFC 6811, including historical
+  candidates at their recorded authorization state. Osprey does not run an RTR
+  service.
+- Peer session monitoring via BMP with up/down history, per-target prefix counts
+  and advertised-prefix (Adj-RIB-Out) counts
 
 ### SR-policy observations
 
 Inspect router-exported SR-policy candidate paths through BGP-LS over BMP or a
 direct BGP-LS session. Compare headend, endpoint, color, preference and ordered
-SID lists, and highlight nodes matched to exact advertisements in the source's
-routing domain. Sources remain separate; unknown and ambiguous SID owners are
-identified. Advertised policies and node associations do not establish an
-installed forwarding path or active protection.
+SID lists, and highlight the nodes they match in the source's routing domain;
+unknown and ambiguous SID owners are identified. Policies are shown as
+advertised, not as installed forwarding state.
 
 ### MPLS & EVPN service visibility
 
 - **MPLS-TE tunnels:** inspect head, transit and tail roles, administrative and
-  operational state, and a headend-to-tailend connection on the canvas. This
-  overview does not trace the tunnel's individual forwarding hops.
+  operational state, and a headend-to-tailend connection on the canvas.
 - **L3VPNs:** group per-PE VRFs by route-target relationships, with full-mesh or
   hub-and-spoke classification and site roles.
 - **VPWS and VPLS:** discover pseudowires through standard or supported Cisco
@@ -242,23 +236,22 @@ installed forwarding path or active protection.
   per-PE MAC/IP counts, Ethernet Segments and devices outside the current map.
 - **EVPN changes:** correlate MAC-mobility and PE-loss symptoms with device or
   link incidents. Detection distinguishes MAC moves from all-active multihoming
-  and limits event bursts. These symptoms do not independently open incidents.
+  and limits event bursts.
 - **Service overlays:** highlight member PEs and their relationships, using mesh
   or hub-and-spoke layouts where supported. The display distinguishes complete,
-  partial and unavailable observations. Membership links describe the control
-  plane, not the path taken by a packet.
+  partial and unavailable observations. Membership links show control-plane
+  relationships, not packet paths.
 - **Controlled discovery:** MPLS discovery is enabled per network and is off by
-  default. Capability checks limit which tables are walked. Tunnel, VRF and
-  pseudowire changes contribute symptoms to incident correlation, rather than
-  being treated as established root causes.
+  default; capability checks limit which tables are walked. Tunnel, VRF and
+  pseudowire changes feed incident correlation as symptoms.
 
 ### Failure simulation
 
 - Simulate link failures, node removals, metric changes, hypothetical links/routers, SRLG failures
-- Cross-domain scenarios retain the BGP-linked path and apply changes to the
-  affected link-state segments. For EIGRP, Osprey can use a surviving installed
-  next hop when one is available. It reports when none survives; it does not
-  predict a new DUAL calculation.
+- Cross-domain scenarios keep the BGP-linked path and apply changes to the
+  affected link-state segments. For EIGRP, Osprey uses a surviving installed
+  next hop when one exists and reports when none does; it does not model a new
+  DUAL calculation.
 - Traffic-shift impact analysis with congestion-risk classification
 - Batch assessment: iterate all links or nodes, surface only failures that cause isolation
 - Shareable scenarios with undo/redo, applicable to historical snapshots via time travel
@@ -272,9 +265,7 @@ installed forwarding path or active protection.
 - Diagnostic reports: timer consistency, MTU mismatch, congestion trends, routing stability, single points of failure
 - **External OSPF defaults.** Filter stored external advertisements to `0.0.0.0/0`
   and `::/0`, grouped by process and Type 5/7 metric type, with advertiser counts
-  and observation timestamps. Unknown originators are not stored; SNMP changes
-  may appear only at the hourly refresh, and stopped areas can retain old rows.
-  This report does not establish complete or current default-route coverage.
+  and when each was last observed.
 
 ### Administration
 
@@ -342,15 +333,10 @@ The installation does not require a JVM, Elasticsearch or a graph database.
 ## Scale
 
 Capacity depends on device and interface counts, route volume, update frequency,
-retention settings and server resources. Browser performance is a separate
-consideration: the number of visible elements, labels, display resolution and
-client hardware affect how smoothly a topology can be explored. There is no
-single device count that describes all of these limits.
-
-Use area views to focus on the part of a large network you are investigating.
-This reduces what is displayed, but does not necessarily reduce all data already
-loaded by the browser. Size and test an installation against its intended workload
-rather than treating a full-network canvas as the only measure of capacity.
+retention settings and server resources. How smoothly a topology can be explored
+also depends on the number of visible elements and labels, the display and the
+client hardware. Use area views to focus on the part of a large network you are
+investigating, and size an installation against its intended workload.
 
 SNMP counter polling defaults to five-minute intervals, with configurable
 per-target overrides. Interface discovery defaults to a six-hour cycle.
@@ -369,11 +355,9 @@ router configuration requirements and guidance on interpreting collected data.
 ## License
 
 Proprietary. Copyright © 2025–2026 Michel Wijnberg. All rights reserved. See
-[LICENSE](LICENSE).
-
-Free evaluation: all features, up to 32 devices, no time limit. Commercial
-licensing: **[sales@wijnberg.net](mailto:sales@wijnberg.net)**. Full terms:
-[www.wijnberg.net/terms](https://www.wijnberg.net/terms/).
+[LICENSE](LICENSE) and the full terms at
+[www.wijnberg.net/terms](https://www.wijnberg.net/terms/). For evaluation and
+commercial licensing, see [Free evaluation](#free-evaluation).
 
 The distributed binary includes third-party open-source components under their
 respective licenses; see [THIRD-PARTY-LICENSES.txt](THIRD-PARTY-LICENSES.txt).
@@ -383,7 +367,7 @@ respective licenses; see [THIRD-PARTY-LICENSES.txt](THIRD-PARTY-LICENSES.txt).
 
 **OSPF**: RFC 2328 (v2), RFC 5340 (v3), RFC 5709 (HMAC-SHA authentication), RFC 7474 (manual-key security extension).
 **IS-IS**: ISO 10589, RFC 1195, RFC 5301 (hostname), RFC 5303 (3-way), RFC 5305 (TE), RFC 8667 (SR-MPLS).
-**BGP/BMP**: RFC 4271 (BGP-4), RFC 4760 (MP-BGP), RFC 6793 (4-byte ASN), RFC 7854 (BMP), RFC 7911 (Add-Path), RFC 8654 (Extended Messages), RFC 9552 (BGP-LS).
+**BGP/BMP**: RFC 4271 (BGP-4), RFC 4760 (MP-BGP), RFC 6793 (4-byte ASN), RFC 7854 (BMP), RFC 7911 (Add-Path), RFC 8654 (Extended Messages), RFC 8671 (BMP Adj-RIB-Out), RFC 9069 (BMP Loc-RIB), RFC 9552 (BGP-LS).
 **EVPN**: RFC 7432 (BGP MPLS-Based Ethernet VPN), RFC 8214 (EVPN-VPWS), RFC 8365 (network virtualization overlays / VXLAN).
 **MPLS**: RFC 3812 (TE MIB), RFC 4364 (BGP/MPLS IP VPNs), RFC 4382 (L3VPN MIB), RFC 5601 (PW-STD-MIB).
 **RPKI**: RFC 6482 (ROA), RFC 6811 (origin validation), RFC 6483 (validation semantics, including AS0 ROAs).
