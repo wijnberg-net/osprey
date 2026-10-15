@@ -1,0 +1,12 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SR-policy node associations (application-only) — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="sr-policy-node-associations-application-only">SR-policy node associations (application-only)</h3><p><code>GET /api/v1/bgpls/policies/{id}/associations</code> is an authenticated live reader,
+not in published OpenAPI or restricted-key access. Returns <code>observation</code>,
+<code>routing_domain_id</code>, <code>headends</code>, <code>endpoint</code>, ordered <code>lists[].segments</code> and
+<code>note</code>. Each association has address, status (matched/unknown/ambiguous/stale/
+unsupported), reason and scoped owners with device/area/PI IDs and observation
+timestamp. Exact source observation identity; no hash-only merge. Reads policy
+and domain evidence in one repeatable-read snapshot. 400 invalid UUID/history,
+404 withdrawn/missing, 422 above 10000 area-node observations, 500 storage or
+corrupt data. An unavailable source is a stale result, not an installed failure.</p>
+<p>BGP-LS SRv6 observations: <code>GET /bgpls/objects</code> also accepts <code>type=srv6_sid</code>. Node/link/prefix/SID rows may carry <code>srv6</code> with capability flags, algorithms, node/link MSD, locator, prefix flags, End SID, End.X adjacency, peer context, raw attributes and error evidence. Withheld/stale semantics remain. <code>GET /devices/{deviceID}/srv6</code> may additionally return <code>data.end_sids</code> (SID, behavior, flags, structure, MTID, algorithm). These remain advertised facts, not installed-state assertions.</p>
+<p>BGP-LS optional SRv6 decode errors are scoped to <code>srv6.error</code>; they do not mark valid IGP/TE attributes withheld or discarded. Whole-attribute discard keeps its existing flags. Notification channel test failures consistently return the standard nested error envelope.</p>
+</main></html>

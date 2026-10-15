@@ -1,0 +1,51 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Pagination — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h2 id="pagination">Pagination</h2><p>Many list endpoints support pagination via query parameters. The defaults below apply to the standard envelope; individual endpoints document exceptions, including unpaginated historical results:</p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Default</th>
+<th>Max</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>limit</code></td>
+<td>integer</td>
+<td>100</td>
+<td>1000</td>
+<td>Maximum items to return</td>
+</tr>
+<tr>
+<td><code>offset</code></td>
+<td>integer</td>
+<td>0</td>
+<td>—</td>
+<td>Number of items to skip</td>
+</tr>
+</tbody></table>
+<p><strong>Paginated endpoints</strong> return a standard envelope:</p>
+<pre><code class="language-json">{
+  &quot;data&quot;: [...],
+  &quot;total&quot;: 42,
+  &quot;limit&quot;: 100,
+  &quot;offset&quot;: 0
+}
+</code></pre>
+<p>Endpoints using this envelope:</p>
+<ul>
+<li><code>GET /networks</code></li>
+<li><code>GET /networks/{id}/autonomous-systems</code></li>
+<li><code>GET /.../routing-domains</code></li>
+<li><code>GET /.../protocol-instances</code></li>
+<li><code>GET /.../areas</code></li>
+<li><code>GET /devices?area_id=...</code></li>
+<li><code>GET /links?area_id=...</code></li>
+<li><code>GET /users</code></li>
+<li><code>GET /collectors</code></li>
+<li><code>GET /snmp-targets</code></li>
+<li><code>GET /alerts/rules</code></li>
+</ul>
+<p><strong>Already-paginated endpoints</strong> (<code>GET /events</code>, <code>GET /alerts</code>, <code>GET /incidents</code>, <code>GET /ssh/sessions</code>, <code>GET /audit-log</code>) retain their existing response keys (<code>events</code>, <code>alerts</code>, <code>incidents</code>, <code>sessions</code>, <code>entries</code>) and now also include <code>limit</code> and <code>offset</code> in the response.</p>
+<hr>
+</main></html>
