@@ -127,7 +127,7 @@ from 1.4.3 also provide `openapi.json` as a download. The specification covers
 | Protocol   | Discovery method   | Capabilities |
 |------------|--------------------|--------------|
 | **OSPFv2** | GRE adjacency, SNMP, BGP-LS | LSDB inspection (GRE), SPF, inter-area and external routes; interface traffic through SNMP |
-| **OSPFv3** | GRE adjacency, SNMP, BGP-LS | LSDB inspection (GRE) and IPv6 topology; IPv4 address-family support is not available |
+| **OSPFv3** | GRE adjacency, SNMP, BGP-LS | LSDB inspection (GRE), IPv6 and IPv4 topology and path analysis (RFC 5838 address families) |
 | **IS-IS**  | GRE adjacency, SNMP, BGP-LS | LSDB inspection (GRE, including Cisco IOS), CLNS/IPv4/IPv6 path analysis, SR-MPLS and SRv6 advertisements, multi-area discovery from a single seed with per-area recorders |
 | **EIGRP**  | SNMP (CISCO-EIGRP-MIB) | IPv4/IPv6 neighbors, interfaces and topology tables (classic and named mode, per VRF and AS), observed metrics and next hops, adjacency-loss alerts. Cisco only; no EIGRP adjacency required |
 | **BGP**    | BMP (RFC 7854)      | Router-selected routes (Loc-RIB) or received routes before or after policy, candidate paths, ADD-PATH, advertised-prefix counts, peer state, historical replay and AS Flow animation |
@@ -365,7 +365,7 @@ respective licenses; see [THIRD-PARTY-LICENSES.txt](THIRD-PARTY-LICENSES.txt).
 <details>
 <summary>Protocol references</summary>
 
-**OSPF**: RFC 2328 (v2), RFC 5340 (v3), RFC 5709 (HMAC-SHA authentication), RFC 7474 (manual-key security extension).
+**OSPF**: RFC 2328 (v2), RFC 5340 (v3), RFC 5838 (OSPFv3 address families), RFC 5709 (HMAC-SHA authentication), RFC 7474 (manual-key security extension).
 **IS-IS**: ISO 10589, RFC 1195, RFC 5301 (hostname), RFC 5303 (3-way), RFC 5305 (TE), RFC 8667 (SR-MPLS).
 **BGP/BMP**: RFC 4271 (BGP-4), RFC 4760 (MP-BGP), RFC 6793 (4-byte ASN), RFC 7854 (BMP), RFC 7911 (Add-Path), RFC 8654 (Extended Messages), RFC 8671 (BMP Adj-RIB-Out), RFC 9069 (BMP Loc-RIB), RFC 9552 (BGP-LS).
 **EVPN**: RFC 7432 (BGP MPLS-Based Ethernet VPN), RFC 8214 (EVPN-VPWS), RFC 8365 (network virtualization overlays / VXLAN).
