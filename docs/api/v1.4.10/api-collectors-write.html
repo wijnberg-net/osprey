@@ -1,0 +1,41 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Collectors (Write) — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="collectors-write">Collectors (Write)</h3><h4 id="create-collector">Create Collector</h4><pre><code>POST /api/v1/collectors
+</code></pre>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;collector-1&quot;,
+  &quot;description&quot;: &quot;Primary collector&quot;,
+  &quot;config&quot;: { ... },
+  &quot;area_id&quot;: &quot;uuid&quot;,
+  &quot;enabled&quot;: true
+}
+</code></pre>
+<p><strong>Validation:</strong> <code>name</code>, <code>config</code>, and <code>area_id</code> are all required. When present in the <code>config</code> blob, <code>config.snmp.target</code>, <code>config.gre.local_ip</code>, and <code>config.gre.remote_ip</code> must each be a valid IP address, and <code>config.discovery_mode</code> must be one of <code>gre</code>, <code>snmp</code>, <code>isis-gre</code>, <code>isis-snmp</code>, <code>eigrp-snmp</code> (absent = GRE; <code>bgpls</code> is engine-managed and refused with its own message) — otherwise the request is rejected with <code>400</code>. An <code>isis-snmp</code> config additionally requires <code>config.hierarchy.area</code> to be exactly <code>level-2</code> or <code>level-1:&lt;canonical-area-address&gt;</code>; <code>config.snmp.crawl_abrs=true</code> is accepted only with <code>level-2</code>. Missing, generic (<code>level-1</code>), malformed, over-long, or non-canonical area values are rejected rather than starting an unscoped recorder. An <code>eigrp-snmp</code> config may carry <code>config.eigrp.route_walk_interval_seconds</code>: how often the routers&#39; EIGRP topology and RIB tables are read for the devices this recorder covers. Absent or <code>0</code> inherits the network&#39;s <code>discovery_interval_hours</code>; any other value must be a whole number of <strong>minutes</strong> expressed in seconds (a multiple of 60) between 300 (five minutes) and 2678400 (31 days), and anything else — a negative, a fraction, a non-minute value such as 330, an overflowing magnitude, a string — is rejected rather than repaired or read as &quot;inherit&quot; — by this endpoint, by the collector-manager, and by the store reader the SNMP poller obeys, so a row imported around the API cannot poll on an unsupported cadence while its collector row reads <code>error</code>. The web form writes an explicit 3600-second value for a new EIGRP recorder; clearing that field or omitting the API property retains the inheritance contract, and editing an older recorder does not add the new UI default. The same number fixes the route-history freshness lease (<code>2 × interval + 10 min</code>). A configured override gets its own poll schedule rather than riding the counters tick, so it also applies where counter polling is disabled; changing it takes one immediate walk even while the poller is running (the recorder refresh wakes the target&#39;s own timer), and an on-demand discovery (<code>POST /api/v1/snmp/discover-now</code>) always reads the tables however long the interval. It overrides the network cadence in <strong>both</strong> directions and governs the route walk only — hierarchy and interface enrichment keep riding the network discovery pass. <code>config.snmp.targets</code> is a bootstrap seed list, not the recording scope: an EIGRP recorder records every device in its network, and an empty list is valid at create and on update (deleting a device prunes its address from it, and such a recorder must stay editable). <code>enabled</code> defaults to <strong>true</strong> when omitted; an explicit <code>false</code> creates the collector stopped.</p>
+<p><strong>Response:</strong> <code>201 Created</code></p>
+<p><strong>Error:</strong> <code>400 Bad Request</code> — Missing required field (<code>name</code>, <code>config</code>, or <code>area_id</code>), an invalid IP in <code>config.snmp.target</code> / <code>config.gre.local_ip</code> / <code>config.gre.remote_ip</code>, or an invalid IS-IS SNMP home-area/crawler combination</p>
+<h4 id="update-collector">Update Collector</h4><pre><code>PUT /api/v1/collectors/{collectorID}
+</code></pre>
+<p>Performs a partial merge-update (only fields provided are updated).
+<code>enabled</code> only changes when explicitly present in the body — a config-only
+update never starts or stops the collector. For backward compatibility on ordinary
+collectors, <code>name: null</code>, <code>name: &quot;&quot;</code>, and <code>area_id: null</code> are no-ops; a non-null
+<code>area_id</code>, including the empty string, follows the historical update path and may still
+fail database validation. A completed bootstrap child is stricter: supplying an empty or
+null protected identity field is an attempted identity change and returns <code>400</code>.</p>
+<p><strong>Request body:</strong> Same as create (all fields optional).</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<p><strong>Errors:</strong> <code>404 Not Found</code>; <code>400 Bad Request</code> when a completed bootstrap child attempts
+identity/provenance drift; <code>409 Conflict</code> while a child is still owned by an active
+bootstrap parent.</p>
+<h4 id="toggle-collector">Toggle Collector</h4><pre><code>POST /api/v1/collectors/{collectorID}/toggle
+</code></pre>
+<p>Flips the <code>enabled</code> flag and updates the status field (<code>&quot;pending&quot;</code> if enabled, <code>&quot;stopped&quot;</code> if disabled).</p>
+<p><strong>Response:</strong> <code>200 OK</code> (updated collector object)</p>
+<p><strong>Errors:</strong> <code>404 Not Found</code>; <code>409 Conflict</code> while a child is still owned by an active
+bootstrap parent.</p>
+<h4 id="delete-collector">Delete Collector</h4><pre><code>DELETE /api/v1/collectors/{collectorID}
+</code></pre>
+<p><strong>Response:</strong> <code>204 No Content</code></p>
+<p><strong>Errors:</strong> <code>404 Not Found</code>; <code>409 Conflict</code> while a child is still owned by an active
+bootstrap parent.</p>
+<hr>
+</main></html>

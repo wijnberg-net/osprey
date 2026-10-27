@@ -1,0 +1,56 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Advanced Reports — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="advanced-reports">Advanced Reports</h3><h4 id="get-enhanced-stability-report">Get Enhanced Stability Report</h4><pre><code>GET /api/v1/reports/stability?window=24h&amp;area_id=&lt;uuid&gt;
+GET /api/v1/reports/stability?window=7d&amp;pi_id=&lt;uuid&gt;
+</code></pre>
+<p>Enhanced routing stability report with severity classification (ok/warning/high/critical) and per-area instability scoring (0-100). Identifies flapping links by state change frequency and unstable routers by adjacency reset and event counts. Supersedes the basic <code>GET /api/v1/diagnostics/stability</code> endpoint with richer data.</p>
+<p><strong>Auth:</strong> Any authenticated user.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li>Scope: <code>area_id</code>, <code>area_ids</code>, <code>pi_id</code>, <code>rd_id</code>, or <code>network_id</code> (same as diagnostics endpoints)</li>
+<li><code>window</code> -- Time window: <code>1h</code>, <code>6h</code>, <code>24h</code> (default), <code>7d</code>, <code>30d</code></li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;window&quot;: &quot;24h&quot;,
+  &quot;from&quot;: &quot;2026-03-10T00:00:00Z&quot;,
+  &quot;to&quot;: &quot;2026-03-11T00:00:00Z&quot;,
+  &quot;summary&quot;: {
+    &quot;total_events&quot;: 150,
+    &quot;flapping_links&quot;: 2,
+    &quot;unstable_routers&quot;: 1,
+    &quot;area_scores&quot;: [
+      { &quot;area_id&quot;: &quot;uuid&quot;, &quot;area_label&quot;: &quot;0.0.0.0&quot;, &quot;score&quot;: 85, &quot;event_count&quot;: 20, &quot;flap_count&quot;: 3 }
+    ]
+  },
+  &quot;flapping_links&quot;: [
+    {
+      &quot;link_id&quot;: &quot;uuid&quot;,
+      &quot;source_device&quot;: &quot;router-a&quot;,
+      &quot;source_router_id&quot;: &quot;10.0.0.1&quot;,
+      &quot;dest_device&quot;: &quot;router-b&quot;,
+      &quot;dest_router_id&quot;: &quot;10.0.0.2&quot;,
+      &quot;area_label&quot;: &quot;0.0.0.0&quot;,
+      &quot;state_changes&quot;: 12,
+      &quot;last_change&quot;: &quot;2026-03-11T08:30:00Z&quot;,
+      &quot;severity&quot;: &quot;high&quot;
+    }
+  ],
+  &quot;unstable_routers&quot;: [
+    {
+      &quot;router_id&quot;: &quot;10.0.0.3&quot;,
+      &quot;hostname&quot;: &quot;router-c&quot;,
+      &quot;adjacency_resets&quot;: 4,
+      &quot;link_flaps&quot;: 8,
+      &quot;event_count&quot;: 25,
+      &quot;severity&quot;: &quot;critical&quot;,
+      &quot;last_event&quot;: &quot;2026-03-11T09:45:00Z&quot;
+    }
+  ]
+}
+</code></pre>
+<p><strong>Severity thresholds:</strong></p>
+<ul>
+<li>Flapping links: ok (&lt;4), warning (4-7), high (8-15), critical (16+) state changes</li>
+<li>Unstable routers: ok (&lt;6), warning (6-11), high (12-23), critical (24+) events</li>
+<li>Area score: <code>100 - (flaps*5 + events)</code>, capped at 0</li>
+</ul>
+</main></html>
