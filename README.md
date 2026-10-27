@@ -116,9 +116,9 @@ Professional or Enterprise licensing, contact **[sales@wijnberg.net](mailto:sale
 ## API & integrations
 
 Building an integration? Start with [API & Integrations](https://github.com/wijnberg-net/osprey/wiki/API-and-Integrations).
-The [API reference for 1.4.9](https://www.wijnberg.net/api/v1.4.9/) covers the current release; [older editions](https://www.wijnberg.net/api/) remain available. Releases
+The [API reference for 1.4.10](https://www.wijnberg.net/api/v1.4.10/) covers the current release; [older editions](https://www.wijnberg.net/api/) remain available. Releases
 from 1.4.3 also provide `openapi.json` as a download. The specification covers
-20 observation operations in 1.4.9, not the complete API.
+20 observation operations in 1.4.10, not the complete API.
 
 ---
 
