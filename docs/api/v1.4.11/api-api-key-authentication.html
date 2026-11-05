@@ -1,0 +1,16 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>API Key Authentication — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="api-key-authentication">API Key Authentication</h3><p>API keys provide stateless authentication for scripts, CI/CD pipelines, and external integrations. Keys are passed via the <code>X-API-Key</code> HTTP header.</p>
+<p><strong>Key format:</strong> <code>osprey_&lt;64-hex-chars&gt;</code> (e.g., <code>osprey_a1b2c3d4...</code>). The 64-character hex suffix is a cryptographically random 32-byte value.</p>
+<p><strong>Security model:</strong></p>
+<ul>
+<li>Keys are SHA-256 hashed before storage in the <code>api_key</code> table. The raw key is returned only once at creation time and cannot be retrieved afterward.</li>
+<li>Each key has a <code>key_prefix</code> (first 8 hex characters) stored in plaintext for identification in list views.</li>
+<li>Keys have an optional <code>expires_at</code> timestamp. Expired keys are rejected at authentication time.</li>
+<li>The <code>last_used_at</code> field is updated asynchronously (non-blocking) on each successful authentication to avoid adding latency to every request.</li>
+<li>API key CRUD is restricted to admin users. Each key carries a <code>role</code> (<code>admin</code>, <code>engineer</code>, or <code>operator</code>), but effective authorization is capped at the owner&#39;s current role. Demoting an owner therefore immediately reduces every existing key&#39;s privileges; deactivating the owner rejects the key.</li>
+<li>Authenticated route groups apply a per-IP limiter before credential lookup as well as the normal post-authentication limiter, so invalid API keys cannot create an unbounded PostgreSQL lookup stream.</li>
+</ul>
+<p><strong>Usage:</strong></p>
+<pre><code>GET /api/v1/devices?area_id=... HTTP/1.1
+X-API-Key: osprey_a1b2c3d4e5f6...
+</code></pre>
+</main></html>

@@ -1,0 +1,80 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MPLS L3VPNs — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="mpls-l3vpns">MPLS L3VPNs</h3><p>Discovered MPLS L3VPNs (RFC 4364), rolled up from per-PE VRFs walked from the MPLS-L3VPN-STD-MIB (RFC 4382) by the SNMP poller and written directly to the store. A <strong>VRF</strong> is one PE&#39;s view of a VPN; an <strong>L3VPN</strong> is a route-target equivalence class of VRFs spanning one or more PE sites (computed server-side, with full-mesh vs hub-and-spoke classified from the import/export route-targets). Read-only — there is no create/update/delete surface. Scoped per network.</p>
+<p><strong>Auth:</strong> All roles (admin, engineer, operator). Read-only observed state; license state never gates reads.</p>
+<h4 id="list-l3vpn-vrfs">List L3VPN VRFs</h4><pre><code>GET /api/v1/networks/{networkID}/l3vpn/vrfs
+</code></pre>
+<p>Flat per-PE VRF observations for a network.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li><code>device_id</code> -- VRFs observed by this PE</li>
+<li><code>l3vpn</code> -- VRFs whose name matches (where the VRF is named after the L3VPN)</li>
+<li><code>status</code> -- <code>up</code> (oper=1) | <code>down</code> (oper&lt;&gt;1)</li>
+<li><code>limit</code> / <code>offset</code> -- Pagination</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code> (paginated envelope)</p>
+<pre><code class="language-json">{
+  &quot;data&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;network_id&quot;: &quot;uuid&quot;,
+      &quot;area_id&quot;: &quot;uuid&quot;,
+      &quot;device_id&quot;: &quot;uuid&quot;,
+      &quot;vrf_name&quot;: &quot;RED&quot;,
+      &quot;rd&quot;: &quot;65000:1001&quot;,
+      &quot;description&quot;: &quot;&quot;,
+      &quot;oper_status&quot;: 1,
+      &quot;admin_status&quot;: 1,
+      &quot;active_interfaces&quot;: 1,
+      &quot;associated_interfaces&quot;: 1,
+      &quot;route_count&quot;: 12,
+      &quot;first_seen&quot;: &quot;2026-07-05T12:00:00Z&quot;,
+      &quot;last_seen&quot;: &quot;2026-07-05T12:05:00Z&quot;,
+      &quot;updated_at&quot;: &quot;2026-07-05T12:05:00Z&quot;
+    }
+  ],
+  &quot;total&quot;: 1,
+  &quot;limit&quot;: 100,
+  &quot;offset&quot;: 0
+}
+</code></pre>
+<p><code>oper_status</code> / <code>admin_status</code> per RFC 4382; <code>route_count</code> is omitted when the agent lacks the perf table (e.g. Cisco IOL). <code>area_id</code> is omitted when unresolved. The flat list does <strong>not</strong> attach <code>route_targets</code> — use the by-id endpoint. Data is <code>[]</code> (not <code>null</code>) when empty.</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- <code>status</code> not <code>up</code>/<code>down</code></li>
+</ul>
+<hr>
+<h4 id="list-l3vpns">List L3VPNs</h4><pre><code>GET /api/v1/networks/{networkID}/l3vpns
+</code></pre>
+<p>VRFs rolled up into L3VPNs by route-target equivalence class. No query parameters; returns a plain JSON array (not the paginated envelope).</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">[
+  {
+    &quot;name&quot;: &quot;RED&quot;,
+    &quot;topology&quot;: &quot;mesh&quot;,
+    &quot;route_targets&quot;: [&quot;65000:100&quot;],
+    &quot;site_count&quot;: 3,
+    &quot;total_routes&quot;: 36,
+    &quot;oper_status&quot;: 1,
+    &quot;sites&quot;: [
+      {
+        &quot;device_id&quot;: &quot;uuid&quot;,
+        &quot;vrf_name&quot;: &quot;RED&quot;,
+        &quot;rd&quot;: &quot;65000:1001&quot;,
+        &quot;role&quot;: &quot;mesh&quot;,
+        &quot;oper_status&quot;: 1,
+        &quot;route_count&quot;: 12
+      }
+    ]
+  }
+]
+</code></pre>
+<p><code>topology</code> is <code>mesh</code> (every site imports exactly what it exports) or <code>hub-spoke</code> (asymmetric RTs); each site&#39;s <code>role</code> is <code>mesh</code>, <code>hub</code>, or <code>spoke</code>. <code>oper_status</code> is the <strong>worst</strong> across sites (2 = at least one site down). <code>total_routes</code> / <code>route_count</code> are omitted when no site reports a route count. The array is <code>[]</code> when empty.</p>
+<hr>
+<h4 id="get-l3vpn-vrf">Get L3VPN VRF</h4><pre><code>GET /api/v1/l3vpn/vrfs/{id}
+</code></pre>
+<p>Returns a single VRF row by ID with its <code>route_targets</code> array attached (each <code>{rt_value, rt_type, address_family}</code>; <code>rt_type</code> {import=1, export=2, both=3}).</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>404 Not Found</code> -- VRF does not exist</li>
+</ul>
+<hr>
+</main></html>

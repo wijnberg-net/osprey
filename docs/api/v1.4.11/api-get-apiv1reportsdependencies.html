@@ -1,0 +1,45 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Dependency report — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="get-apiv1reportsdependencies">Dependency report <!-- topic: get-apiv1reportsdependencies --></h3><p><code>GET /api/v1/reports/dependencies</code></p>
+<pre><code>GET /api/v1/reports/dependencies?pi_id=&lt;uuid&gt;
+GET /api/v1/reports/dependencies?as_id=&lt;uuid&gt;&amp;pi_id=&lt;uuid&gt;
+</code></pre>
+<p>Dependency analysis overview across three dimensions: peer AS dependencies (BGP/BMP), critical link pairs (topology), and SRLG/device failure candidates.</p>
+<p><strong>Auth:</strong> Any authenticated user.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li><code>as_id</code> (optional) -- Autonomous System UUID for peer AS dependency analysis (requires BMP targets)</li>
+<li><code>pi_id</code> (optional) -- Protocol Instance UUID for critical pairs and SRLG/device analysis</li>
+<li><code>window</code> (optional) -- scorecard window in hours, <code>1..168</code>, default <code>24</code>. Scopes the session scorecards, churn share, path half-life and the observability ledger; the live peer-AS/prefix summary is always current state. A malformed value is a <code>400</code>, never silently the default.</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;peer_as_summary&quot;: [
+    { &quot;peer_as&quot;: 64512, &quot;peer_count&quot;: 2, &quot;total_prefixes&quot;: 150, &quot;ipv4_space&quot;: 65536, &quot;cidr_equiv&quot;: &quot;/16.0&quot;, &quot;severity&quot;: &quot;yellow&quot;,
+      &quot;flaps&quot;: 3, &quot;uptime_pct&quot;: 87.5, &quot;churn_share&quot;: 75.0, &quot;median_path_life_s&quot;: 240, &quot;path_life_closed&quot;: 8, &quot;path_life_open&quot;: 3 }
+  ],
+  &quot;critical_pairs&quot;: [
+    { &quot;edge_a&quot;: { &quot;u&quot;: &quot;10.0.0.1&quot;, &quot;v&quot;: &quot;10.0.0.2&quot;, &quot;link_id&quot;: &quot;uuid&quot; }, &quot;edge_b&quot;: { &quot;u&quot;: &quot;10.0.0.3&quot;, &quot;v&quot;: &quot;10.0.0.4&quot;, &quot;link_id&quot;: &quot;uuid&quot; }, &quot;small_side&quot;: 3, &quot;shared_srlgs&quot;: [&quot;fiber-ring-1&quot;] }
+  ],
+  &quot;srlg_devices&quot;: [
+    { &quot;type&quot;: &quot;device&quot;, &quot;id&quot;: &quot;uuid&quot;, &quot;name&quot;: &quot;core-rtr-1&quot;, &quot;member_count&quot;: 0, &quot;neighbor_count&quot;: 4 }
+  ],
+  &quot;bgp_available&quot;: true,
+  &quot;peer_sessions&quot;: [
+    { &quot;device_id&quot;: &quot;uuid&quot;, &quot;hostname&quot;: &quot;gw1&quot;, &quot;peer_ip&quot;: &quot;198.51.100.1&quot;, &quot;address_family&quot;: &quot;ipv4&quot;, &quot;peer_as&quot;: 64512,
+      &quot;peer_type&quot;: &quot;ebgp&quot;, &quot;state&quot;: &quot;up&quot;, &quot;flaps&quot;: 3, &quot;uptime_seconds&quot;: 6300, &quot;window_seconds&quot;: 86400,
+      &quot;churn_opens&quot;: 412, &quot;last_dump_seconds&quot;: 12.5, &quot;last_dump_routes&quot;: 902 }
+  ],
+  &quot;observability&quot;: { &quot;peer_count&quot;: 4, &quot;peers&quot;: [], &quot;suppressions&quot;: [] },
+  &quot;window_from&quot;: &quot;2026-08-17T00:00:00Z&quot;,
+  &quot;window_to&quot;: &quot;2026-08-18T00:00:00Z&quot;,
+  &quot;full_rib_available&quot;: true,
+  &quot;computation_time_ms&quot;: 42
+}
+</code></pre>
+<p><strong>Severity (D-04):</strong> <code>red</code> = single-homed + &gt;50% no-alternative, <code>yellow</code> = multi-homed with some unprotected, <code>green</code> = fully protected.</p>
+<p><strong>Scorecard block</strong>: <code>peer_sessions</code> carries one window scorecard per <strong>recorded</strong> session — a session that is down right now still scores (and <code>bgp_available</code> is true whenever session history exists, even with an empty live summary; that is exactly the BMP-settle case). Recorded uptime is clamped to the window; <code>flaps</code> counts in-window state transitions with seed re-baselines excluded; <code>churn_opens</code> counts the candidate-path opens received from that session; <code>last_dump_seconds</code>/<code>last_dump_routes</code> measure the table dump after the last session-up (receive-time based over a 10-minute horizon — an approximation by design, not a convergence measurement). <strong>Sentinel discipline: <code>-1</code> means &quot;not measurable&quot;</strong> — no enabled <code>history_mode: full</code> target on the session&#39;s device (churn/dump), no sessions recorded (the aggregated summary columns), or no full-RIB history at all (<code>median_path_life_s</code>) — and is never conflated with a genuine quiet <code>0</code>. The aggregated summary columns weight uptime by session-time, and <code>churn_share</code> is the AS&#39;s share of ALL measurable sessions&#39; churn (shares sum to ≤100%). <code>observability</code> embeds the blind-spot ledger for the same window; read it before reading stability off quiet numbers, and treat <code>full_rib_available: false</code> as &quot;churn/half-life emptiness is a coverage refusal, not stability&quot;.</p>
+<p><strong><code>ipv4_space</code> semantics:</strong> the peer AS&#39;s <strong>unique</strong>
+IPv4 address space — the interval union of its distinct prefixes, so a covering
+aggregate and its more-specifics count once — and the report&#39;s sort key. The same
+union semantics apply to <code>ipv4_space_lost</code>, the per-device <code>ipv4_space</code>, and
+<code>total_ipv4_space</code> in the dependency-impact response below (the drill-down&#39;s per-prefix <code>ipv4_space</code> reports that one prefix&#39;s own size).</p>
+</main></html>

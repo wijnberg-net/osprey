@@ -1,0 +1,12 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>CORS — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h2 id="cors">CORS</h2><p>The API sets <code>Access-Control-Allow-Credentials: true</code> to support cookie-based authentication. Allowed origins are configured via <code>api.cors_origins</code> in the server config. Wildcard origins (<code>*</code>) are not supported (incompatible with credentials).</p>
+<p><strong>CORS headers:</strong></p>
+<ul>
+<li><code>Access-Control-Allow-Origin: {origin}</code> (echoed from request if allowed)</li>
+<li><code>Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS</code></li>
+<li><code>Access-Control-Allow-Headers: Content-Type, Authorization, X-API-Key</code></li>
+<li><code>Access-Control-Allow-Credentials: true</code></li>
+<li><code>Access-Control-Max-Age: 3600</code></li>
+</ul>
+<p><strong>Preflight requests:</strong> <code>OPTIONS</code> requests return <code>204 No Content</code> with CORS headers.</p>
+<hr>
+</main></html>

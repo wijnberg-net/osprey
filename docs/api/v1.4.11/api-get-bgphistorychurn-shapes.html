@@ -1,0 +1,17 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BGP churn shapes — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="get-bgphistorychurn-shapes">BGP churn shapes <!-- topic: get-bgphistorychurn-shapes --></h3><p><code>GET /bgp/history/churn-shapes</code></p>
+<p><strong>Churn-shape classification per peer session</strong> over <code>(from, to]</code>: every close+reopen pair in the candidate changelog is a field diff, classified by SHAPE instead of volume — <code>selection_flips</code> (identical attributes, only <code>is_best</code> moved: the SELECTION oscillates; only assertable about the router itself on a <code>loc_rib</code> feed, otherwise it describes the engine&#39;s recomputation), <code>next_hop_only</code> (a re-home inside the neighbour — damp, don&#39;t alarm), <code>path_hunting</code> (AS_PATH moved, origin stayed — the <strong>MRAI is the resolution floor</strong>: sub-MRAI oscillation is invisible by construction and never reads as &quot;stable&quot;), <code>cosmetic</code> (only MED/communities), <code>attribute_changes</code> (the rest), plus genuine <code>announces</code> and terminal <code>withdrawals</code> (seed re-baselines never count). Each session also carries its <code>hot_prefixes</code> — the heavily-skewed hot minority (measured: mean lifetime 40 min vs median 4 min) other views may exclude. Peer-list-driven (peer-scoped range scans, never an AS-wide sweep); a close+reopen within 5 minutes is one event; the per-peer scan is capped (<code>truncated</code> = counts are a lower bound).</p>
+<p><strong>Auth</strong>: all authenticated roles. <strong>Query params</strong>: <code>as_id</code> (required); <code>from</code>/<code>to</code> (required, RFC 3339); optional <code>device_id</code>, <code>af</code> (<code>routing_domain_id</code> is accepted but does not apply — <code>bgp_peer</code> carries no routing domain).</p>
+<p><strong>Response</strong>: <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;from&quot;: &quot;2026-08-17T00:00:00Z&quot;, &quot;to&quot;: &quot;2026-08-18T00:00:00Z&quot;,
+  &quot;peers&quot;: [
+    { &quot;peer_id&quot;: &quot;uuid&quot;, &quot;device_id&quot;: &quot;uuid&quot;, &quot;peer_ip&quot;: &quot;172.20.0.1&quot;, &quot;address_family&quot;: &quot;ipv4&quot;, &quot;peer_as&quot;: 4242420000,
+      &quot;selection_flips&quot;: 2, &quot;next_hop_only&quot;: 41, &quot;path_hunting&quot;: 380, &quot;cosmetic&quot;: 12, &quot;attribute_changes&quot;: 9,
+      &quot;announces&quot;: 55, &quot;withdrawals&quot;: 48, &quot;total&quot;: 547,
+      &quot;hot_prefixes&quot;: [ { &quot;prefix&quot;: &quot;172.23.0.0/24&quot;, &quot;transitions&quot;: 61 } ], &quot;truncated&quot;: false }
+  ],
+  &quot;full_available&quot;: true
+}
+</code></pre>
+<p><code>full_available: false</code> marks emptiness as a <strong>coverage refusal</strong> (no full-RIB history), never calm. <strong>Errors</strong>: <code>400</code> on a missing <code>as_id</code> or invalid window.</p>
+</main></html>

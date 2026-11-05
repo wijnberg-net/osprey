@@ -1,0 +1,54 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Sessions (Admin) — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="sessions-admin">Sessions (Admin)</h3><h4 id="list-sessions">List Sessions</h4><pre><code>GET /api/v1/sessions
+</code></pre>
+<p>Returns active (and optionally revoked) user login sessions. Admin-only.</p>
+<p><strong>Query parameters:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Parameter</th>
+<th>Type</th>
+<th>Required</th>
+<th>Default</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>user_id</code></td>
+<td>string (UUID)</td>
+<td>No</td>
+<td>--</td>
+<td>Filter by user</td>
+</tr>
+<tr>
+<td><code>active_only</code></td>
+<td>string</td>
+<td>No</td>
+<td>--</td>
+<td>If <code>true</code>, exclude revoked sessions</td>
+</tr>
+</tbody></table>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;sessions&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;user_id&quot;: &quot;uuid&quot;,
+      &quot;username&quot;: &quot;admin&quot;,
+      &quot;ip_address&quot;: &quot;192.168.1.100&quot;,
+      &quot;user_agent&quot;: &quot;Mozilla/5.0...&quot;,
+      &quot;created_at&quot;: &quot;2026-02-24T12:00:00Z&quot;,
+      &quot;last_seen&quot;: &quot;2026-02-24T12:05:00Z&quot;,
+      &quot;revoked&quot;: false,
+      &quot;revoked_at&quot;: null
+    }
+  ]
+}
+</code></pre>
+<h4 id="revoke-session">Revoke Session</h4><pre><code>DELETE /api/v1/sessions/{sessionID}
+</code></pre>
+<p>Revokes a single session. Admin-only. Returns <code>204 No Content</code> on success, <code>404</code> if not found or already revoked.</p>
+<h4 id="revoke-all-user-sessions">Revoke All User Sessions</h4><pre><code>DELETE /api/v1/sessions/user/{userID}
+</code></pre>
+<p>Revokes all active sessions for a specific user. Admin-only. Returns <code>204 No Content</code> on success.</p>
+<hr>
+</main></html>

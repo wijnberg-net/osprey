@@ -1,0 +1,91 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MPLS L2VPN Pseudowires (VPWS / VPLS) — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="mpls-l2vpn-pseudowires-vpws-vpls">MPLS L2VPN Pseudowires (VPWS / VPLS)</h3><p>Pseudowire observations discovered per PE via the PW MIBs (PW-STD-MIB RFC 5601, or CISCO-IETF-PW-MIB where the standard is absent) and rolled up server-side into point-to-point <strong>VPWS wires</strong> and multipoint <strong>VPLS instances</strong>. All-role observed-topology reads; license state never gates them.</p>
+<h4 id="list-pseudowires">List Pseudowires</h4><pre><code>GET /api/v1/networks/{networkID}/pseudowires
+</code></pre>
+<p>Flat per-PE pseudowire observations.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li><code>device_id</code> (optional) -- PWs observed by this PE</li>
+<li><code>pw_id</code> (optional) -- VC ID (non-negative integer; LDP-VPLS: the shared VPLS ID)</li>
+<li><code>status</code> (optional) -- <code>up</code> (oper=1) or <code>down</code> (oper&lt;&gt;1)</li>
+<li><code>limit</code>/<code>offset</code> -- pagination</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code> (paginated envelope)</p>
+<pre><code class="language-json">{
+  &quot;data&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;network_id&quot;: &quot;uuid&quot;,
+      &quot;device_id&quot;: &quot;uuid&quot;,
+      &quot;pw_index&quot;: 1,
+      &quot;pw_id&quot;: 100,
+      &quot;pw_type&quot;: 5,
+      &quot;psn_type&quot;: 1,
+      &quot;owner&quot;: 2,
+      &quot;peer_addr&quot;: &quot;198.51.100.13&quot;,
+      &quot;peer_device_id&quot;: &quot;uuid&quot;,
+      &quot;name&quot;: &quot;Ethernet0/3.100&quot;,
+      &quot;admin_status&quot;: 1,
+      &quot;oper_status&quot;: 1,
+      &quot;inbound_oper_status&quot;: 1,
+      &quot;outbound_oper_status&quot;: 1,
+      &quot;mib_source&quot;: 2,
+      &quot;first_seen&quot;: &quot;...&quot;, &quot;last_seen&quot;: &quot;...&quot;, &quot;updated_at&quot;: &quot;...&quot;
+    }
+  ],
+  &quot;total&quot;: 3, &quot;limit&quot;: 100, &quot;offset&quot;: 0
+}
+</code></pre>
+<p><code>pw_type</code> is the IANA pwType (RFC 4446: 5=ethernet, 4=ethernetTagged; 0 = not yet negotiated). <code>owner</code> {1=manual, 2=maintenanceProtocol/LDP}. <code>mib_source</code> {1=PW-STD-MIB, 2=CISCO-IETF-PW-MIB}. <code>peer_device_id</code> and the per-direction statuses are omitted when unresolved/not applicable (std driver has no per-direction columns).</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- invalid <code>status</code> or <code>pw_id</code></li>
+</ul>
+<hr>
+<h4 id="get-pseudowire">Get Pseudowire</h4><pre><code>GET /api/v1/pseudowires/{id}
+</code></pre>
+<p>Returns a single pseudowire observation by ID.</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>404 Not Found</code> -- pseudowire does not exist</li>
+</ul>
+<hr>
+<h4 id="list-vpws-wires">List VPWS Wires</h4><pre><code>GET /api/v1/networks/{networkID}/vpws
+</code></pre>
+<p>Point-to-point pseudowire services: connected components of exactly two mutually-paired PW observations, plus unpaired PWs as <strong>half-wires</strong> (peer off-view or unmonitored). No query parameters; returns a plain JSON array.</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">[
+  {
+    &quot;name&quot;: &quot;Ethernet0/3.100&quot;,
+    &quot;pw_id&quot;: 100,
+    &quot;signaling&quot;: &quot;ldp&quot;,
+    &quot;endpoints&quot;: [
+      { &quot;device_id&quot;: &quot;uuid&quot;, &quot;peer_addr&quot;: &quot;198.51.100.13&quot;, &quot;name&quot;: &quot;Ethernet0/3.100&quot;, &quot;oper_status&quot;: 1 },
+      { &quot;device_id&quot;: &quot;uuid&quot;, &quot;peer_addr&quot;: &quot;198.51.100.3&quot;, &quot;name&quot;: &quot;Ethernet0/3.100&quot;, &quot;oper_status&quot;: 1 }
+    ],
+    &quot;oper_status&quot;: 1,
+    &quot;half_wire&quot;: false
+  }
+]
+</code></pre>
+<p><code>name</code> is the common PW name across both endpoints (on IOS the AC interface), else <code>PW &lt;pw_id&gt;</code>. <code>signaling</code> is <code>ldp</code>, <code>static</code>, or <code>unknown</code> (mixed evidence). <code>oper_status</code> is the worst across endpoints. On a half-wire, <code>endpoints[1]</code> carries the far side honestly: <code>device_id</code> when the peer address resolves to a monitored device that never reported the PW, or only <code>peer_addr</code> when off-view; its <code>oper_status</code> is 0 (unobserved). The array is <code>[]</code> when empty.</p>
+<hr>
+<h4 id="list-vpls-instances">List VPLS Instances</h4><pre><code>GET /api/v1/networks/{networkID}/vpls
+</code></pre>
+<p>Multipoint L2 services: connected components carrying VPLS evidence (a PE holding ≥ 2 member PWs behind one shared per-PE name, with no known non-Ethernet pw_type). Structurally ambiguous components are never fake-classified — a 2-PE mutual pair stays VPWS, and evidence-less fan-out appears in neither rollup (the flat pseudowire list remains its surface). No query parameters; returns a plain JSON array.</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">[
+  {
+    &quot;name&quot;: &quot;VPLS 200&quot;,
+    &quot;pw_id&quot;: 200,
+    &quot;signaling&quot;: &quot;ldp&quot;,
+    &quot;topology&quot;: &quot;mesh&quot;,
+    &quot;sites&quot;: [
+      { &quot;device_id&quot;: &quot;uuid&quot;, &quot;name&quot;: &quot;pseudowire100002&quot;, &quot;peer_count&quot;: 2, &quot;up_count&quot;: 2, &quot;oper_status&quot;: 1 }
+    ],
+    &quot;oper_status&quot;: 1
+  }
+]
+</code></pre>
+<p><code>name</code> is the common non-empty PW name across sites, else <code>VPLS &lt;pw_id&gt;</code> (IOS numbers pseudowire interfaces per PE, so the fallback is the norm). <code>topology</code> is <code>mesh</code> (every monitored site pair mutually connected), <code>partial</code> (edges missing), or <code>unknown</code> (an unresolved peer prevents assessment); no hub-spoke in v1 — the PW tables carry no spoke marker. <code>oper_status</code> is the worst across member PWs. The array is <code>[]</code> when empty.</p>
+<hr>
+</main></html>

@@ -1,0 +1,53 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>EVPN (E-LAN, EVPN-VPWS) — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="evpn-e-lan-evpn-vpws">EVPN (E-LAN, EVPN-VPWS)</h3><p>Discovered EVPN instances (RFC 7432), observed via BMP (AFI 25 / SAFI 70) — no SNMP walk. An <strong>EVI</strong> is a route-target equivalence class of per-(BMP target, RD) observations; members are deduped by PE across observing targets (observer-collapse: a dual-RR fabric reports one EVI, not two). Control-plane only: membership and MAC/IP counts come from BGP routes; the data path (VXLAN underlay or LSPs) is not traced. Read-only, all-role, scoped per network.</p>
+<h4 id="list-evpn-instances">List EVPN Instances</h4><pre><code>GET /api/v1/networks/{networkID}/evpn/instances
+</code></pre>
+<p>Canonical EVIs for the network. No query parameters; returns a plain JSON array (not the paginated envelope).</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">[
+  {
+    &quot;name&quot;: &quot;65100:10100&quot;,
+    &quot;service_kind&quot;: &quot;elan&quot;,
+    &quot;encap&quot;: &quot;vxlan&quot;,
+    &quot;rds&quot;: [&quot;192.0.2.1:100&quot;, &quot;192.0.2.2:100&quot;],
+    &quot;rts&quot;: [&quot;65100:10100&quot;],
+    &quot;members&quot;: [
+      { &quot;pe_addr&quot;: &quot;192.0.2.1&quot;, &quot;pe_device_id&quot;: &quot;uuid&quot;, &quot;vni_or_label&quot;: 10100, &quot;mac_count&quot;: 5, &quot;ip_count&quot;: 2, &quot;oper&quot;: true },
+      { &quot;pe_addr&quot;: &quot;192.0.2.2&quot;, &quot;vni_or_label&quot;: 10100, &quot;mac_count&quot;: 3, &quot;ip_count&quot;: 1, &quot;oper&quot;: true }
+    ],
+    &quot;mac_count&quot;: 8,
+    &quot;stale&quot;: false,
+    &quot;observations&quot;: 2,
+    &quot;instance_ids&quot;: [&quot;uuid-a&quot;, &quot;uuid-b&quot;]
+  }
+]
+</code></pre>
+<p><code>service_kind</code> is <code>elan</code> (any IMET/RT-3 observation in the cluster) or <code>vpws</code> (per-EVI RT-1 with no IMET anywhere — RFC 8214). <code>encap</code> is <code>vxlan</code> | <code>mpls</code> | <code>&quot;&quot;</code>. <code>pe_device_id</code> is present only when the PE resolves to a known node (absent = off-view). <code>mac_count</code> sums the deduped members. <code>stale</code> is true when every observing target&#39;s session is down — a monitoring gap, never a withdrawal. The array is <code>[]</code> when empty.</p>
+<h4 id="get-evpn-instance">Get EVPN Instance</h4><pre><code>GET /api/v1/evpn/instances/{id}
+</code></pre>
+<p>One canonical EVI — the rollup cluster containing observation <code>{id}</code> (any value from a list entry&#39;s <code>instance_ids</code>), plus the Ethernet Segments (RT-4) its member PEs attach to and its recent symptom events (newest first, max 20, last 30 days).</p>
+<p><strong>Response:</strong> <code>200 OK</code> — the instance object above, with added <code>segments</code> and <code>recent_events</code> arrays:</p>
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;65100:10100&quot;, &quot;service_kind&quot;: &quot;elan&quot;, &quot;encap&quot;: &quot;vxlan&quot;,
+  &quot;members&quot;: [ ... ],
+  &quot;segments&quot;: [
+    { &quot;esi&quot;: &quot;00:00:00:00:00:00:00:00:00:01&quot;, &quot;pes&quot;: [ { &quot;pe_addr&quot;: &quot;192.0.2.1&quot;, &quot;pe_device_id&quot;: &quot;uuid&quot; } ] }
+  ],
+  &quot;recent_events&quot;: [
+    { &quot;id&quot;: &quot;uuid&quot;, &quot;event_time&quot;: &quot;2026-07-09T12:00:00Z&quot;, &quot;event_type&quot;: &quot;evpn_mac_move&quot;,
+      &quot;detail&quot;: { &quot;mac&quot;: &quot;00:00:be:ef:00:11&quot;, &quot;old_pe&quot;: &quot;192.0.2.1&quot;, &quot;new_pe&quot;: &quot;192.0.2.2&quot;, &quot;mobility_seq&quot;: 1 } }
+  ]
+}
+</code></pre>
+<p><code>recent_events</code> carries <code>evpn_mac_move</code> (a host moved between PEs — RFC 7432 §7.7 sequence bump; all-active multihoming aliasing never fires) and <code>evpn_pe_lost</code> (membership absent across all live BMP targets) topology events. <code>404 Not Found</code> when the id is unknown.</p>
+<p>For <code>evpn_mac_move</code>, <code>detail</code> contains <code>mac</code>, <code>evi_rt</code>, <code>rd</code>, <code>vni_or_label</code>, <code>old_pe</code>, <code>new_pe</code>, <code>old_esi</code>, <code>new_esi</code>, <code>mobility_seq</code>, <code>router_a</code>, and <code>router_b</code>. For <code>evpn_pe_lost</code>, it contains <code>rd</code>, <code>pe_addr</code>, and <code>router_a</code>. PE addresses and resolved router identities are distinct; unavailable identity values can be empty. A BMP monitoring outage is not itself a membership withdrawal.</p>
+<h4 id="list-ethernet-segments">List Ethernet Segments</h4><pre><code>GET /api/v1/networks/{networkID}/evpn/segments
+</code></pre>
+<p>Ethernet Segments (RT-4 view): each ESI with the PEs attached to it (multihoming membership). No query parameters; returns a plain JSON array.</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">[
+  { &quot;esi&quot;: &quot;00:00:00:00:00:00:00:00:00:01&quot;, &quot;pes&quot;: [ { &quot;pe_addr&quot;: &quot;192.0.2.1&quot;, &quot;pe_device_id&quot;: &quot;uuid&quot; }, { &quot;pe_addr&quot;: &quot;192.0.2.2&quot; } ] }
+]
+</code></pre>
+<p>The array is <code>[]</code> when empty.</p>
+<hr>
+</main></html>
