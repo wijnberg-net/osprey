@@ -1,0 +1,43 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Auth Management — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="auth-management">Auth Management</h3><h4 id="get-current-user">Get Current User</h4><pre><code>GET /api/v1/auth/me
+</code></pre>
+<p>Returns the authenticated user&#39;s profile.</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;user&quot;: {
+    &quot;id&quot;: &quot;uuid&quot;,
+    &quot;username&quot;: &quot;admin&quot;,
+    &quot;display_name&quot;: &quot;&quot;,
+    &quot;role&quot;: &quot;admin&quot;,
+    &quot;is_active&quot;: true,
+    &quot;created_at&quot;: &quot;2024-01-01T00:00:00Z&quot;,
+    &quot;updated_at&quot;: &quot;2024-01-01T00:00:00Z&quot;
+  },
+  &quot;default_password_warning&quot;: false
+}
+</code></pre>
+<h4 id="change-password">Change Password</h4><pre><code>PUT /api/v1/auth/password
+</code></pre>
+<p><strong>Rate limit:</strong> 3 requests per minute per IP.</p>
+<p>Changes the authenticated user&#39;s password. Users of any role can change their own password.</p>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;current_password&quot;: &quot;old-password&quot;,
+  &quot;new_password&quot;: &quot;new-password-min-8-chars&quot;
+}
+</code></pre>
+<p><strong>Validation:</strong> New password must be 8-72 characters.</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{&quot;message&quot;: &quot;password updated successfully&quot;}
+</code></pre>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> — Missing fields, password too short/long</li>
+<li><code>401 Unauthorized</code> — Current password incorrect</li>
+<li><code>429 Too Many Requests</code> — Rate limit exceeded</li>
+</ul>
+<h4 id="logout">Logout</h4><pre><code>POST /api/v1/auth/logout
+</code></pre>
+<p>Revokes the refresh token family and clears authentication cookies.</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<hr>
+</main></html>

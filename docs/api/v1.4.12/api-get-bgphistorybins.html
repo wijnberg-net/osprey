@@ -1,0 +1,15 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BGP history bins — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="get-bgphistorybins">BGP history bins <!-- topic: get-bgphistorybins --></h3><p><code>GET /bgp/history/bins</code></p>
+<p>Event-density buckets over a window for the scrubber strip — the AS-wide overview you scan to pick a prefix. Bucket width adapts to the window (<code>buckets</code>≈200 by default). Announce/change counts <strong>exclude</strong> seed-origin opens; withdrawals count terminal closes.</p>
+<p><strong>Auth</strong>: all authenticated roles</p>
+<p><strong>Query params</strong>: <code>as_id</code> (required), <code>from</code>/<code>to</code> (required, RFC 3339); optional <code>prefix</code> + <code>match</code>, <code>routing_domain_id</code>, <code>device_id</code>, and <code>buckets</code> (default 200, max 1000).</p>
+<p><strong>Response</strong>: <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;bucket_seconds&quot;: 60,
+  &quot;from&quot;: &quot;2026-07-01T10:00:00Z&quot;,
+  &quot;to&quot;: &quot;2026-07-01T11:00:00Z&quot;,
+  &quot;bins&quot;: [ { &quot;t&quot;: &quot;2026-07-01T10:05:00Z&quot;, &quot;announces&quot;: 3, &quot;changes&quot;: 12, &quot;withdrawals&quot;: 1, &quot;peer_changes&quot;: 0 } ]
+}
+</code></pre>
+<p><code>bins</code> is <strong>sparse</strong> — only non-empty buckets are returned; <code>t</code> is the bucket start. <code>bucket_seconds = ceil((to−from)/buckets)</code>.</p>
+<p><strong>Errors</strong>: <code>400</code> if <code>as_id</code> or the window is missing/invalid.</p>
+</main></html>

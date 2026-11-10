@@ -1,0 +1,242 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Traffic (Read) — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="traffic-read">Traffic (Read)</h3><h4 id="get-bulk-link-utilization">Get Bulk Link Utilization</h4><pre><code>GET /api/v1/traffic/links?area_id={areaID}
+GET /api/v1/traffic/links?pi_id={piID}
+GET /api/v1/traffic/links?rd_id={rdID}
+GET /api/v1/traffic/links?network_id={networkID}
+</code></pre>
+<p>Get the max utilization percentage for every link in the given scope that has SNMP traffic data. Used by the &quot;By Utilization&quot; color mode.</p>
+<p><strong>Query parameters (exactly one required):</strong></p>
+<ul>
+<li><code>area_id</code> — UUID of a single area</li>
+<li><code>pi_id</code> — UUID of a protocol instance (resolves all child areas)</li>
+<li><code>rd_id</code> — UUID of a routing domain (resolves all child areas)</li>
+<li><code>network_id</code> — UUID of a network (resolves all child areas)</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">[
+  {
+    &quot;link_id&quot;: &quot;uuid&quot;,
+    &quot;utilization_pct&quot;: 42.7,
+    &quot;source_name&quot;: &quot;core-1&quot;,
+    &quot;source_router_id&quot;: &quot;198.51.100.150&quot;,
+    &quot;target_name&quot;: &quot;dist-3&quot;,
+    &quot;target_router_id&quot;: &quot;203.0.113.10&quot;
+  }
+]
+</code></pre>
+<p><strong>Notes:</strong></p>
+<ul>
+<li><code>utilization_pct</code> is <code>GREATEST(source, target)</code> — the higher of the two link endpoints.</li>
+<li><code>source_name</code> / <code>target_name</code> are the device hostnames (SNMP sysName). <code>source_router_id</code> / <code>target_router_id</code> are OSPF router IDs. These are included so the response is self-contained (no cross-reference with topology graph needed).</li>
+<li>Links with <code>state = &#39;down&#39;</code> are excluded.</li>
+<li>Links with no SNMP stats on either endpoint are excluded (returned as empty array entry).</li>
+<li>Returns <code>[]</code> when no links have traffic data.</li>
+</ul>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> — No scope parameter provided</li>
+</ul>
+<h4 id="get-interface-traffic-history">Get Interface Traffic History</h4><pre><code>GET /api/v1/traffic/interface/{interfaceID}?from={from}&amp;to={to}&amp;limit={limit}
+</code></pre>
+<p>Get historical traffic statistics for a specific interface.</p>
+<p><strong>Path parameters:</strong></p>
+<ul>
+<li><code>interfaceID</code> (required) — UUID of the interface</li>
+</ul>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li><code>from</code> (optional) — Start time filter, ISO 8601 timestamp (e.g., <code>&quot;2026-02-17T00:00:00Z&quot;</code>)</li>
+<li><code>to</code> (optional) — End time filter, ISO 8601 timestamp (e.g., <code>&quot;2026-02-18T00:00:00Z&quot;</code>)</li>
+<li><code>limit</code> (optional) — Maximum number of records to return (default: 100)</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">[
+  {
+    &quot;id&quot;: &quot;uuid&quot;,
+    &quot;interface_id&quot;: &quot;uuid&quot;,
+    &quot;timestamp&quot;: &quot;2026-02-18T14:30:00Z&quot;,
+    &quot;in_octets&quot;: 1234567890,
+    &quot;out_octets&quot;: 987654321,
+    &quot;in_rate_bps&quot;: 8500000,
+    &quot;out_rate_bps&quot;: 6200000,
+    &quot;in_pps&quot;: 12000,
+    &quot;out_pps&quot;: 9500,
+    &quot;utilization_in&quot;: 0.085,
+    &quot;utilization_out&quot;: 0.062,
+    &quot;if_speed&quot;: 1000000000,
+    &quot;if_oper_status&quot;: &quot;up&quot;,
+    &quot;in_errors&quot;: 0,
+    &quot;out_errors&quot;: 0,
+    &quot;in_discards&quot;: 0,
+    &quot;out_discards&quot;: 0
+  }
+]
+</code></pre>
+<p><strong>Notes:</strong></p>
+<ul>
+<li><code>in_rate_bps</code> and <code>out_rate_bps</code> are calculated rates in bits per second derived from counter deltas.</li>
+<li><code>utilization_in</code> and <code>utilization_out</code> are decimal fractions (0.0 to 1.0) representing the percentage of <code>if_speed</code> consumed.</li>
+<li><code>if_speed</code> is in bits per second (e.g., 1000000000 for 1 Gbps).</li>
+<li>Returns <code>[]</code> when no traffic data is available for the specified interface or time range.</li>
+</ul>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> — Invalid interface ID, invalid timestamp format, or invalid limit</li>
+<li><code>404 Not Found</code> — Interface does not exist</li>
+</ul>
+<h4 id="get-interface-utilization-history">Get Interface Utilization History</h4><pre><code>GET /api/v1/traffic/interface/{interfaceID}/history?from={from}&amp;to={to}
+</code></pre>
+<p>Get hourly-bucketed utilization history for a specific interface. Data comes from the <code>utilization_history</code> table (populated by the SNMP poller). Used by the UtilizationChart component in LinkDetailDrawer and NodeDetailDrawer.</p>
+<p><strong>Path parameters:</strong></p>
+<ul>
+<li><code>interfaceID</code> (required) — UUID of the interface</li>
+</ul>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li><code>from</code> (optional) — Start time filter, RFC 3339 timestamp. Default: 24 hours ago.</li>
+<li><code>to</code> (optional) — End time filter, RFC 3339 timestamp. Default: now.</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">[
+  {
+    &quot;bucket_time&quot;: &quot;2026-03-04T14:00:00Z&quot;,
+    &quot;max_util&quot;: 67.3,
+    &quot;avg_util&quot;: 42.1,
+    &quot;samples&quot;: 12
+  }
+]
+</code></pre>
+<p><strong>Notes:</strong></p>
+<ul>
+<li><code>max_util</code> and <code>avg_util</code> are percentages (0-100).</li>
+<li><code>samples</code> is the number of raw polls aggregated into the hourly bucket.</li>
+<li>One row per hour in the requested range.</li>
+<li>Returns <code>[]</code> when no utilization data is available.</li>
+</ul>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> — Invalid interface ID or timestamp format</li>
+</ul>
+<h4 id="get-link-traffic">Get Link Traffic</h4><pre><code>GET /api/v1/traffic/link/{linkID}
+</code></pre>
+<p>Get the latest traffic statistics for both endpoints of a link.</p>
+<p><strong>Path parameters:</strong></p>
+<ul>
+<li><code>linkID</code> (required) — UUID of the link</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;source_stats&quot;: {
+    &quot;id&quot;: &quot;uuid&quot;,
+    &quot;interface_id&quot;: &quot;uuid&quot;,
+    &quot;timestamp&quot;: &quot;2026-02-18T14:30:00Z&quot;,
+    &quot;in_octets&quot;: 1234567890,
+    &quot;out_octets&quot;: 987654321,
+    &quot;in_rate_bps&quot;: 8500000,
+    &quot;out_rate_bps&quot;: 6200000,
+    &quot;in_pps&quot;: 12000,
+    &quot;out_pps&quot;: 9500,
+    &quot;utilization_in&quot;: 0.085,
+    &quot;utilization_out&quot;: 0.062,
+    &quot;if_speed&quot;: 1000000000,
+    &quot;if_oper_status&quot;: &quot;up&quot;,
+    &quot;in_errors&quot;: 0,
+    &quot;out_errors&quot;: 0,
+    &quot;in_discards&quot;: 0,
+    &quot;out_discards&quot;: 0
+  },
+  &quot;target_stats&quot;: null
+}
+</code></pre>
+<p><strong>Notes:</strong></p>
+<ul>
+<li><code>source_stats</code> corresponds to the link&#39;s source device interface.</li>
+<li><code>target_stats</code> corresponds to the link&#39;s target device interface.</li>
+<li>Either field may be <code>null</code> if the SNMP poller has not yet collected data for that endpoint, or if the endpoint device has no SNMP target configured.</li>
+</ul>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> — Invalid link ID</li>
+<li><code>404 Not Found</code> — Link does not exist</li>
+</ul>
+<h4 id="get-device-traffic">Get Device Traffic</h4><pre><code>GET /api/v1/traffic/device/{deviceID}
+</code></pre>
+<p>Get the latest traffic statistics for all interfaces on a device.</p>
+<p><strong>Path parameters:</strong></p>
+<ul>
+<li><code>deviceID</code> (required) — UUID of the device</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">[
+  {
+    &quot;id&quot;: &quot;uuid&quot;,
+    &quot;interface_id&quot;: &quot;uuid&quot;,
+    &quot;timestamp&quot;: &quot;2026-02-18T14:30:00Z&quot;,
+    &quot;in_octets&quot;: 1234567890,
+    &quot;out_octets&quot;: 987654321,
+    &quot;in_rate_bps&quot;: 8500000,
+    &quot;out_rate_bps&quot;: 6200000,
+    &quot;in_pps&quot;: 12000,
+    &quot;out_pps&quot;: 9500,
+    &quot;utilization_in&quot;: 0.085,
+    &quot;utilization_out&quot;: 0.062,
+    &quot;if_speed&quot;: 1000000000,
+    &quot;if_oper_status&quot;: &quot;up&quot;,
+    &quot;in_errors&quot;: 0,
+    &quot;out_errors&quot;: 0,
+    &quot;in_discards&quot;: 0,
+    &quot;out_discards&quot;: 0
+  }
+]
+</code></pre>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>Returns one entry per interface that has SNMP traffic data.</li>
+<li>Returns <code>[]</code> if the device has no SNMP target or no traffic data has been collected yet.</li>
+</ul>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> — Invalid device ID</li>
+<li><code>404 Not Found</code> — Device does not exist</li>
+</ul>
+<h4 id="boost-traffic-polling">Boost Traffic Polling</h4><pre><code>POST /api/v1/traffic/boost
+</code></pre>
+<p>Request the SNMP poller to temporarily accelerate polling for the specified devices. Used by the Link Detail Drawer to get near-real-time traffic stats while the user is viewing them.</p>
+<p><strong>Auth:</strong> Any authenticated user.</p>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;device_ids&quot;: [&quot;uuid1&quot;, &quot;uuid2&quot;],
+  &quot;action&quot;: &quot;boost&quot;
+}
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Required</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>device_ids</code></td>
+<td><code>string[]</code></td>
+<td>Yes</td>
+<td>Device UUIDs to boost (max 10)</td>
+</tr>
+<tr>
+<td><code>action</code></td>
+<td><code>string</code></td>
+<td>Yes</td>
+<td><code>&quot;boost&quot;</code> to start fast polling, <code>&quot;unboost&quot;</code> to cancel</td>
+</tr>
+</tbody></table>
+<p><strong>Response:</strong> <code>204 No Content</code></p>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>Publishes a <code>TrafficBoostEvent</code> to NATS <code>osprey.traffic.boost</code></li>
+<li>SNMP poller accelerates to 5s intervals for matched targets</li>
+<li>Boost auto-expires after 60s TTL; frontend sends heartbeat every 30s</li>
+<li>Best-effort: returns 204 even if NATS publish fails</li>
+</ul>
+<hr>
+</main></html>

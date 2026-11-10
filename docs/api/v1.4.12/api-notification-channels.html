@@ -1,0 +1,100 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Notification Channels — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="notification-channels">Notification Channels</h3><p>Engineer or admin CRUD for notification channels. Channels define how alert notifications are delivered (e.g., webhook, email, Slack).</p>
+<h4 id="create-notification-channel">Create Notification Channel</h4><pre><code>POST /api/v1/notifications/channels
+</code></pre>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;Slack Ops&quot;,
+  &quot;channel_type&quot;: &quot;slack&quot;,
+  &quot;config&quot;: {
+    &quot;webhook_url&quot;: &quot;https://hooks.slack.com/services/...&quot;,
+    &quot;channel&quot;: &quot;#network-alerts&quot;
+  },
+  &quot;enabled&quot;: true
+}
+</code></pre>
+<p><strong>Validation:</strong></p>
+<ul>
+<li><code>name</code> and <code>channel_type</code> are required; <code>channel_type</code> must be one of <code>webhook</code>, <code>email</code>, <code>slack</code>, <code>teams</code>, <code>in_app</code> (<code>400</code> otherwise, on create and update)</li>
+<li><code>enabled</code> defaults to <strong>true</strong> if omitted; explicit <code>false</code> creates the channel disabled (note: there is no toggle endpoint for channels — re-enable via <code>PUT</code>)</li>
+<li><code>config</code> defaults to <code>{}</code> if omitted</li>
+</ul>
+<p><strong>Response:</strong> <code>201 Created</code></p>
+<pre><code class="language-json">{
+  &quot;id&quot;: &quot;uuid&quot;,
+  &quot;name&quot;: &quot;Slack Ops&quot;,
+  &quot;channel_type&quot;: &quot;slack&quot;,
+  &quot;config&quot;: {
+    &quot;webhook_url&quot;: &quot;https://hooks.slack.com/services/...&quot;,
+    &quot;channel&quot;: &quot;#network-alerts&quot;
+  },
+  &quot;enabled&quot;: true,
+  &quot;created_by&quot;: &quot;uuid&quot;,
+  &quot;created_at&quot;: &quot;2026-02-17T12:00:00Z&quot;,
+  &quot;updated_at&quot;: &quot;2026-02-17T12:00:00Z&quot;
+}
+</code></pre>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Missing required fields or invalid request body</li>
+<li><code>403 Forbidden</code> -- Non-admin user</li>
+</ul>
+<h4 id="list-notification-channels">List Notification Channels</h4><pre><code>GET /api/v1/notifications/channels
+</code></pre>
+<p>List all notification channels.</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">[
+  {
+    &quot;id&quot;: &quot;uuid&quot;,
+    &quot;name&quot;: &quot;Slack Ops&quot;,
+    &quot;channel_type&quot;: &quot;slack&quot;,
+    &quot;config&quot;: { ... },
+    &quot;enabled&quot;: true,
+    &quot;created_by&quot;: &quot;uuid&quot;,
+    &quot;created_at&quot;: &quot;2026-02-17T12:00:00Z&quot;,
+    &quot;updated_at&quot;: &quot;2026-02-17T12:00:00Z&quot;
+  }
+]
+</code></pre>
+<h4 id="update-notification-channel">Update Notification Channel</h4><pre><code>PUT /api/v1/notifications/channels/{channelID}
+</code></pre>
+<p>Partial update of a notification channel. Uses read-merge-write -- only fields present in the request body are updated; other fields are preserved.</p>
+<p><strong>Request body (all fields optional):</strong></p>
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;Updated Channel Name&quot;,
+  &quot;channel_type&quot;: &quot;webhook&quot;,
+  &quot;config&quot;: {&quot;url&quot;: &quot;https://example.com/webhook&quot;},
+  &quot;enabled&quot;: false
+}
+</code></pre>
+<p><strong>Response:</strong> <code>200 OK</code> (updated notification channel object)</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Invalid request body</li>
+<li><code>403 Forbidden</code> -- Non-admin user</li>
+<li><code>404 Not Found</code> -- Channel does not exist</li>
+</ul>
+<h4 id="delete-notification-channel">Delete Notification Channel</h4><pre><code>DELETE /api/v1/notifications/channels/{channelID}
+</code></pre>
+<p>Delete a notification channel.</p>
+<p><strong>Response:</strong> <code>204 No Content</code></p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>403 Forbidden</code> -- Non-admin user</li>
+<li><code>500 Internal Server Error</code> -- Database error</li>
+</ul>
+<h4 id="test-notification-channel">Test Notification Channel</h4><pre><code>POST /api/v1/notifications/channels/{channelID}/test
+</code></pre>
+<p>Send a test notification through the specified channel. Validates that the channel exists and its configuration is reachable.</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;ok&quot;,
+  &quot;message&quot;: &quot;test notification would be sent&quot;
+}
+</code></pre>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>403 Forbidden</code> -- Non-admin user</li>
+<li><code>404 Not Found</code> -- Channel does not exist</li>
+</ul>
+<hr>
+</main></html>

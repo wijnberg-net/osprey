@@ -1,0 +1,77 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>SSH Sessions — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="ssh-sessions">SSH Sessions</h3><p>SSH session metadata is recorded for audit and troubleshooting. When <code>ssh_recording</code> is enabled in the server config, session stdout is also captured in chunks for playback.</p>
+<h4 id="list-ssh-sessions">List SSH Sessions</h4><pre><code>GET /api/v1/ssh/sessions
+GET /api/v1/ssh/sessions?limit=50&amp;offset=0
+</code></pre>
+<p>List SSH sessions. Admins see all sessions; operators see only their own sessions.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li><code>router_id</code> (optional) — Filter by the target device&#39;s router ID (exact match)</li>
+<li><code>protocol</code> (optional) — Filter by <code>ssh</code> or <code>telnet</code></li>
+<li><code>from</code> / <code>to</code> (optional) — RFC3339 bounds on <code>started_at</code></li>
+<li><code>limit</code> (optional) — Maximum number of sessions to return (default: 50, max: 1000). Values outside that range are clamped, and the response echoes the <strong>clamped</strong> value, so <code>offset += limit</code> paging stays correct.</li>
+<li><code>offset</code> (optional) — Number of sessions to skip for pagination (default: 0). Negative values are treated as 0.</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;sessions&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;user_id&quot;: &quot;uuid&quot;,
+      &quot;username&quot;: &quot;admin&quot;,
+      &quot;device_router_id&quot;: &quot;10.0.0.1&quot;,
+      &quot;device_hostname&quot;: &quot;router1&quot;,
+      &quot;protocol&quot;: &quot;ssh&quot;,
+      &quot;client_ip&quot;: &quot;198.51.100.20&quot;,
+      &quot;started_at&quot;: &quot;2026-02-17T10:30:00Z&quot;,
+      &quot;ended_at&quot;: &quot;2026-02-17T10:45:00Z&quot;,
+      &quot;bytes_sent&quot;: 4096,
+      &quot;bytes_received&quot;: 65536
+    }
+  ],
+  &quot;total&quot;: 150,
+  &quot;limit&quot;: 50,
+  &quot;offset&quot;: 0
+}
+</code></pre>
+<p><strong>Field notes:</strong></p>
+<ul>
+<li><code>device_username</code> is the requested device login, captured before connection/authentication. It does not prove login success and is omitted for older sessions where it was not recorded.</li>
+<li><code>username</code> is the Osprey login that opened the session, joined from <code>app_user</code> — it is not a
+column on <code>ssh_session</code>. Always present. It reflects the account&#39;s <em>current</em> name: renaming a
+user rewrites the attribution on their historical sessions.</li>
+<li><code>device_hostname</code> is <strong>omitted</strong> when no hostname was recorded for the device (the column is
+nullable, and rows with an empty hostname exist). Clients must fall back to <code>device_router_id</code>.</li>
+<li><code>ended_at</code> is omitted while the session is still active.</li>
+<li><code>protocol</code> reflects the transport actually used, including a telnet fallback recorded after the
+session row was created.</li>
+</ul>
+<h4 id="get-ssh-session">Get SSH Session</h4><pre><code>GET /api/v1/ssh/sessions/{sessionID}
+</code></pre>
+<p>Get a single SSH session by ID. Admins can view any session; operators can only view their own.</p>
+<p><strong>Response:</strong> <code>200 OK</code> (single session object)</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>403 Forbidden</code> — Operator attempting to view another user&#39;s session</li>
+<li><code>404 Not Found</code> — Session does not exist</li>
+</ul>
+<h4 id="get-ssh-session-log">Get SSH Session Log</h4><pre><code>GET /api/v1/ssh/sessions/{sessionID}/log
+</code></pre>
+<p>Get the session stdout log as an ordered array of recording chunks. Only available when session recording is enabled (<code>ssh.session_recording</code>) and the session has recorded data; otherwise the array is empty. Chunks are decrypted server-side when <code>OSPREY_ENCRYPTION_KEY</code> is configured.</p>
+<p><strong>Response:</strong> <code>200 OK</code> — a flat array (not an envelope); concatenate <code>data</code> in <code>chunk_index</code> order.</p>
+<pre><code class="language-json">[
+  {
+    &quot;id&quot;: &quot;uuid&quot;,
+    &quot;session_id&quot;: &quot;uuid&quot;,
+    &quot;chunk_index&quot;: 0,
+    &quot;data&quot;: &quot;base64-encoded-stdout-data&quot;,
+    &quot;recorded_at&quot;: &quot;2026-02-17T10:30:01Z&quot;
+  }
+]
+</code></pre>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>403 Forbidden</code> — Operator attempting to view another user&#39;s session log</li>
+<li><code>404 Not Found</code> — Session does not exist or no recording available</li>
+</ul>
+<hr>
+</main></html>
