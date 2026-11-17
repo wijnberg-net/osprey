@@ -106,7 +106,7 @@ in with the admin account created during setup.
 
 ### Free evaluation
 
-All features, up to 32 devices, no time limit, no license key required.
+All features, up to 64 devices, no time limit, no license key required.
 Monitoring more devices requires a paid license; devices already monitored stay
 monitored when the limit is reached, and removing a device frees a slot. Paid
 licenses include a 30-day grace period for exceeding the device limit or
@@ -116,9 +116,9 @@ Professional or Enterprise licensing, contact **[sales@wijnberg.net](mailto:sale
 ## API & integrations
 
 Building an integration? Start with [API & Integrations](https://github.com/wijnberg-net/osprey/wiki/API-and-Integrations).
-The [API reference for 1.4.12](https://www.wijnberg.net/api/v1.4.12/) covers the current release; [older editions](https://www.wijnberg.net/api/) remain available. Releases
+The [API reference for 1.4.13](https://www.wijnberg.net/api/v1.4.13/) covers the current release; [older editions](https://www.wijnberg.net/api/) remain available. Releases
 from 1.4.3 also provide `openapi.json` as a download. The specification covers
-20 observation operations in 1.4.12, not the complete API.
+20 observation operations in 1.4.13, not the complete API.
 
 ---
 
