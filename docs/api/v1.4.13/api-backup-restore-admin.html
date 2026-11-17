@@ -1,0 +1,153 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Backup &amp; Restore (Admin) — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="backup-restore-admin">Backup &amp; Restore (Admin)</h3><h4 id="export-configuration-backup">Export Configuration Backup</h4><pre><code>GET /api/v1/admin/backup
+</code></pre>
+<p>Export all configuration as a downloadable JSON file. Admin-only.</p>
+<p><strong>Response:</strong> <code>200 OK</code> — <code>application/json</code> download with <code>Content-Disposition: attachment; filename=&quot;osprey-config-YYYYMMDD-HHMMSS.json&quot;</code></p>
+<pre><code class="language-json">{
+  &quot;version&quot;: &quot;1.0&quot;,
+  &quot;exported_at&quot;: &quot;2026-02-24T12:00:00Z&quot;,
+  &quot;networks&quot;: [...],
+  &quot;autonomous_systems&quot;: [...],
+  &quot;routing_domains&quot;: [...],
+  &quot;protocol_instances&quot;: [...],
+  &quot;areas&quot;: [...],
+  &quot;collector_configs&quot;: [...],
+  &quot;alert_rules&quot;: [...],
+  &quot;notification_channels&quot;: [...],
+  &quot;snmp_targets&quot;: [...],
+  &quot;users&quot;: [{&quot;username&quot;: &quot;admin&quot;, &quot;display_name&quot;: &quot;Administrator&quot;, &quot;role&quot;: &quot;admin&quot;, &quot;is_active&quot;: true}],
+  &quot;system_settings&quot;: {&quot;topology.stale_retention_hours&quot;: &quot;168&quot;, ...},
+  &quot;maintenance_windows&quot;: [...]
+}
+</code></pre>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>Users are exported WITHOUT password hashes (security).</li>
+<li>API keys are NOT exported (contain sensitive hashes).</li>
+<li>All hierarchy entities include parent name context for import matching.</li>
+<li>Audit log entry created on export.</li>
+</ul>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>401 Unauthorized</code> -- Missing or invalid access token</li>
+<li><code>403 Forbidden</code> -- Non-admin user</li>
+<li><code>500 Internal Server Error</code> -- Database query failure</li>
+</ul>
+<hr>
+<h4 id="export-database-dump">Export Database Dump</h4><pre><code>GET /api/v1/admin/backup/database
+</code></pre>
+<p>Full PostgreSQL dump via <code>pg_dump --compress=gzip:6</code>. Returns the compressed dump as a streaming download. Admin-only. The response is streamed directly from <code>pg_dump</code> stdout -- no memory buffering on the server regardless of database size. Rate-limited to one database backup per user per minute (<code>429</code>).</p>
+<p>The <code>200</code> and the download headers are withheld until <code>pg_dump</code> has actually produced its first byte. <code>pg_dump</code> starts successfully and only then exits non-zero for a server-version mismatch, an authentication failure or an unreachable database, so committing the status line earlier delivered those failures as a successful download of an empty <code>.sql.gz</code>. A failure <em>after</em> the first byte cannot change the status code -- the response is already streaming -- and surfaces as a truncated body plus a server-side error log.</p>
+<p><strong>Response:</strong> <code>200 OK</code> — <code>application/gzip</code> download with <code>Content-Disposition: attachment; filename=&quot;osprey-database-YYYYMMDD-HHMMSS.sql.gz&quot;</code></p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>401 Unauthorized</code> -- Missing or invalid access token</li>
+<li><code>403 Forbidden</code> -- Non-admin user</li>
+<li><code>429 Too Many Requests</code> -- <code>database backup can only be requested once per minute</code></li>
+<li><code>500 Internal Server Error</code> -- <code>database export failed: pg_dump produced no output</code> (pg_dump started but exited without writing a dump)</li>
+<li><code>503 Service Unavailable</code> -- <code>pg_dump not available on this system</code> (pg_dump binary not found in PATH)</li>
+<li><code>503 Service Unavailable</code> -- <code>database URL not configured for backup</code> (server not configured with database URL)</li>
+</ul>
+<hr>
+<h4 id="list-deleted-area-tombstones">List Deleted-Area Tombstones</h4><pre><code>GET /api/v1/admin/deleted-areas
+</code></pre>
+<p>Admin-only. Returns <code>{ &quot;deleted_areas&quot;: [ { id, area_label, area_name, protocol, network_name, deleted_at } ] }</code>, newest first — the tombstones every hierarchy delete transaction writes. Topology history keeps dead area UUIDs by design, and these records are the only surviving way to name them.</p>
+<h4 id="purge-history-of-deleted-areas">Purge History of Deleted Areas</h4><pre><code>DELETE /api/v1/admin/history?area_ids=&lt;uuid&gt;,&lt;uuid&gt;
+</code></pre>
+<p>Admin-only. Deletes topology events, snapshots and incidents for the given <strong>dead</strong> area UUIDs (typically taken from the tombstone list) — the after-the-fact purge for history retained when an area was deleted without <code>?delete_history=true</code>. Returns <code>{ &quot;purged_areas&quot;: n }</code>. 400 on missing/malformed <code>area_ids</code>.</p>
+<p><strong>Hierarchy delete semantics:</strong> every hierarchy <code>DELETE</code> (area, PI, RD, AS) is refused with <strong>409</strong> when an <em>enabled</em> recorder homed outside the delete set feeds any affected area — the cascade cannot stop that recorder and it would re-create the entity within the hour. The 409 body names the recorder and its home area; <code>?force=true</code> proceeds anyway (history, layouts and alert scopes will not survive the round-trip). All nested hierarchy routes also verify the parent chain and return <strong>404</strong> for a child addressed under the wrong parent, and every hierarchy <code>PUT</code> now has true patch semantics: only fields present in the body are applied.</p>
+<h4 id="restore-configuration-backup">Restore Configuration Backup</h4><pre><code>POST /api/v1/admin/restore
+</code></pre>
+<p>Import configuration from a previously exported JSON backup file. Admin-only.</p>
+<p><strong>Body size limit:</strong> 10 MB</p>
+<p><strong>Request body:</strong> The same JSON structure as the <code>GET /api/v1/admin/backup</code> response.
+Only backup format version <code>1.0</code> is accepted; an unknown version is rejected
+instead of being interpreted as the current schema.</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;created&quot;: 5,
+  &quot;skipped&quot;: 12,
+  &quot;errors&quot;: [&quot;area \&quot;0.0.0.1\&quot;: parent PI not found&quot;]
+}
+</code></pre>
+<p><strong>Response fields:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>created</code></td>
+<td>integer</td>
+<td>Number of new entities created</td>
+</tr>
+<tr>
+<td><code>skipped</code></td>
+<td>integer</td>
+<td>Number of entities skipped (already exist, matched by name)</td>
+</tr>
+<tr>
+<td><code>errors</code></td>
+<td>string[]</td>
+<td>List of non-fatal errors encountered during import</td>
+</tr>
+</tbody></table>
+<p><strong>Behavior:</strong></p>
+<ul>
+<li>Runs in a single database transaction.</li>
+<li>Entities matched by name are skipped (not updated).</li>
+<li>New entities are created with new UUIDs.</li>
+<li>Hierarchy FK references resolved via name matching.</li>
+<li>Audit log entry created with created/skipped/error counts.</li>
+</ul>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Invalid JSON, missing required fields, or an unsupported backup version</li>
+<li><code>401 Unauthorized</code> -- Missing or invalid access token</li>
+<li><code>403 Forbidden</code> -- Non-admin user</li>
+<li><code>413 Payload Too Large</code> -- Request body exceeds 10 MB limit</li>
+<li><code>500 Internal Server Error</code> -- Transaction failure (all changes rolled back)</li>
+</ul>
+<hr>
+<h4 id="restore-database">Restore Database</h4><pre><code>POST /api/v1/admin/restore/database
+</code></pre>
+<p>Restore a full PostgreSQL database from a previously exported <code>.sql</code> or <code>.sql.gz</code> dump file. Admin-only. Osprey first fully decompresses, size-checks, and screens the SQL in bounded chunks into a private disk-backed staging file. No database command runs until validation succeeds; large single-row INSERT/COPY payloads have no separate scanner line limit.</p>
+<p>The screener tracks SQL tokens across line boundaries, standard and PostgreSQL escape strings, identifiers, nested comments, dollar-quoted bodies, and <code>COPY ... FROM stdin</code> data. Role/user administration, grants/revokes, <code>LOAD</code>, <code>DO</code>, <code>REASSIGN OWNED</code>, <code>FROM PROGRAM</code>, transaction-control statements (<code>BEGIN</code>/<code>COMMIT</code>/<code>ROLLBACK</code>/<code>SAVEPOINT</code> and aliases), and arbitrary psql meta-commands are rejected; harmless words inside quoted values or COPY data are not treated as statements.</p>
+<p><strong>Warning:</strong> A successful restore replaces all existing data. The <code>ag_catalog</code>/<code>public</code> schema reset, import, and verification of essential Osprey schema tables run in one PostgreSQL transaction, so prohibited input, malformed uploads, non-Osprey SQL files, and SQL import failures preserve the existing database.</p>
+<p><strong>Content-Type:</strong> <code>multipart/form-data</code></p>
+<p><strong>Capacity policy:</strong> <code>api.max_restore_size</code> is an optional hard ceiling applying to both HTTP upload and decompressed SQL; default <code>0</code> disables that arbitrary ceiling. The effective limit follows current disk capacity. <code>api.restore_staging_dir</code> selects the staging filesystem (packaged default <code>/var/lib/osprey/restore</code>), while <code>api.restore_min_free_bytes</code> (default 5 GiB) and <code>api.restore_min_free_percent</code> (default 10) define the larger mandatory reserve. Osprey additionally retains one staged-SQL size for database construction and checks <code>api.restore_database_dir</code> (default <code>/var/lib/postgresql</code>) for local PostgreSQL before import. A custom staging path in the Debian package also requires a matching systemd <code>ReadWritePaths=</code> drop-in because the API unit uses <code>ProtectSystem=strict</code>.</p>
+<p><strong>Form fields:</strong></p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>file</code></td>
+<td>file</td>
+<td>A <code>.sql</code> or <code>.sql.gz</code> file from <code>GET /admin/backup/database</code></td>
+</tr>
+</tbody></table>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;ok&quot;,
+  &quot;message&quot;: &quot;Database restored from osprey-database-20260306-120000.sql. Services should be restarted.&quot;
+}
+</code></pre>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Missing file, unsupported extension, invalid multipart/gzip/SQL input, or prohibited SQL</li>
+<li><code>401 Unauthorized</code> -- Missing or invalid access token</li>
+<li><code>403 Forbidden</code> -- Non-admin user</li>
+<li><code>413 Payload Too Large</code> -- Compressed upload or decompressed SQL exceeds a non-zero <code>api.max_restore_size</code></li>
+<li><code>507 Insufficient Storage</code> -- Staging or local PostgreSQL capacity cannot retain the configured reserve and database-build headroom</li>
+<li><code>503 Service Unavailable</code> -- <code>psql</code> not available or database URL not configured</li>
+<li><code>500 Internal Server Error</code> -- Staging filesystem inspection failed or the atomic import failed; screened transaction control cannot end the wrapper transaction early</li>
+</ul>
+<hr>
+</main></html>

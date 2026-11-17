@@ -1,0 +1,21 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>BGP history AS detail — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="get-bgphistoryas-detail">BGP history AS detail <!-- topic: get-bgphistoryas-detail --></h3><p><code>GET /bgp/history/as-detail</code></p>
+<p>The <strong>per-AS dossier</strong> over <code>(from, to]</code>: carried-entry share over time, churn, top prefixes (each a <code>↺ replay</code> handoff), the exit-router split, sessions, and the full-mode <strong>shadow-share</strong> dependency insight.</p>
+<p><strong>Auth</strong>: all authenticated roles</p>
+<p><strong>Query params</strong>: <code>as_id</code> and <code>asn</code> (required); <code>from</code>/<code>to</code> (required, RFC 3339); optional <code>routing_domain_id</code>, <code>device_id</code>, <code>af</code>, <code>buckets</code> (share resolution, default 48, max 200).</p>
+<p><strong>Response</strong>: <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;asn&quot;: 3356, &quot;role&quot;: &quot;neighbor&quot;,
+  &quot;count_at_start&quot;: 532, &quot;count_at_end&quot;: 309,
+  &quot;share&quot;: [ { &quot;t&quot;: &quot;2026-07-03T06:00:00Z&quot;, &quot;count&quot;: 532 } ],
+  &quot;churn&quot;: { &quot;gained&quot;: 0, &quot;lost&quot;: 9, &quot;rerouted&quot;: 214 },
+  &quot;top_prefixes&quot;: [ { &quot;prefix&quot;: &quot;203.0.113.0/24&quot;, &quot;device_id&quot;: &quot;uuid&quot; } ],
+  &quot;exits&quot;: [ { &quot;device_id&quot;: &quot;uuid&quot;, &quot;count&quot;: 194 } ],
+  &quot;sessions&quot;: [ { &quot;device_id&quot;: &quot;uuid&quot;, &quot;peer_ip&quot;: &quot;198.51.100.1&quot;, &quot;address_family&quot;: &quot;ipv4&quot;, &quot;state_at_end&quot;: &quot;up&quot;, &quot;flaps&quot;: 1 } ],
+  &quot;shadow&quot;: { &quot;backup_for&quot;: 402, &quot;sole_path_for&quot;: 87, &quot;available&quot;: true },
+  &quot;half_life&quot;: { &quot;closed_count&quot;: 18, &quot;open_count&quot;: 4, &quot;median_seconds&quot;: 252, &quot;p90_seconds&quot;: 3660, &quot;available&quot;: true },
+  &quot;transit_space&quot;: 786432,
+  &quot;transit_prefixes&quot;: 3072
+}
+</code></pre>
+<p><code>shadow</code> is the dependency insight from the <code>full</code>-mode candidate lanes at <code>to</code>: <code>sole_path_for</code> counts prefixes whose every candidate traverses this AS (a hard dependency), <code>backup_for</code> counts prefixes where it is on some but not all candidates (an alternate it provides). <code>available</code> is <code>false</code> when the AS lacks <code>full</code> RIB history at <code>to</code> (the counts are then 0). <code>half_life</code> summarises candidate-path interval lifetimes <strong>originated by</strong> the dossier AS for the cohort born in the window: percentiles over the closed intervals, <code>open_count</code> the still-open remainder (when it dominates, the percentiles are a lower bound). Its <code>available</code> mirrors the shadow gate — <code>false</code> means coverage refusal, not stability. <code>transit_space</code>/<code>transit_prefixes</code> measure the unique IPv4 address space over the DISTINCT prefixes whose AS_PATH traverses this AS on a best-path interval open at <code>to</code> — a true server-side interval <strong>union</strong> (the graph&#39;s tree-sum <code>reach_space</code> is 1.3–3.6× apart from it and cannot replace it); default routes excluded, and <code>transit_prefixes: 0</code> means &quot;no IPv4 prefixes traverse this AS at <code>to</code>&quot;, never &quot;unknown&quot;. <strong>Errors</strong>: <code>400</code> on a missing <code>as_id</code>/<code>asn</code> or invalid window.</p>
+</main></html>

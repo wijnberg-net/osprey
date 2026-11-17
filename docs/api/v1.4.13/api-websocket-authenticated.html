@@ -1,0 +1,68 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>WebSocket (Authenticated) — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="websocket-authenticated">WebSocket (Authenticated)</h3><h4 id="topology-updates">Topology Updates</h4><pre><code>GET /api/v1/ws/topology
+</code></pre>
+<p>Upgrades to WebSocket. The <code>osprey_access</code> cookie is validated during the upgrade. Real-time topology diffs are pushed to connected clients when devices or links change. <strong>Connection limits</strong>: 100 total concurrent connections, 10 per user. Excess connections are rejected with HTTP 503.</p>
+<p><strong>Protocol:</strong> Binary or text frames containing JSON topology diff messages.</p>
+<h4 id="sshtelnet-terminal-proxy">SSH/Telnet Terminal Proxy</h4><pre><code>GET /api/v1/ws/ssh?host={router_id}
+</code></pre>
+<p>Upgrades to WebSocket and proxies an SSH or telnet session to the specified device.</p>
+<p><strong>Roles:</strong> <code>admin</code> or <code>engineer</code>. Operators are refused with <code>403</code>; interactive device access is outside the read-only role boundary.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li><code>host</code> (required) — Router ID (IP address) of the device, as stored in the topology. <code>/32</code> suffix is automatically stripped.</li>
+</ul>
+<p><strong>Authentication flow:</strong></p>
+<ol>
+<li>Client sends a JSON text message with the <strong>username only</strong> (the password is typed interactively, not sent here):<pre><code class="language-json">{&quot;type&quot;: &quot;auth&quot;, &quot;username&quot;: &quot;admin&quot;}
+</code></pre>
+</li>
+<li>Server dials SSH (port 22) and relays the device&#39;s banner and password prompt to the terminal as binary frames; the user types the password, which is read from the client&#39;s binary input frames (SSH keyboard-interactive, password-callback fallback). On a wrong password the device re-prompts (bounded retries). On a connection-level failure, if the <code>ssh.allow_telnet_fallback</code> system setting is <code>true</code>, falls back to telnet (port 23) — disabled by default (cleartext credentials).</li>
+<li>Server sends connection status and device output as binary frames.</li>
+<li>After login, binary frames carry terminal I/O in both directions.</li>
+<li>Client sends resize events as JSON text messages:<pre><code class="language-json">{&quot;type&quot;: &quot;resize&quot;, &quot;cols&quot;: 80, &quot;rows&quot;: 24}
+</code></pre>
+</li>
+</ol>
+<p><strong>SSRF Protection:</strong></p>
+<ul>
+<li>Host must exist in the topology (validated via <code>GetDeviceByRouterID</code>). This topology whitelist is the primary SSRF protection.</li>
+<li>The <code>host</code> you pass is the device&#39;s router-id; the server then resolves the actual dial target via <code>resolveDialHost</code> — the device&#39;s selected reachable <strong>management IP</strong> (<code>management_ip</code> / <code>device_address</code>), falling back to the router-id only when no management IP has been selected. The SSH host-key (TOFU) pin is keyed on this dialed address, not the router-id.</li>
+<li>After resolution, the dial target is blocked if it falls in a non-routable / infrastructure range: loopback (<code>127.0.0.0/8</code>, <code>::1/128</code>), link-local (<code>169.254.0.0/16</code>, <code>fe80::/10</code>), multicast (<code>224.0.0.0/4</code>, <code>ff00::/8</code>), reserved / class-E (<code>240.0.0.0/4</code>), and the <code>0.0.0.0/8</code> &quot;this network&quot; range.</li>
+<li>RFC 1918 private ranges (10/8, 172.16/12, 192.168/16) are NOT blocked because topology devices legitimately use private IP addressing.</li>
+</ul>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> — Missing host parameter</li>
+<li><code>401 Unauthorized</code> — Missing or invalid access token</li>
+<li><code>403 Forbidden</code> — Caller is an operator, host is not in topology, resolved dial target is in a blocked IP range, or the SSH terminal proxy is globally disabled via the <code>security.disable_ssh_proxy</code> system setting</li>
+</ul>
+<p><strong>WebSocket close codes:</strong></p>
+<ul>
+<li><code>1000</code> (Normal Closure) — Session ended normally</li>
+<li><code>1008</code> (Policy Violation) — Invalid auth message or missing credentials, or an <strong>SSH host key mismatch</strong> (close reason <code>host key mismatch</code>)</li>
+</ul>
+<p><strong>Host key verification (TOFU):</strong> The proxy pins each device&#39;s SSH host key on first connect (<code>ssh_known_host</code> table). On a later mismatch the connection is refused (close <code>1008</code>, reason <code>host key mismatch</code>). Before closing, the server emits one <strong>text</strong> control frame (terminal output is sent as binary frames, so a text frame is an unambiguous control message) describing the change:</p>
+<pre><code class="language-json">{&quot;type&quot;:&quot;hostkey_mismatch&quot;,&quot;host&quot;:&quot;198.51.100.13&quot;,&quot;port&quot;:22,
+ &quot;stored_fingerprint&quot;:&quot;SHA256:…&quot;,&quot;stored_key_type&quot;:&quot;ssh-ed25519&quot;,
+ &quot;offered_fingerprint&quot;:&quot;SHA256:…&quot;,&quot;offered_key_type&quot;:&quot;ssh-ed25519&quot;}
+</code></pre>
+<p>An admin can then clear the pin (see <a href="api-websocket-authenticated.html#clear-ssh-host-key-tofu">Clear SSH Host Key</a>) and reconnect, which re-runs TOFU and pins the new key.</p>
+<h4 id="clear-ssh-host-key-tofu">Clear SSH Host Key (TOFU)</h4><pre><code>DELETE /api/v1/admin/ssh/known-hosts?host={host}&amp;port={port}&amp;offered_fp={fingerprint}
+</code></pre>
+<p><strong>Admin only.</strong> Removes the pinned TOFU host key for <code>host:port</code> so a legitimately re-keyed or replaced device can be reconnected to — the next SSH connection re-runs Trust-On-First-Use and pins the new key. Recorded in the audit log (<code>action=clear</code>, <code>entity_type=ssh_known_host</code>) with the cleared fingerprint and the client-reported offered fingerprint.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li><code>host</code> (required) — device host/IP exactly as pinned. The proxy keys the TOFU pin on the device&#39;s <strong>management IP</strong> (the reachable address it actually dials, resolved via <code>resolveDialHost</code>), falling back to the router-id only when the device has no selected management IP — so pass whichever address was dialed, as it appears in the mismatch control frame&#39;s <code>host</code> field.</li>
+<li><code>port</code> (optional, default <code>22</code>).</li>
+<li><code>offered_fp</code> (optional) — the fingerprint the device most recently presented; recorded in the audit detail as client-reported context.</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{&quot;cleared&quot;: true, &quot;host&quot;: &quot;198.51.100.13&quot;, &quot;port&quot;: 22, &quot;fingerprint&quot;: &quot;SHA256:…&quot;, &quot;key_type&quot;: &quot;ssh-ed25519&quot;}
+</code></pre>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> — missing <code>host</code></li>
+<li><code>403 Forbidden</code> — caller is not an admin</li>
+<li><code>404 Not Found</code> — no key pinned for that <code>host:port</code></li>
+</ul>
+<hr>
+</main></html>

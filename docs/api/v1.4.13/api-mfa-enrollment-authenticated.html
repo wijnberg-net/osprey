@@ -1,0 +1,13 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>MFA Enrollment (authenticated) — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="mfa-enrollment-authenticated">MFA Enrollment (authenticated)</h3><pre><code>POST   /api/v1/auth/mfa/totp          — start enrollment (local and LDAP accounts)
+POST   /api/v1/auth/mfa/totp/confirm  — confirm with the first code, get recovery codes
+DELETE /api/v1/auth/mfa/totp          — disable your own TOTP
+</code></pre>
+<p><code>POST /auth/mfa/totp</code> returns <code>{secret, otpauth_uri, qr_png}</code> where <code>qr_png</code> is a <strong>server-rendered</strong> <code>data:image/png;base64,…</code> (no client QR dependency; the secret never crosses an external chart API). The enrollment is pending until <code>confirm</code> verifies a code and returns one-time <code>recovery_codes</code> (shown once). OIDC/SAML accounts get <code>400</code> (they manage MFA at their IdP); a second enrollment while one is confirmed gets <code>409</code>.</p>
+<p><code>DELETE /auth/mfa/totp</code> requires <strong>proof of possession</strong> in the body — a session cookie alone is not enough, because a stolen session must not be able to strip the second factor. Send any one of:</p>
+<pre><code class="language-json">{&quot;code&quot;: &quot;123456&quot;}            // current TOTP code
+{&quot;recovery_code&quot;: &quot;ABCDE-23456&quot;}
+{&quot;password&quot;: &quot;…&quot;}             // local accounts only — SSO accounts have no local password
+</code></pre>
+<p>A used recovery code is burned even though the record is about to be deleted. No proof gets <code>400</code>; wrong proof gets <code>401</code> and is audited as <code>mfa_disable_failed</code>. The route is rate-limited at 3 requests per minute per IP, like its enrollment siblings. A user who has lost every factor is not locked out — an admin can still reset it.</p>
+<p>Admin reset of another user&#39;s TOTP: <code>DELETE /api/v1/users/{userID}/mfa</code> (admin-only, audited as <code>mfa_reset</code>).</p>
+</main></html>

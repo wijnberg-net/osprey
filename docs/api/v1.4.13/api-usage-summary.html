@@ -1,0 +1,12 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Usage Summary — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="usage-summary">Usage Summary</h3><pre><code>GET /api/v1/usage-summary
+</code></pre>
+<p>Returns deployment-wide aggregate counts for the in-app startup usage ping: total devices, total links, and the set of protocols configured anywhere in the installation. Authenticated (any role); license state never gates reads.</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;devices&quot;: 64,
+  &quot;links&quot;: 244,
+  &quot;protocols&quot;: [&quot;ospfv2&quot;, &quot;ospfv3&quot;]
+}
+</code></pre>
+<p><code>protocols</code> is the <code>DISTINCT</code> set of <code>protocol_instance.protocol</code> values (<code>ospfv2</code>, <code>ospfv3</code>, <code>isis</code>, <code>eigrp</code>, <code>bgp</code>), alphabetically ordered, or <code>[]</code> when none are configured. The frontend (<code>useUsageSummary</code>) encodes these into the anonymous UTM usage payload, so the signal reflects the whole installation rather than whichever topology view is open.</p>
+</main></html>

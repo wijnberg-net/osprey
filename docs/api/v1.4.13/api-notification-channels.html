@@ -1,0 +1,107 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Notification Channels — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="notification-channels">Notification Channels</h3><p>Engineer or admin CRUD for notification channels. Channels define how alert notifications are delivered (e.g., webhook, email, Slack).</p>
+<h4 id="create-notification-channel">Create Notification Channel</h4><pre><code>POST /api/v1/notifications/channels
+</code></pre>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;Slack Ops&quot;,
+  &quot;channel_type&quot;: &quot;slack&quot;,
+  &quot;config&quot;: {
+    &quot;webhook_url&quot;: &quot;https://hooks.slack.com/services/...&quot;,
+    &quot;channel&quot;: &quot;#network-alerts&quot;
+  },
+  &quot;enabled&quot;: true
+}
+</code></pre>
+<p><strong>Validation:</strong></p>
+<ul>
+<li><code>name</code> and <code>channel_type</code> are required; <code>channel_type</code> must be one of <code>webhook</code>, <code>email</code>, <code>slack</code>, <code>teams</code>, <code>in_app</code> (<code>400</code> otherwise, on create and update)</li>
+<li><code>enabled</code> defaults to <strong>true</strong> if omitted; explicit <code>false</code> creates the channel disabled (note: there is no toggle endpoint for channels — re-enable via <code>PUT</code>)</li>
+<li><code>config</code> defaults to <code>{}</code> if omitted</li>
+<li>Webhook <code>config.headers</code> (custom HTTP request headers) is a JSON object of header name → value, e.g. <code>{&quot;Authorization&quot;: &quot;Bearer …&quot;}</code>. A JSON-encoded string of such an object is accepted and stored as the object — older clients, including the web form before 2026-11-17, sent that shape, and delivery skipped it without a word. Names must be RFC 9110 tokens; values must be strings (numbers and booleans are kept as text) without CR, LF or NUL. Two names that differ only in case (<code>Authorization</code> and <code>authorization</code>) are one HTTP header, so such a pair is refused too. Anything else is a <code>400</code> naming the offending header or pair. An empty value removes the headers. Rows stored in the string shape still deliver their headers.</li>
+</ul>
+<p><strong>Secrets:</strong> <code>password</code>, Slack/Teams <code>webhook_url</code> and every custom header value are encrypted at rest when the installation has an encryption key (<code>OSPREY_ENCRYPTION_KEY</code>, which the Debian installer generates; without one they are stored in plain text, like the SNMP credentials), and returned as <code>&quot;***&quot;</code> by every endpoint (header names stay visible). A <code>PUT</code> that sends <code>&quot;***&quot;</code> back for one of them keeps the stored value — the edit form sends the config it received, so a rename no longer overwrites the secrets with the mask. A masked header with no stored header of that name (compared case-insensitively) is a <code>400</code>: there is nothing to keep. Stored headers that are not a JSON object (possible only for a channel saved by an older client) are returned as a single <code>&quot;***&quot;</code> and are not sent with notifications; sending <code>&quot;***&quot;</code> back keeps them as stored, any other value replaces them.</p>
+<p><strong>Response:</strong> <code>201 Created</code></p>
+<pre><code class="language-json">{
+  &quot;id&quot;: &quot;uuid&quot;,
+  &quot;name&quot;: &quot;Slack Ops&quot;,
+  &quot;channel_type&quot;: &quot;slack&quot;,
+  &quot;config&quot;: {
+    &quot;webhook_url&quot;: &quot;https://hooks.slack.com/services/...&quot;,
+    &quot;channel&quot;: &quot;#network-alerts&quot;
+  },
+  &quot;enabled&quot;: true,
+  &quot;created_by&quot;: &quot;uuid&quot;,
+  &quot;created_at&quot;: &quot;2026-02-17T12:00:00Z&quot;,
+  &quot;updated_at&quot;: &quot;2026-02-17T12:00:00Z&quot;
+}
+</code></pre>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Missing required fields or invalid request body</li>
+<li><code>403 Forbidden</code> -- Non-admin user</li>
+</ul>
+<h4 id="list-notification-channels">List Notification Channels</h4><pre><code>GET /api/v1/notifications/channels
+</code></pre>
+<p>List all notification channels.</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">[
+  {
+    &quot;id&quot;: &quot;uuid&quot;,
+    &quot;name&quot;: &quot;Slack Ops&quot;,
+    &quot;channel_type&quot;: &quot;slack&quot;,
+    &quot;config&quot;: { ... },
+    &quot;enabled&quot;: true,
+    &quot;created_by&quot;: &quot;uuid&quot;,
+    &quot;created_at&quot;: &quot;2026-02-17T12:00:00Z&quot;,
+    &quot;updated_at&quot;: &quot;2026-02-17T12:00:00Z&quot;
+  }
+]
+</code></pre>
+<h4 id="update-notification-channel">Update Notification Channel</h4><pre><code>PUT /api/v1/notifications/channels/{channelID}
+</code></pre>
+<p>Partial update of a notification channel. Uses read-merge-write -- only fields present in the request body are updated; other fields are preserved. A present <code>config</code> replaces the stored config, except that a secret sent back as <code>&quot;***&quot;</code> keeps its stored value (see <a href="api-notification-channels.html#create-notification-channel">Secrets</a> above), and <code>headers</code> is validated and canonicalised as on create.</p>
+<p><strong>Request body (all fields optional):</strong></p>
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;Updated Channel Name&quot;,
+  &quot;channel_type&quot;: &quot;webhook&quot;,
+  &quot;config&quot;: {&quot;url&quot;: &quot;https://example.com/webhook&quot;, &quot;headers&quot;: {&quot;Authorization&quot;: &quot;***&quot;, &quot;X-Tenant&quot;: &quot;ops&quot;}},
+  &quot;enabled&quot;: false
+}
+</code></pre>
+<p><strong>Response:</strong> <code>200 OK</code> (updated notification channel object, secrets masked)</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Invalid request body, invalid <code>headers</code>, or a masked header with no stored value</li>
+<li><code>403 Forbidden</code> -- Non-admin user</li>
+<li><code>404 Not Found</code> -- Channel does not exist</li>
+</ul>
+<h4 id="delete-notification-channel">Delete Notification Channel</h4><pre><code>DELETE /api/v1/notifications/channels/{channelID}
+</code></pre>
+<p>Delete a notification channel.</p>
+<p><strong>Response:</strong> <code>204 No Content</code></p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>403 Forbidden</code> -- Non-admin user</li>
+<li><code>500 Internal Server Error</code> -- Database error</li>
+</ul>
+<h4 id="test-notification-channel">Test Notification Channel</h4><pre><code>POST /api/v1/notifications/channels/{channelID}/test
+</code></pre>
+<p>Send a test notification through the specified channel. Validates that the channel exists and its configuration is reachable.</p>
+<p>The test uses the same transport rules as real alert delivery, so a passing test means delivery would succeed:</p>
+<ul>
+<li><strong>Webhook, Slack, Teams</strong> — the connection is refused at dial time when the host resolves to a private or internal address (DNS-rebinding safe, the same client alert delivery uses). Redirects are not followed. A webhook test sends the channel&#39;s custom headers exactly as alert delivery does (both stored shapes); a stored headers value that cannot be read fails the test with the reason — delivery itself then sends without the headers and logs a warning. So does a stored pair of names that differ only in case (saved before the API refused one): delivery sends the value of the later name in byte order every time and logs a warning.</li>
+<li><strong>Email</strong> — STARTTLS is used whenever the relay offers it. With <code>&quot;tls&quot;: true</code> in the channel config (the UI default) it is required: a relay that does not advertise STARTTLS fails the test before any envelope or message data is sent. Port 465 with <code>&quot;tls&quot;: true</code> uses implicit TLS. The whole SMTP conversation is bounded to 60 seconds.</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;ok&quot;,
+  &quot;message&quot;: &quot;test notification would be sent&quot;
+}
+</code></pre>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>403 Forbidden</code> -- Non-admin user</li>
+<li><code>404 Not Found</code> -- Channel does not exist</li>
+</ul>
+<hr>
+</main></html>

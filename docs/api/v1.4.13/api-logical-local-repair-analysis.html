@@ -1,0 +1,20 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Logical local repair analysis — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h2 id="logical-local-repair-analysis">Logical local repair analysis</h2><p><code>GET /api/v1/topology/local-repair?area_id=&lt;uuid&gt;&amp;source=&lt;uuid&gt;&amp;destination=&lt;uuid&gt;&amp;failed_link_id=&lt;uuid&gt;</code></p>
+<p>Use <code>failed_node_id</code> instead of <code>failed_link_id</code> for a local neighbor failure.
+Exactly one failure is required. The route accepts one live IS-IS area, up to
+1000 devices/8000 links; no historical <code>at</code>. Invalid/nonlocal requests return
+400, missing topology/devices 404, size excess 422, and database errors 500.</p>
+<p>The result carries <code>model: igp_logical_repair</code>, area_id, device names, and
+<code>repair</code> (status, cost, ordered node/link IDs, logical node/adjacency segments
+and LFA neighbors). <code>installed_protection: not_observed</code> and
+<code>sid_resolution</code> (<code>resolved</code>, <code>unresolved</code>, <code>not_applicable</code>) separate advertised
+SID binding from programmed TI-LFA. Additive <code>srv6</code> contains MTID/algorithm,
+ordered <code>bindings</code> (node/link, status/reason, SID/behavior/locator/observed_at),
+a separate destination End candidate, <code>msd_status</code>, <code>msd_checks</code> and scope note.
+Only MTID 0 / algorithm 0 are modeled; explicit other values return 400.
+MSD checks expose type, node, minimum required, optional advertised value and
+within/exceeded/unknown status. <code>node_limits_match_minimum</code> is conditional:
+link overrides and the original packet are unobserved. Missing values stay
+unknown. A resolved destination candidate does not replace an active service SID.
+The active destination segment follows the returned repair instructions.
+Authenticated application API only; no public OpenAPI/restricted-key expansion.</p>
+</main></html>

@@ -1,0 +1,324 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>IP Conflict Diagnostics — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="ip-conflict-diagnostics">IP Conflict Diagnostics</h3><h4 id="get-ip-conflicts">Get IP Conflicts</h4><pre><code>GET /api/v1/diagnostics/ip-conflicts?area_id=&lt;uuid&gt;
+GET /api/v1/diagnostics/ip-conflicts?pi_id=&lt;uuid&gt;
+GET /api/v1/diagnostics/ip-conflicts?rd_id=&lt;uuid&gt;
+GET /api/v1/diagnostics/ip-conflicts?network_id=&lt;uuid&gt;
+</code></pre>
+<p>Detects IP address conflicts and misconfigurations within the selected scope. Runs 4 SQL queries:</p>
+<ol>
+<li><strong>Duplicate Router IDs</strong> — devices sharing the same router ID</li>
+<li><strong>Duplicate IPs</strong> — interfaces on different devices sharing the same IP address</li>
+<li><strong>Duplicate Prefixes</strong> — same network advertised by multiple devices within the same source type (stub or inter-area)</li>
+<li><strong>Conflicting Externals</strong> — same prefix advertised by multiple ASBRs with different attributes (metric type, metric, or tag)</li>
+</ol>
+<p><strong>Auth:</strong> Any authenticated user.</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;summary&quot;: {
+    &quot;duplicate_router_ids&quot;: 1,
+    &quot;duplicate_ips&quot;: 2,
+    &quot;duplicate_prefixes&quot;: 3,
+    &quot;conflicting_externals&quot;: 1,
+    &quot;total&quot;: 7
+  },
+  &quot;duplicate_router_ids&quot;: [
+    {
+      &quot;router_id&quot;: &quot;10.0.0.1&quot;,
+      &quot;devices&quot;: [
+        { &quot;device_id&quot;: &quot;uuid-1&quot;, &quot;hostname&quot;: &quot;router-a&quot; },
+        { &quot;device_id&quot;: &quot;uuid-2&quot;, &quot;hostname&quot;: &quot;router-b&quot; }
+      ]
+    }
+  ],
+  &quot;duplicate_ips&quot;: [
+    {
+      &quot;ip_address&quot;: &quot;192.168.1.1&quot;,
+      &quot;devices&quot;: [
+        { &quot;device_id&quot;: &quot;uuid-1&quot;, &quot;hostname&quot;: &quot;router-a&quot;, &quot;if_name&quot;: &quot;GigabitEthernet0/0&quot;, &quot;router_id&quot;: &quot;10.0.0.1&quot; },
+        { &quot;device_id&quot;: &quot;uuid-3&quot;, &quot;hostname&quot;: &quot;router-c&quot;, &quot;if_name&quot;: &quot;GigabitEthernet0/1&quot;, &quot;router_id&quot;: &quot;10.0.0.3&quot; }
+      ]
+    }
+  ],
+  &quot;duplicate_prefixes&quot;: [
+    {
+      &quot;network&quot;: &quot;10.0.1.0/24&quot;,
+      &quot;source&quot;: &quot;stub&quot;,
+      &quot;devices&quot;: [
+        { &quot;device_id&quot;: &quot;10.0.0.1&quot;, &quot;hostname&quot;: &quot;router-a&quot; },
+        { &quot;device_id&quot;: &quot;10.0.0.2&quot;, &quot;hostname&quot;: &quot;router-b&quot; }
+      ]
+    }
+  ],
+  &quot;conflicting_externals&quot;: [
+    {
+      &quot;network&quot;: &quot;192.0.2.0/24&quot;,
+      &quot;entries&quot;: [
+        { &quot;adv_router&quot;: &quot;10.0.0.5&quot;, &quot;hostname&quot;: &quot;asbr-1&quot;, &quot;metric_type&quot;: 2, &quot;metric&quot;: 100, &quot;tag&quot;: 0, &quot;is_nssa&quot;: false },
+        { &quot;adv_router&quot;: &quot;10.0.0.6&quot;, &quot;hostname&quot;: &quot;asbr-2&quot;, &quot;metric_type&quot;: 1, &quot;metric&quot;: 200, &quot;tag&quot;: 0, &quot;is_nssa&quot;: false }
+      ]
+    }
+  ]
+}
+</code></pre>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Missing scope parameter</li>
+</ul>
+<h4 id="get-single-points-of-failure">Get Single Points of Failure</h4><pre><code>GET /api/v1/diagnostics/spof?area_id=&lt;uuid&gt;
+GET /api/v1/diagnostics/spof?pi_id=&lt;uuid&gt;
+GET /api/v1/diagnostics/spof?rd_id=&lt;uuid&gt;
+GET /api/v1/diagnostics/spof?network_id=&lt;uuid&gt;
+</code></pre>
+<p>Identifies articulation points (cut vertices) and bridge links in the topology graph using Tarjan&#39;s algorithm. These are devices/links whose failure would partition the network into disconnected components. Only considers links with state <code>&quot;up&quot;</code>.</p>
+<p><strong>Auth:</strong> Any authenticated user.</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;summary&quot;: {
+    &quot;total_devices&quot;: 12,
+    &quot;total_links&quot;: 15,
+    &quot;articulation_points&quot;: 2,
+    &quot;bridge_links&quot;: 3
+  },
+  &quot;articulation_points&quot;: [
+    {
+      &quot;device_id&quot;: &quot;uuid-1&quot;,
+      &quot;router_id&quot;: &quot;10.0.0.1&quot;,
+      &quot;hostname&quot;: &quot;core-rtr-1&quot;,
+      &quot;affected_components&quot;: 3
+    }
+  ],
+  &quot;bridge_links&quot;: [
+    {
+      &quot;link_id&quot;: &quot;uuid-link-1&quot;,
+      &quot;source_device_id&quot;: &quot;uuid-1&quot;,
+      &quot;source_router_id&quot;: &quot;10.0.0.1&quot;,
+      &quot;source_hostname&quot;: &quot;core-rtr-1&quot;,
+      &quot;target_device_id&quot;: &quot;uuid-2&quot;,
+      &quot;target_router_id&quot;: &quot;10.0.0.2&quot;,
+      &quot;target_hostname&quot;: &quot;edge-rtr-1&quot;,
+      &quot;affected_components&quot;: 2
+    }
+  ]
+}
+</code></pre>
+<p><strong>Fields:</strong></p>
+<ul>
+<li><code>affected_components</code> — Number of connected components that would result from removing this device/link. Higher = more critical (3+ is critical severity, 2 is warning).</li>
+</ul>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Missing scope parameter</li>
+</ul>
+<h4 id="get-routing-stability-report">Get Routing Stability Report</h4><pre><code>GET /api/v1/diagnostics/stability?area_id=&lt;uuid&gt;&amp;period=24h
+GET /api/v1/diagnostics/stability?pi_id=&lt;uuid&gt;&amp;period=7d
+GET /api/v1/diagnostics/stability?rd_id=&lt;uuid&gt;&amp;period=6h
+GET /api/v1/diagnostics/stability?network_id=&lt;uuid&gt;&amp;period=1h
+</code></pre>
+<p>Identifies flapping links (frequent state changes) and unstable devices (high event rate) by aggregating topology_event data over the specified period. Uses SQL GROUP BY aggregation for efficiency.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li>Scope: <code>area_id</code>, <code>area_ids</code>, <code>pi_id</code>, <code>rd_id</code>, or <code>network_id</code> (same as other diagnostics endpoints)</li>
+<li><code>period</code> — Time window: <code>1h</code>, <code>6h</code>, <code>24h</code> (default), <code>7d</code>, <code>30d</code></li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;flapping_links&quot;: [
+    {
+      &quot;entity_id&quot;: &quot;uuid&quot;,
+      &quot;source_router_id&quot;: &quot;10.0.0.1&quot;,
+      &quot;source_hostname&quot;: &quot;router-a&quot;,
+      &quot;target_router_id&quot;: &quot;10.0.0.2&quot;,
+      &quot;target_hostname&quot;: &quot;router-b&quot;,
+      &quot;state_changes&quot;: 7,
+      &quot;period_hours&quot;: 24,
+      &quot;first_event&quot;: &quot;2026-02-23T10:15:00Z&quot;,
+      &quot;last_event&quot;: &quot;2026-02-24T08:30:00Z&quot;
+    }
+  ],
+  &quot;unstable_devices&quot;: [
+    {
+      &quot;router_id&quot;: &quot;10.0.0.3&quot;,
+      &quot;hostname&quot;: &quot;router-c&quot;,
+      &quot;event_count&quot;: 25,
+      &quot;period_hours&quot;: 24,
+      &quot;breakdown&quot;: {
+        &quot;link_state_changed&quot;: 12,
+        &quot;link_added&quot;: 8,
+        &quot;link_removed&quot;: 5
+      },
+      &quot;first_event&quot;: &quot;2026-02-23T06:00:00Z&quot;,
+      &quot;last_event&quot;: &quot;2026-02-24T09:45:00Z&quot;
+    }
+  ],
+  &quot;summary&quot;: {
+    &quot;flapping_links&quot;: 1,
+    &quot;unstable_devices&quot;: 1,
+    &quot;total_events&quot;: 150,
+    &quot;period_hours&quot;: 24
+  }
+}
+</code></pre>
+<p><strong>Thresholds:</strong></p>
+<ul>
+<li>Flapping links: 3+ state-change events (link_state_changed, link_added, link_removed)</li>
+<li>Unstable devices: 10+ total events of any type</li>
+</ul>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Missing scope parameter</li>
+</ul>
+<h4 id="get-timer-consistency-report">Get Timer Consistency Report</h4><pre><code>GET /api/v1/diagnostics/timer-consistency?area_id=&lt;uuid&gt;
+GET /api/v1/diagnostics/timer-consistency?pi_id=&lt;uuid&gt;
+GET /api/v1/diagnostics/timer-consistency?rd_id=&lt;uuid&gt;
+GET /api/v1/diagnostics/timer-consistency?network_id=&lt;uuid&gt;
+</code></pre>
+<p>Compares OSPF hello/dead timers, authentication type, network type, and MTU across interfaces that share a link within each area. Returns mismatches where two connected interfaces have different timer, configuration, or MTU values. Data is populated by the SNMP poller from OSPF-MIB (ospfIfHelloInterval, ospfIfRtrDeadInterval, ospfIfAuthType, ospfIfType) and IF-MIB (ifMtu).</p>
+<p><strong>Auth:</strong> Any authenticated user.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li>Scope (mutually exclusive, one required): <code>area_id</code>, <code>area_ids</code>, <code>pi_id</code>, <code>rd_id</code>, or <code>network_id</code></li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;mismatches&quot;: [
+    {
+      &quot;area_id&quot;: &quot;uuid&quot;,
+      &quot;interface_a&quot;: {
+        &quot;device_id&quot;: &quot;uuid&quot;,
+        &quot;router_id&quot;: &quot;10.0.0.1&quot;,
+        &quot;hostname&quot;: &quot;core-rtr-1&quot;,
+        &quot;ip_address&quot;: &quot;192.168.1.1&quot;,
+        &quot;if_name&quot;: &quot;Gi0/0/0&quot;,
+        &quot;hello_interval&quot;: 10,
+        &quot;dead_interval&quot;: 40,
+        &quot;auth_type&quot;: &quot;md5&quot;,
+        &quot;network_type&quot;: &quot;p2p&quot;,
+        &quot;if_mtu&quot;: 9000
+      },
+      &quot;interface_b&quot;: {
+        &quot;device_id&quot;: &quot;uuid&quot;,
+        &quot;router_id&quot;: &quot;10.0.0.2&quot;,
+        &quot;hostname&quot;: &quot;edge-rtr-1&quot;,
+        &quot;ip_address&quot;: &quot;192.168.1.2&quot;,
+        &quot;if_name&quot;: &quot;Gi0/1/0&quot;,
+        &quot;hello_interval&quot;: 30,
+        &quot;dead_interval&quot;: 120,
+        &quot;auth_type&quot;: &quot;none&quot;,
+        &quot;network_type&quot;: &quot;broadcast&quot;,
+        &quot;if_mtu&quot;: 1500
+      },
+      &quot;mismatch_type&quot;: &quot;hello_interval&quot;
+    }
+  ],
+  &quot;summary&quot;: {
+    &quot;interfaces_checked&quot;: 42,
+    &quot;mismatches&quot;: 3
+  }
+}
+</code></pre>
+<p><strong>Fields:</strong></p>
+<ul>
+<li><code>mismatch_type</code> — The type of mismatch detected: <code>hello_interval</code>, <code>dead_interval</code>, <code>auth_type</code>, <code>network_type</code>, <code>mtu</code>, or <code>nondefault_timers</code>. A single interface pair may produce multiple mismatch entries (one per mismatched field). <code>nondefault_timers</code> is the inverted case: both endpoints <em>agree</em> on hello/dead but on values other than the RFC 2328 defaults (10/40) — a healthy adjacency the pairwise checks can never flag (OSPF requires matching timers, so a link-wide template mistake always agrees with itself). Only reported for network types the 10/40 default applies to (<code>broadcast</code>, <code>p2p</code>); NBMA/point-to-multipoint default to 30/120 and are skipped rather than guessed.</li>
+<li><code>interface_a</code> / <code>interface_b</code> — The two endpoints of the link with their OSPF timer/config values.</li>
+<li><code>summary.interfaces_checked</code> — Total interfaces with OSPF timer data in scope.</li>
+<li><code>summary.mismatches</code> — Total number of mismatch entries.</li>
+</ul>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Missing scope parameter</li>
+</ul>
+<hr>
+<h4 id="get-best-practices-report">Get Best Practices Report</h4><pre><code>GET /api/v1/diagnostics/best-practices?area_id=&lt;uuid&gt;
+GET /api/v1/diagnostics/best-practices?pi_id=&lt;uuid&gt;
+GET /api/v1/diagnostics/best-practices?rd_id=&lt;uuid&gt;
+GET /api/v1/diagnostics/best-practices?network_id=&lt;uuid&gt;
+</code></pre>
+<p>Best practices compliance report. Runs 5 automated OSPF checks (IS-IS areas are filtered out automatically):</p>
+<ol>
+<li><strong>Reference Bandwidth Consistency</strong> (warning) — detects routers in same PI with different implied reference bandwidths</li>
+<li><strong>Area 0 Contiguity</strong> (critical) — non-backbone areas with no ABR connected to backbone</li>
+<li><strong>Stub Area Compliance</strong> (warning) — ASBRs in stub/totally_stub areas (Type 5 leakage risk)</li>
+<li><strong>Router ID Uniqueness</strong> (critical) — duplicate router IDs across devices</li>
+<li><strong>Passive Interface Suggestions</strong> (info) — interfaces with no peer that aren&#39;t loopback/stub/virtual</li>
+</ol>
+<p><strong>Auth:</strong> Any authenticated user.</p>
+<p><strong>Query parameters:</strong></p>
+<ul>
+<li>Scope (mutually exclusive, one required): <code>area_id</code>, <code>area_ids</code>, <code>pi_id</code>, <code>rd_id</code>, or <code>network_id</code></li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;findings&quot;: [{
+    &quot;category&quot;: &quot;backbone_design&quot;,
+    &quot;severity&quot;: &quot;critical&quot;,
+    &quot;title&quot;: &quot;Area 0.0.1.20 has no backbone connectivity&quot;,
+    &quot;description&quot;: &quot;No ABR in area 0.0.1.20 connects to area 0.0.0.0. 3 device(s) in this area are isolated from the backbone.&quot;,
+    &quot;devices&quot;: [{&quot;id&quot;: &quot;uuid&quot;, &quot;name&quot;: &quot;r1&quot;, &quot;router_id&quot;: &quot;10.0.0.1&quot;}],
+    &quot;area_id&quot;: &quot;uuid&quot;
+  }],
+  &quot;summary&quot;: {&quot;total&quot;: 5, &quot;critical&quot;: 1, &quot;warning&quot;: 2, &quot;info&quot;: 2, &quot;devices_checked&quot;: 42, &quot;areas_checked&quot;: 6}
+}
+</code></pre>
+<p><strong>Fields:</strong></p>
+<ul>
+<li><code>findings[].category</code> — Check category: <code>reference_bandwidth</code>, <code>backbone_design</code>, <code>stub_compliance</code>, <code>router_id_uniqueness</code>, <code>passive_interface</code></li>
+<li><code>findings[].severity</code> — <code>critical</code>, <code>warning</code>, or <code>info</code></li>
+<li><code>findings[].title</code> — Human-readable summary of the finding</li>
+<li><code>findings[].description</code> — Detailed explanation with device/area counts</li>
+<li><code>findings[].devices</code> — Affected devices (id, name, router_id)</li>
+<li><code>findings[].area_id</code> — Area UUID (when finding is area-scoped)</li>
+<li><code>summary.total</code> — Total number of findings</li>
+<li><code>summary.critical</code> / <code>summary.warning</code> / <code>summary.info</code> — Count by severity</li>
+<li><code>summary.devices_checked</code> — Total devices in scope</li>
+<li><code>summary.areas_checked</code> — Total areas in scope</li>
+</ul>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Missing scope parameter</li>
+</ul>
+<hr>
+<h4 id="get-asymmetric-costs">Get Asymmetric Costs</h4><pre><code>GET /api/v1/diagnostics/asymmetric-costs?area_id=&lt;uuid&gt;
+GET /api/v1/diagnostics/asymmetric-costs?pi_id=&lt;uuid&gt;
+GET /api/v1/diagnostics/asymmetric-costs?rd_id=&lt;uuid&gt;
+GET /api/v1/diagnostics/asymmetric-costs?network_id=&lt;uuid&gt;
+</code></pre>
+<p>Returns all links where forward cost differs from reverse cost — a common OSPF misconfiguration that causes asymmetric routing. Only up links with both costs set (&gt; 0) are checked.</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;summary&quot;: {
+    &quot;total_links_checked&quot;: 87,
+    &quot;asymmetric_count&quot;: 3
+  },
+  &quot;asymmetric_links&quot;: [
+    {
+      &quot;link_id&quot;: &quot;uuid&quot;,
+      &quot;area_id&quot;: &quot;uuid&quot;,
+      &quot;area_label&quot;: &quot;0.0.0.0&quot;,
+      &quot;link_type&quot;: &quot;point-to-point&quot;,
+      &quot;source&quot;: {
+        &quot;device_id&quot;: &quot;uuid&quot;,
+        &quot;router_id&quot;: &quot;10.0.0.1&quot;,
+        &quot;name&quot;: &quot;core-rtr-01&quot;,
+        &quot;cost&quot;: 10
+      },
+      &quot;destination&quot;: {
+        &quot;device_id&quot;: &quot;uuid&quot;,
+        &quot;router_id&quot;: &quot;10.0.0.2&quot;,
+        &quot;name&quot;: &quot;core-rtr-02&quot;,
+        &quot;cost&quot;: 20
+      }
+    }
+  ]
+}
+</code></pre>
+<p><strong>Fields:</strong></p>
+<ul>
+<li><code>summary.total_links_checked</code> — Total up links with both costs set in scope</li>
+<li><code>summary.asymmetric_count</code> — Number of links with cost mismatch</li>
+<li><code>asymmetric_links[].source</code> / <code>.destination</code> — Link endpoints with display names (respects system device name mode) and per-direction costs</li>
+</ul>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> -- Missing scope parameter</li>
+</ul>
+<hr>
+</main></html>

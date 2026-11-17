@@ -1,0 +1,1 @@
+document.getElementById('search').addEventListener('input', function () { const query = this.value.toLowerCase(); Array.from(document.querySelectorAll('[data-topic]')).reverse().forEach(function (row) { row.hidden = !row.dataset.search.toLowerCase().includes(query) && !Array.from(row.querySelectorAll('[data-topic]')).some(child => !child.hidden); }); });

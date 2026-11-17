@@ -1,0 +1,12 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Update BMP target — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="put-bgptargetsid">Update BMP target <!-- topic: put-bgptargetsid --></h3><p><code>PUT /bgp/targets/{id}</code></p>
+<p>Update an existing BMP target. Uses merge semantics: only non-zero/non-empty fields in the request body overwrite the existing values. The <code>enabled</code> field in the request body is <strong>ignored</strong> by this endpoint — use <code>PUT /bgp/targets/{id}/toggle</code> to change the enabled state. This deliberately prevents a partial PUT that omits <code>enabled</code> from silently disabling the target (a bool zero value is <code>false</code>).</p>
+<p><code>device_id</code> merges too: set it to pre-link the exporter to its device (validated — an unknown device is <code>400</code>), or send an explicit <code>&quot;&quot;</code> to clear the link. Omitting the field keeps the current link. Normally the engine self-resolves this link at peer-up once the exporter exists as a device; the manual pre-link is for wiring a target before its first session.</p>
+<p><strong>Auth</strong>: admin, engineer</p>
+<p><strong>Request Body</strong>: same shape as POST.</p>
+<p><code>history_mode</code> is validated and applied when non-empty. <code>history_prefix_filter</code>
+merges by presence: an omitted field keeps the existing filter, while an explicit
+<code>[]</code> clears it (record all prefixes).</p>
+<p><strong>Response</strong>: <code>200 OK</code> -- returns the updated target.</p>
+<p><strong>Side effect</strong>: Publishes <code>osprey.config.bmp_target.updated</code> to NATS, triggering the engine&#39;s NextHopResolver to invalidate its BMP target cache.</p>
+<p><strong>Errors</strong>: <code>404</code> if target not found.</p>
+</main></html>

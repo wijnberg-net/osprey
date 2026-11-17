@@ -1,0 +1,44 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Global Search — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="global-search">Global Search</h3><h4 id="search-devices-and-interfaces">Search Devices and Interfaces</h4><pre><code>GET /api/v1/search
+</code></pre>
+<p>Global search across devices and interfaces.</p>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>q</code> (required) — Search query string (max 200 chars)</li>
+<li><code>limit</code> (optional) — Max results per category (default 10, max 50)</li>
+</ul>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;devices&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;router_id&quot;: &quot;10.0.0.1&quot;,
+      &quot;hostname&quot;: &quot;rtr-core-01&quot;,
+      &quot;dns_name&quot;: &quot;rtr-core-01.example.com&quot;,
+      &quot;vendor&quot;: &quot;Cisco&quot;,
+      &quot;device_type&quot;: &quot;router&quot;,
+      &quot;model&quot;: &quot;ASR-9001&quot;,
+      &quot;platform&quot;: &quot;IOS-XR&quot;,
+      &quot;software_version&quot;: &quot;7.3.2&quot;,
+      &quot;match_field&quot;: &quot;hostname&quot;
+    }
+  ],
+  &quot;interfaces&quot;: [
+    {
+      &quot;id&quot;: &quot;uuid&quot;,
+      &quot;device_id&quot;: &quot;uuid&quot;,
+      &quot;area_id&quot;: &quot;uuid&quot;,
+      &quot;ip_address&quot;: &quot;10.0.0.1&quot;,
+      &quot;if_name&quot;: &quot;GigabitEthernet0/0/0&quot;,
+      &quot;if_descr&quot;: &quot;GigabitEthernet0/0/0&quot;,
+      &quot;if_alias&quot;: &quot;AT&amp;T-MPLS-CID-12345&quot;,
+      &quot;speed_mbps&quot;: 1000,
+      &quot;device_router_id&quot;: &quot;10.0.0.1&quot;,
+      &quot;device_hostname&quot;: &quot;rtr-core-01&quot;,
+      &quot;match_field&quot;: &quot;if_alias&quot;
+    }
+  ]
+}
+</code></pre>
+<p>Searches device fields (hostname, dns_name, router_id, vendor, model, platform, software_version) and interface fields (if_alias, if_name, if_descr, ip_address). If query is a valid IP or CIDR, also performs subnet containment search. Results prioritize prefix matches. Available to all authenticated users.</p>
+<hr>
+</main></html>

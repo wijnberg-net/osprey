@@ -1,0 +1,72 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>API Keys — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="api-keys">API Keys</h3><p>Admin-only CRUD for API keys. API keys provide an alternative to JWT cookie authentication for programmatic access.</p>
+<h4 id="create-api-key">Create API Key</h4><pre><code>POST /api/v1/api-keys
+</code></pre>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;CI Pipeline&quot;,
+  &quot;role&quot;: &quot;operator&quot;,
+  &quot;read_only&quot;: true,
+  &quot;expires_at&quot;: &quot;2027-01-01T00:00:00Z&quot;
+}
+</code></pre>
+<p><strong>Validation:</strong></p>
+<ul>
+<li><code>name</code> is required</li>
+<li><code>role</code> must be <code>&quot;admin&quot;</code>, <code>&quot;engineer&quot;</code> or <code>&quot;operator&quot;</code> (required)</li>
+<li><code>read_only</code> is an optional boolean, default false for API compatibility; see <a href="api-read-only-api-keys.html#read-only-api-keys">Read-only API Keys</a> for the exact allowlist and version caveat. It is returned in creation and list responses.</li>
+<li><code>expires_at</code> is optional (ISO 8601 timestamp); if omitted, the key does not expire</li>
+</ul>
+<p><strong>Response:</strong> <code>201 Created</code></p>
+<pre><code class="language-json">{
+  &quot;key&quot;: &quot;osprey_&lt;one-time-secret&gt;&quot;,
+  &quot;api_key&quot;: {
+    &quot;id&quot;: &quot;uuid&quot;,
+    &quot;user_id&quot;: &quot;uuid&quot;,
+    &quot;name&quot;: &quot;CI Pipeline&quot;,
+    &quot;role&quot;: &quot;operator&quot;,
+    &quot;read_only&quot;: true,
+    &quot;key_prefix&quot;: &quot;a1b2c3d4&quot;,
+    &quot;is_active&quot;: true,
+    &quot;created_at&quot;: &quot;2026-02-17T12:00:00Z&quot;,
+    &quot;expires_at&quot;: &quot;2027-01-01T00:00:00Z&quot;
+  }
+}
+</code></pre>
+<p><strong>Important:</strong> The top-level <code>key</code> field is returned only in this response. It cannot be retrieved afterward. Clients must store it securely at creation time.</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> — Missing name or invalid role</li>
+<li><code>403 Forbidden</code> — Non-admin user</li>
+</ul>
+<h4 id="list-api-keys">List API Keys</h4><pre><code>GET /api/v1/api-keys
+</code></pre>
+<p>List all API keys. The raw key is never included in list responses.</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">[
+  {
+    &quot;id&quot;: &quot;uuid&quot;,
+    &quot;name&quot;: &quot;CI Pipeline&quot;,
+    &quot;role&quot;: &quot;operator&quot;,
+    &quot;read_only&quot;: true,
+    &quot;key_prefix&quot;: &quot;a1b2c3d4&quot;,
+    &quot;is_active&quot;: true,
+    &quot;created_at&quot;: &quot;2026-02-17T12:00:00Z&quot;,
+    &quot;last_used_at&quot;: &quot;2026-02-17T14:30:00Z&quot;,
+    &quot;expires_at&quot;: &quot;2027-01-01T00:00:00Z&quot;
+  }
+]
+</code></pre>
+<p><strong>Note:</strong> <code>last_used_at</code> is <code>null</code> if the key has never been used. <code>expires_at</code> is <code>null</code> if the key does not expire.</p>
+<h4 id="delete-api-key">Delete API Key</h4><pre><code>DELETE /api/v1/api-keys/{keyID}
+</code></pre>
+<p>Delete an API key. The key is immediately invalidated.</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{&quot;status&quot;:&quot;deleted&quot;}
+</code></pre>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>403 Forbidden</code> — Non-admin user</li>
+<li><code>404 Not Found</code> — API key does not exist</li>
+</ul>
+<hr>
+</main></html>

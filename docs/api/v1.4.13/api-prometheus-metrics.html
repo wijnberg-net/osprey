@@ -1,0 +1,205 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Prometheus Metrics — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="prometheus-metrics">Prometheus Metrics</h3><pre><code>GET /metrics    (on metrics port :9093, NOT the API port)
+</code></pre>
+<p><strong>Note:</strong> Metrics are served on a separate, dedicated port (<code>:9093</code> by default, configurable via <code>OSPREY_METRICS_LISTEN</code>). This keeps operational telemetry isolated from the authenticated API surface on <code>:8080</code>.</p>
+<p><strong>Available metrics (API server):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Type</th>
+<th>Labels</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>osprey_http_requests_total</code></td>
+<td>counter</td>
+<td>method, route, status</td>
+<td>HTTP request count by method, route pattern, HTTP status</td>
+</tr>
+<tr>
+<td><code>osprey_http_request_duration_seconds</code></td>
+<td>histogram</td>
+<td>method, route</td>
+<td>HTTP request latency (buckets: 5ms–5s)</td>
+</tr>
+<tr>
+<td><code>osprey_db_pool_total_conns</code></td>
+<td>gauge</td>
+<td>—</td>
+<td>Total connections in the pgx pool</td>
+</tr>
+<tr>
+<td><code>osprey_db_pool_idle_conns</code></td>
+<td>gauge</td>
+<td>—</td>
+<td>Idle connections</td>
+</tr>
+<tr>
+<td><code>osprey_db_pool_acquired_conns</code></td>
+<td>gauge</td>
+<td>—</td>
+<td>Currently acquired connections</td>
+</tr>
+<tr>
+<td><code>osprey_db_pool_max_conns</code></td>
+<td>gauge</td>
+<td>—</td>
+<td>Maximum pool connections</td>
+</tr>
+<tr>
+<td><code>osprey_nats_messages_published_total</code></td>
+<td>gauge</td>
+<td>—</td>
+<td>Total NATS messages published</td>
+</tr>
+<tr>
+<td><code>osprey_nats_messages_received_total</code></td>
+<td>gauge</td>
+<td>—</td>
+<td>Total NATS messages received</td>
+</tr>
+<tr>
+<td><code>osprey_nats_reconnects_total</code></td>
+<td>gauge</td>
+<td>—</td>
+<td>Total NATS reconnections</td>
+</tr>
+<tr>
+<td><code>osprey_nats_connected</code></td>
+<td>gauge</td>
+<td>—</td>
+<td>NATS connection status (1/0)</td>
+</tr>
+<tr>
+<td><code>osprey_ws_clients_connected</code></td>
+<td>gauge</td>
+<td>—</td>
+<td>Connected WebSocket clients</td>
+</tr>
+<tr>
+<td><code>osprey_ws_messages_broadcast_total</code></td>
+<td>counter</td>
+<td>—</td>
+<td>Broadcast messages sent</td>
+</tr>
+<tr>
+<td><code>osprey_ws_messages_dropped_total</code></td>
+<td>counter</td>
+<td>—</td>
+<td>Messages dropped (slow clients)</td>
+</tr>
+</tbody></table>
+<p><strong>Engine metrics (port 9090):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Type</th>
+<th>Labels</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>osprey_engine_snapshots_total</code></td>
+<td>counter</td>
+<td>area</td>
+<td>Topology snapshots processed</td>
+</tr>
+<tr>
+<td><code>osprey_engine_snapshot_duration_seconds</code></td>
+<td>histogram</td>
+<td>area</td>
+<td>Snapshot processing time</td>
+</tr>
+<tr>
+<td><code>osprey_engine_snapshot_errors_total</code></td>
+<td>counter</td>
+<td>—</td>
+<td>Snapshot processing errors</td>
+</tr>
+<tr>
+<td><code>osprey_engine_devices_processed_total</code></td>
+<td>counter</td>
+<td>—</td>
+<td>Total devices processed</td>
+</tr>
+<tr>
+<td><code>osprey_engine_links_processed_total</code></td>
+<td>counter</td>
+<td>—</td>
+<td>Total links processed</td>
+</tr>
+<tr>
+<td><code>osprey_engine_stale_sweeps_total</code></td>
+<td>counter</td>
+<td>—</td>
+<td>Stale area sweep operations</td>
+</tr>
+</tbody></table>
+<p><strong>Collector-manager metrics (port 9091):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Type</th>
+<th>Labels</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>osprey_manager_collectors_running</code></td>
+<td>gauge</td>
+<td>—</td>
+<td>Running collector instances</td>
+</tr>
+<tr>
+<td><code>osprey_manager_collectors_errored</code></td>
+<td>gauge</td>
+<td>—</td>
+<td>Errored collector instances</td>
+</tr>
+<tr>
+<td><code>osprey_manager_sync_total</code></td>
+<td>counter</td>
+<td>—</td>
+<td>DB poll sync cycles</td>
+</tr>
+<tr>
+<td><code>osprey_manager_sync_errors_total</code></td>
+<td>counter</td>
+<td>—</td>
+<td>Failed sync cycles</td>
+</tr>
+</tbody></table>
+<p><strong>SNMP discovery metrics (collector-manager port 9091):</strong></p>
+<table>
+<thead>
+<tr>
+<th>Metric</th>
+<th>Type</th>
+<th>Labels</th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>osprey_snmp_isis_area_verification</code></td>
+<td>gauge</td>
+<td>collector, area, state</td>
+<td>One-hot latest IS-IS area verdict (<code>unknown</code>, <code>verified</code>, <code>pending</code>, <code>unreachable</code>, <code>truncated</code>)</td>
+</tr>
+<tr>
+<td><code>osprey_snmp_isis_bootstrap_areas</code></td>
+<td>gauge</td>
+<td>collector, state</td>
+<td>Active handoff counts (<code>desired</code>, <code>acked</code>); both return to zero after handoff</td>
+</tr>
+<tr>
+<td><code>osprey_snmp_lsdb_walk_truncated_total</code></td>
+<td>counter</td>
+<td>target, area, protocol</td>
+<td>LSDB walks rejected after transport or structural completeness validation</td>
+</tr>
+</tbody></table>
+<p>Engine and collector-manager metrics also include the <code>osprey_db_pool_*</code> and <code>osprey_nats_*</code> gauges.</p>
+</main></html>

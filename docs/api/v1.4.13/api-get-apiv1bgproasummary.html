@@ -1,0 +1,14 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>ROA summary — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="get-apiv1bgproasummary">ROA summary <!-- topic: get-apiv1bgproasummary --></h3><p><code>GET /api/v1/bgp/roa/summary</code></p>
+<pre><code>GET /api/v1/bgp/roa/summary?as_id=&lt;uuid&gt;
+</code></pre>
+<p>The tenant&#39;s ROA state: the open rule count per source (with last import time), live candidate validation counts, and <strong>per-session invalid counts</strong> — the mandatory coverage honesty (plan 3c): a session showing <strong>zero invalids may simply be filtered upstream of BMP</strong>, so &quot;invalid-free&quot; is not validation coverage and must never be read as a green light.</p>
+<p><strong>Auth:</strong> any authenticated user. <strong>Response</strong> <code>200 OK</code>:</p>
+<pre><code class="language-json">{
+  &quot;open_roas&quot;: 3120,
+  &quot;sources&quot;: [ { &quot;source&quot;: &quot;dn42&quot;, &quot;count&quot;: 3120, &quot;last_import&quot;: &quot;2026-08-18T00:00:00Z&quot; } ],
+  &quot;live_valid&quot;: 2380, &quot;live_invalid&quot;: 12, &quot;live_unknown&quot;: 148,
+  &quot;session_invalids&quot;: [ { &quot;device_id&quot;: &quot;uuid&quot;, &quot;peer_ip&quot;: &quot;172.20.0.1&quot;, &quot;address_family&quot;: &quot;ipv4&quot;, &quot;peer_as&quot;: 4242420000, &quot;invalids&quot;: 12 } ]
+}
+</code></pre>
+<p><strong><code>roa_status</code> on the candidate readers</strong> (join-at-read): <code>GET /bgp/rib-paths</code> rows carry <code>roa_status</code> (<code>valid</code> | <code>invalid</code> | <code>unknown</code>, RFC 6811 against the <strong>open</strong> ROAs) and <code>GET /bgp/history/candidates</code> intervals carry it <strong>as of each interval&#39;s start</strong> (a registry change never rewrites what an old candidate was). The field is <strong>absent</strong> when the tenant has no ROAs loaded (no badge, never a fake &quot;unknown&quot; that implies validation is running) or when the row carries no origin.</p>
+</main></html>

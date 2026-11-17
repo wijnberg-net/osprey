@@ -1,0 +1,26 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Device Management (Admin) — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="device-management-admin">Device Management (Admin)</h3><h4 id="delete-device">Delete Device</h4><pre><code>DELETE /api/v1/devices/{deviceID}
+</code></pre>
+<p>Permanently removes a device and all associated data (interfaces, interface_stats_latest, snmp_target, device_area_membership) via FK CASCADE. Engineer or admin.</p>
+<p>In the same transaction the device&#39;s addresses (its current polling target, its
+router-id and every recorded management address) are removed from the seed list of
+every EIGRP recorder <strong>declared in that device&#39;s own network</strong>, and those
+recorders&#39; <code>config_version</code> is bumped so the collector-manager re-reads the
+shortened list. Without that prune a delete would not stick: seed lists are
+operator config no cascade touches, and the manager re-creates an SNMP target
+for every declared seed each time it registers a recorder — a service restart is
+enough. Pruning never disables a recorder (recording matches on network
+membership, so an emptied seed list still records the whole network), and a
+router that is still live and still speaks EIGRP returns through ordinary
+LLDP/CDP discovery on its own evidence rather than on a stale config line.
+The network scope matters: the same management address legitimately exists in
+several networks, so recorders in other networks are never touched. A device
+with no resolvable network leaves every seed list alone and logs a warning.</p>
+<p><strong>Response:</strong> <code>204 No Content</code></p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>401 Unauthorized</code> -- Missing or invalid access token</li>
+<li><code>403 Forbidden</code> -- Non-admin user</li>
+<li><code>404 Not Found</code> -- Device does not exist</li>
+</ul>
+<hr>
+</main></html>

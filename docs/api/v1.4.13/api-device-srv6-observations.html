@@ -1,0 +1,12 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Device SRv6 observations — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h2 id="device-srv6-observations">Device SRv6 observations</h2><p><code>GET /api/v1/devices/{deviceID}/srv6</code> (authenticated application endpoint, UUID
+guard) returns <code>{ &quot;live_only&quot;: true, &quot;observations&quot;: [...] }</code>. Each observation
+has area_id, device_id, observed_at and data containing locators, capabilities,
+adjacencies and invalid_advertisements. Empty observations means no decoded
+source data; an observation with an empty locator list means no locator was
+advertised. <code>at</code> requests return 400; database errors return 500. This endpoint
+is not yet part of the published OpenAPI or restricted-key allowlist.</p>
+<p>EVPN members expose optional <code>srv6_services[]</code>: SID/base SID, behavior code,
+raw label evidence and complete/unresolved status. The EVPN detail endpoint
+also resolves owners within the EVI observation ASes and reports unique,
+ambiguous or unknown ownership. SRv6 service state is live-only.</p>
+</main></html>

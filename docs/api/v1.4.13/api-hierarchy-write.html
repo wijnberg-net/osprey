@@ -1,0 +1,145 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Hierarchy (Write) — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="hierarchy-write">Hierarchy (Write)</h3><h4 id="create-network">Create Network</h4><pre><code>POST /api/v1/networks
+</code></pre>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;Production&quot;,
+  &quot;description&quot;: &quot;Production network&quot;
+}
+</code></pre>
+<p><strong>Validation:</strong> <code>name</code> is required.</p>
+<p><strong>Response:</strong> <code>201 Created</code> (created network object with generated ID and timestamps)</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> — Missing name</li>
+<li><code>409 Conflict</code> — Duplicate name (PostgreSQL unique constraint violation)</li>
+</ul>
+<h4 id="update-network">Update Network</h4><pre><code>PUT /api/v1/networks/{networkID}
+</code></pre>
+<p><strong>Request body:</strong> Same as create (all fields optional). Beyond <code>name</code>/<code>description</code>, the endpoint accepts the per-network settings fields shown in the network object (only the fields present in the body are patched): <code>poller_paused</code>, SNMP settings (<code>snmp_credential_profile_id</code>, <code>snmp_fallback_credential_profile_id</code>, <code>snmp_timeout_seconds</code> 1–30, <code>snmp_retries</code> 0–10, <code>snmp_auto_disable_threshold</code> 1–100), discovery/counters (<code>discovery_enabled</code>, <code>discovery_interval_hours</code> &gt;= 1, <code>counters_enabled</code>, <code>counters_interval_minutes</code> &gt;= 1, <code>counters_poll_interval_seconds</code> 10–3600), L2 (<code>l2_enrichment_enabled</code>, <code>l2_enrichment_interval_hours</code>, <code>l2_crawl_enabled</code>, <code>l2_crawl_interval_hours</code>, <code>l2_crawl_max_depth</code>, <code>l2_crawl_include_routers</code>, <code>l2_stale_hours</code>, <code>l2_credential_profile_id</code>, <code>l2_fallback_credential_profile_id</code>), and <code>mpls_discovery</code> — the MPLS discovery switch (TE tunnels, L3VPN VRFs, pseudowires), <code>on</code> (walk only capability-probed MPLS devices) or <code>off</code> (never walk; the default). The legacy <code>auto</code> is accepted and normalized to <code>on</code>. Set from the Enrichment panel&#39;s <strong>MPLS Discovery</strong> card.</p>
+<p><strong>Response:</strong> <code>200 OK</code> (updated network object)</p>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>400 Bad Request</code> — Validation failure (e.g. <code>mpls_discovery</code> not <code>on</code>/<code>off</code>)</li>
+<li><code>404 Not Found</code> — Network does not exist</li>
+<li><code>409 Conflict</code> — Attempt to set <code>l2_enrichment_enabled=false</code> on a network that has an EIGRP recorder. EIGRP has no LSDB, so the LLDP/CDP adjacencies L2 enrichment records are its only topology source; the recorder would keep polling but resolve no neighbours. Remove the EIGRP recorder first. (The poller also force-enables enrichment for such networks at runtime; this guard surfaces the constraint instead of letting it fail silently.)</li>
+</ul>
+<h4 id="delete-network">Delete Network</h4><pre><code>DELETE /api/v1/networks/{networkID}?delete_history=true
+</code></pre>
+<p>Disables all collectors under this network (sets <code>enabled=false</code>, <code>status=&#39;stopped&#39;</code>) before cascade delete. Cascade deletes all child resources (AS, routing domains, protocol instances, areas, devices, links).</p>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>delete_history</code> (optional, boolean): When <code>true</code>, deletes all <code>topology_event</code> and <code>topology_snapshot</code> rows for areas under this network before cascade delete. Default: <code>false</code> (history is preserved).</li>
+</ul>
+<p><strong>Response:</strong> <code>204 No Content</code></p>
+<p><strong>Error:</strong> <code>404 Not Found</code> (or <code>500 Internal Server Error</code> on database constraint violations)</p>
+<h4 id="create-autonomous-system">Create Autonomous System</h4><pre><code>POST /api/v1/networks/{networkID}/autonomous-systems
+</code></pre>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;asn&quot;: 65000,
+  &quot;name&quot;: &quot;AS65000&quot;,
+  &quot;description&quot;: &quot;Primary AS&quot;
+}
+</code></pre>
+<p><strong>Validation:</strong> <code>asn</code> is required.</p>
+<p><strong>Response:</strong> <code>201 Created</code></p>
+<p><strong>Error:</strong> <code>400 Bad Request</code> — Missing asn</p>
+<h4 id="update-autonomous-system">Update Autonomous System</h4><pre><code>PUT /api/v1/networks/{networkID}/autonomous-systems/{asID}
+</code></pre>
+<p><strong>Request body:</strong> Same as create (all fields optional).</p>
+<p><strong>ASN renumber cascade:</strong> When <code>asn</code> differs from the current value, the handler:</p>
+<ol>
+<li>Updates the AS row and rewrites <code>collector_config</code> JSONB <code>hierarchy.asn</code> fields (as a JSON number) within a single transaction, bumping <code>config_version</code> to trigger collector-manager restarts.</li>
+<li>Publishes <code>osprey.config.bmp_target.updated</code> for each BMP target under this AS (engine cache invalidation).</li>
+<li>Publishes <code>osprey.config.as.updated</code> (BMP server closes affected TCP sessions so routers reconnect with the new ASN).</li>
+</ol>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<h4 id="delete-autonomous-system">Delete Autonomous System</h4><pre><code>DELETE /api/v1/networks/{networkID}/autonomous-systems/{asID}
+</code></pre>
+<p>Cascade deletes all child resources.</p>
+<p><strong>Response:</strong> <code>204 No Content</code></p>
+<h4 id="create-routing-domain">Create Routing Domain</h4><pre><code>POST /api/v1/networks/{networkID}/autonomous-systems/{asID}/routing-domains
+</code></pre>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;name&quot;: &quot;Global&quot;,
+  &quot;description&quot;: &quot;Global routing table&quot;,
+  &quot;type&quot;: &quot;global&quot;,
+  &quot;rd&quot;: null
+}
+</code></pre>
+<p><strong>Validation:</strong> <code>name</code> is required. <code>type</code> defaults to <code>&quot;global&quot;</code> if omitted; valid values are <code>&quot;global&quot;</code>, <code>&quot;vrf&quot;</code>, <code>&quot;l3vpn&quot;</code> — anything else is a <code>400</code> (create and update).</p>
+<p><strong>Response:</strong> <code>201 Created</code></p>
+<p><strong>Error:</strong> <code>400 Bad Request</code> — Missing name or invalid type</p>
+<h4 id="update-routing-domain">Update Routing Domain</h4><pre><code>PUT /api/v1/networks/{networkID}/autonomous-systems/{asID}/routing-domains/{rdID}
+</code></pre>
+<p><strong>Request body:</strong> Same as create (all fields optional).</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<h4 id="delete-routing-domain">Delete Routing Domain</h4><pre><code>DELETE /api/v1/networks/{networkID}/autonomous-systems/{asID}/routing-domains/{rdID}?delete_history=true
+</code></pre>
+<p>Disables all collectors under this routing domain before cascade delete. Cascade deletes all child resources.</p>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>delete_history</code> (optional, boolean): When <code>true</code>, deletes all <code>topology_event</code> and <code>topology_snapshot</code> rows for areas under this routing domain before cascade delete. Default: <code>false</code> (history is preserved).</li>
+</ul>
+<p><strong>Response:</strong> <code>204 No Content</code></p>
+<h4 id="create-protocol-instance">Create Protocol Instance</h4><pre><code>POST /api/v1/networks/{networkID}/autonomous-systems/{asID}/routing-domains/{rdID}/protocol-instances
+</code></pre>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;protocol&quot;: &quot;ospfv3&quot;,
+  &quot;process_id&quot;: &quot;1&quot;,
+  &quot;address_family&quot;: &quot;ipv6&quot;,
+  &quot;description&quot;: &quot;Primary OSPFv3 instance&quot;
+}
+</code></pre>
+<p><strong>Validation:</strong></p>
+<ul>
+<li><code>protocol</code> and <code>process_id</code> are required.</li>
+<li><code>address_family</code> is optional. Defaults: <code>&quot;ipv4&quot;</code> for OSPFv2, <code>&quot;ipv6&quot;</code> for OSPFv3, <code>&quot;multi&quot;</code> for BGP.</li>
+<li>OSPFv2 only supports <code>address_family: &quot;ipv4&quot;</code>.</li>
+<li>OSPFv3 supports <code>&quot;ipv4&quot;</code> (RFC 5838 AF extensions) or <code>&quot;ipv6&quot;</code>.</li>
+<li>BGP: <code>process_id</code> must be a valid ASN (1–4294967295). <code>address_family</code> is auto-set to <code>&quot;multi&quot;</code>. BGP PIs have no areas — BMP targets are linked via <code>bmp_target.protocol_instance_id</code> instead.</li>
+</ul>
+<p><strong>Response:</strong> <code>201 Created</code></p>
+<p><strong>Error:</strong> <code>400 Bad Request</code> — Missing protocol or process_id, invalid address_family, invalid BGP ASN
+<strong>Error:</strong> <code>409 Conflict</code> — A BGP protocol instance already exists for this routing domain</p>
+<h4 id="update-protocol-instance">Update Protocol Instance</h4><pre><code>PUT /api/v1/networks/{networkID}/autonomous-systems/{asID}/routing-domains/{rdID}/protocol-instances/{piID}
+</code></pre>
+<p><strong>Request body:</strong> Same as create (all fields optional).</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<h4 id="delete-protocol-instance">Delete Protocol Instance</h4><pre><code>DELETE /api/v1/networks/{networkID}/autonomous-systems/{asID}/routing-domains/{rdID}/protocol-instances/{piID}?delete_history=true
+</code></pre>
+<p>Disables all collectors under this protocol instance before cascade delete. Cascade deletes all child resources.</p>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>delete_history</code> (optional, boolean): When <code>true</code>, deletes all <code>topology_event</code> and <code>topology_snapshot</code> rows for areas under this protocol instance before cascade delete. Default: <code>false</code> (history is preserved).</li>
+</ul>
+<p><strong>Response:</strong> <code>204 No Content</code></p>
+<h4 id="create-area">Create Area</h4><pre><code>POST /api/v1/networks/{networkID}/autonomous-systems/{asID}/routing-domains/{rdID}/protocol-instances/{piID}/areas
+</code></pre>
+<p><strong>Request body:</strong></p>
+<pre><code class="language-json">{
+  &quot;area_id&quot;: &quot;0.0.0.0&quot;,
+  &quot;area_type&quot;: &quot;normal&quot;,
+  &quot;name&quot;: &quot;Area 0&quot;,
+  &quot;description&quot;: &quot;Backbone area&quot;
+}
+</code></pre>
+<p><strong>Validation:</strong> <code>area_id</code> is required. <code>area_type</code> defaults to <code>&quot;normal&quot;</code> if omitted. Valid values: <code>normal</code>, <code>stub</code>, <code>totally_stub</code>, <code>nssa</code>, <code>totally_nssa</code>, <code>level-1</code>, <code>level-2</code> (DB CHECK constraint — <code>backbone</code> is <strong>not</strong> valid; sending it currently yields a 500).</p>
+<p><strong>Response:</strong> <code>201 Created</code></p>
+<p><strong>Error:</strong> <code>400 Bad Request</code> — Missing area_id</p>
+<h4 id="update-area">Update Area</h4><pre><code>PUT /api/v1/networks/{networkID}/autonomous-systems/{asID}/routing-domains/{rdID}/protocol-instances/{piID}/areas/{areaID}
+</code></pre>
+<p><strong>Request body:</strong> Same as create (all fields optional).</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<h4 id="delete-area">Delete Area</h4><pre><code>DELETE /api/v1/networks/{networkID}/autonomous-systems/{asID}/routing-domains/{rdID}/protocol-instances/{piID}/areas/{areaID}?delete_history=true
+</code></pre>
+<p>Disables all collectors for this area before cascade delete. Cascade deletes all child resources (devices, links, stub networks).</p>
+<p><strong>Query Parameters:</strong></p>
+<ul>
+<li><code>delete_history</code> (optional, boolean): When <code>true</code>, deletes all <code>topology_event</code> and <code>topology_snapshot</code> rows for this area before cascade delete. Default: <code>false</code> (history is preserved).</li>
+</ul>
+<p><strong>Response:</strong> <code>204 No Content</code></p>
+<hr>
+</main></html>

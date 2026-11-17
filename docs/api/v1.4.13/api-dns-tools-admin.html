@@ -1,0 +1,23 @@
+<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>DNS Tools (Admin) — Osprey API</title><style>body{font:16px/1.6 system-ui,sans-serif;margin:0;color:#202938;background:#fafbfd}main{max-width:1000px;margin:auto;padding:24px}a{color:#1358aa}h1,h2,h3,h4{scroll-margin-top:24px}pre{overflow:auto;background:#edf0f5;padding:16px}table{display:block;overflow:auto;border-collapse:collapse}td,th{padding:8px;border:1px solid #cbd2dd;text-align:left}code{overflow-wrap:anywhere}nav{margin-bottom:24px}</style><main><nav><a href="index.html">API reference</a> · <a href="openapi.json">OpenAPI JSON</a></nav><h3 id="dns-tools-admin">DNS Tools (Admin)</h3><h4 id="refresh-reverse-dns">Refresh Reverse DNS</h4><pre><code>POST /api/v1/dns/refresh
+</code></pre>
+<p>Triggers a full re-resolution of all reverse DNS (PTR) records for device router IDs and interface IPs across the entire system. The engine clears its DNS caches and re-resolves all IPs in the background. Use this endpoint after network renumbering events, device replacements, or DNS zone updates to force a refresh of all cached DNS lookups. Admin-only.</p>
+<p><strong>Request body:</strong> None (empty POST)</p>
+<p><strong>Response:</strong> <code>200 OK</code></p>
+<pre><code class="language-json">{
+  &quot;status&quot;: &quot;refresh requested&quot;
+}
+</code></pre>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>The refresh happens asynchronously. DNS caches on the engine are cleared immediately; re-resolution of all IPs begins after the request completes.</li>
+<li>Device display names across the topology, incidents, diagnostics, and reports (when <code>display.device_name_mode</code> is set to <code>dns</code>) will reflect the refreshed DNS results.</li>
+<li>Audit log entry is created with action <code>&quot;refresh&quot;</code> and entity_type <code>&quot;dns&quot;</code>.</li>
+</ul>
+<p><strong>Error responses:</strong></p>
+<ul>
+<li><code>401 Unauthorized</code> -- Missing or invalid access token</li>
+<li><code>403 Forbidden</code> -- Non-admin user</li>
+<li><code>500 Internal Server Error</code> -- NATS publication failure or database error</li>
+</ul>
+<hr>
+</main></html>
